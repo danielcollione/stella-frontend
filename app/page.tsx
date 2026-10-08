@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { Navbar } from '@/components/layout/Navbar';
 import { PhoneMockup } from '@/components/features/PhoneMockup';
+import { PageContent } from '@/components/layout/PageContent';
 
 export default function Home() {
   return (
@@ -10,6 +11,7 @@ export default function Home() {
       <Navbar />
 
       <main>
+        <PageContent stagger fadeOnly>
         {/* Hero Section */}
         <section className="max-w-4xl mx-auto text-center px-4 pt-16 pb-12">
           <h1 className="text-4xl sm:text-6xl font-serif tracking-tight text-stone-900 leading-[1.15]">
@@ -30,6 +32,7 @@ export default function Home() {
         <section className="flex justify-center px-4">
           <PhoneMockup />
         </section>
+        </PageContent>
       </main>
     </div>
   );

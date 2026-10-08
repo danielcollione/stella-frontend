@@ -5,6 +5,28 @@ body {
   color: #1c1917;
 }
 
+.stella-select-menu {
+  transform-origin: var(--radix-select-content-transform-origin);
+}
+
+.stella-select-menu[data-state="open"] {
+  animation: stella-select-in 160ms ease-out;
+}
+
+.stella-select-menu[data-state="closed"] {
+  animation: stella-select-out 100ms ease-in;
+}
+
+@keyframes stella-select-in {
+  from { opacity: 0; transform: translateY(-4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes stella-select-out {
+  from { opacity: 1; }
+  to { opacity: 0; }
+}
+
 /* --- Scrollbar Minimalista (Estilo ChatGPT / Gemini) --- */
 
 /* Suporte para Firefox */
@@ -49,4 +71,61 @@ body {
 /* Cantos transparentes */
 ::-webkit-scrollbar-corner {
   background: transparent !important;
+}
+
+::view-transition {
+  pointer-events: none;
+}
+
+::view-transition-old(.stella-page) {
+  animation: stella-page-out 180ms ease-out both;
+}
+
+::view-transition-new(.stella-page) {
+  animation: stella-page-in 300ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@keyframes stella-page-out {
+  to { opacity: 0; }
+}
+
+@keyframes stella-page-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.stella-stagger > * {
+  animation: stella-content-in 300ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.stella-stagger > :nth-child(2) { animation-delay: 40ms; }
+.stella-stagger > :nth-child(3) { animation-delay: 80ms; }
+.stella-stagger > :nth-child(4) { animation-delay: 120ms; }
+.stella-stagger > :nth-child(n + 5) { animation-delay: 160ms; }
+
+@keyframes stella-content-in {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .stella-select-menu {
+    animation: none !important;
+  }
+
+  .stella-stagger > * {
+    animation: none !important;
+  }
+
+  .stella-content {
+    transform: none !important;
+    opacity: 1 !important;
+  }
+
+  ::view-transition-old(*),
+  ::view-transition-new(*),
+  ::view-transition-group(*) {
+    animation-duration: 0s !important;
+    animation-delay: 0s !important;
+  }
 }
