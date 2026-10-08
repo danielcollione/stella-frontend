@@ -8,6 +8,7 @@ export interface UserResponseDto {
   fashionPreference: FashionPreference | null;
   cityName?: string | null;
   cityCoordinates?: string | null;
+  age?: number | null;
   lifestyles: string[];
   stellaPersona?: string | null;
   onboardingCompleted: boolean;
@@ -22,6 +23,7 @@ export interface UpdateProfileRequestDto {
   fashionPreference: FashionPreference;
   cityName: string;
   cityCoordinates?: string;
+  age?: number;
   lifestyles: string[];
   stellaPersona: string;
 }

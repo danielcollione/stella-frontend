@@ -10,6 +10,7 @@ import {
 import { useAppShell } from "@/components/layout/AppShell";
 import { PageContent } from "@/components/layout/PageContent";
 import { Select } from "@/components/ui/Select";
+import { CityAutocomplete } from "@/components/features/CityAutocomplete";
 import { authService } from "@/services/authService";
 import type { UpdateProfileRequestDto, UserResponseDto } from "@/types/auth";
 
@@ -56,6 +57,7 @@ function profileValues(user: UserResponseDto): UpdateProfileRequestDto {
     fashionPreference: user.fashionPreference ?? "NEUTRAL",
     cityName: user.cityName ?? "",
     cityCoordinates: user.cityCoordinates ?? "",
+    age: user.age ?? undefined,
     lifestyles: [...(user.lifestyles ?? [])],
     stellaPersona: user.stellaPersona === "CONSULTORA" ? "CONSULTORA_LUXO" : user.stellaPersona ?? "AMIGA",
   };
@@ -96,6 +98,10 @@ export default function ProfilePage() {
     if (saving) return;
     if (!profile.name?.trim() || !profile.cityName.trim() || profile.lifestyles.length === 0) {
       setError("Informe seu nome, sua cidade e selecione pelo menos um estilo de vida.");
+      return;
+    }
+    if (profile.age !== undefined && (profile.age < 13 || profile.age > 100)) {
+      setError("Informe uma idade entre 13 e 100 anos.");
       return;
     }
     setSaving(true);
@@ -218,7 +224,16 @@ export default function ProfilePage() {
                   <label htmlFor="profile-preference" className={labelClass}>Preferencia de roupa</label>
                   <Select id="profile-preference" value={profile.fashionPreference} onValueChange={(fashionPreference) => setProfile({ ...profile, fashionPreference })} options={FASHION_OPTIONS} disabled={saving} />
                 </div>
-                <div><label htmlFor="profile-city" className={labelClass}>Cidade</label><input id="profile-city" required maxLength={255} value={profile.cityName} onChange={(event) => setProfile({ ...profile, cityName: event.target.value, cityCoordinates: undefined })} className={fieldClass} /></div>
+                <div className="grid gap-5 sm:grid-cols-[8rem_1fr]">
+                  <div>
+                    <label htmlFor="profile-age" className={labelClass}>Idade</label>
+                    <input id="profile-age" type="text" inputMode="numeric" maxLength={3} placeholder="--" value={profile.age ?? ""} onChange={(event) => { const digits = event.target.value.replace(/\D/g, ""); setProfile({ ...profile, age: digits ? Number(digits) : undefined }); }} className={fieldClass} />
+                  </div>
+                  <div>
+                    <label htmlFor="profile-city" className={labelClass}>Cidade</label>
+                    <CityAutocomplete id="profile-city" value={{ cityName: profile.cityName, cityCoordinates: profile.cityCoordinates ?? "" }} onChange={({ cityName, cityCoordinates }) => setProfile({ ...profile, cityName, cityCoordinates })} disabled={saving} inputClassName={fieldClass} />
+                  </div>
+                </div>
                 <fieldset><legend className={labelClass}>Estilos de vida</legend><div className="grid sm:grid-cols-2 gap-3">{[...LIFESTYLES, ...profile.lifestyles.filter((id) => !LIFESTYLES.some((option) => option.id === id)).map((id) => ({ id, label: id }))].map((option) => <label key={option.id} className="flex items-center gap-3 text-sm text-stone-700 py-1.5"><input type="checkbox" checked={profile.lifestyles.includes(option.id)} onChange={(event) => setProfile({ ...profile, lifestyles: event.target.checked ? [...profile.lifestyles, option.id] : profile.lifestyles.filter((id) => id !== option.id) })} className="h-4 w-4 shrink-0 accent-stone-900" />{option.label}</label>)}</div></fieldset>
                 <div>
                   <label htmlFor="profile-persona" className={labelClass}>Personalidade da Stella</label>

@@ -21,7 +21,27 @@ import {
 import { Logo } from "@/components/ui/Logo";
 import { PageContent } from "@/components/layout/PageContent";
 import { authService } from "@/services/authService";
+import { CityAutocomplete } from "@/components/features/CityAutocomplete";
+import type { CityValue } from "@/components/features/CityAutocomplete";
+import { geoService, toCoordinates } from "@/services/geo/geoService";
 import type { UpdateProfileRequestDto } from "@/types/auth";
+
+type Step = 1 | 2 | 3 | 4 | 5;
+const TOTAL_STEPS = 5;
+
+// Mesmos limites do back-end (UpdateProfileRequestDto)
+const MIN_AGE = 13;
+const MAX_AGE = 100;
+const DEFAULT_AGE = 25;
+
+function isValidAge(value: string): boolean {
+  const age = Number(value);
+  return /^\d{1,3}$/.test(value) && age >= MIN_AGE && age <= MAX_AGE;
+}
+
+function clampAge(value: number): number {
+  return Math.min(MAX_AGE, Math.max(MIN_AGE, value));
+}
 
 // 1. Opções de Estilo de Vida (Moda)
 const LIFESTYLE_OPTIONS = [
@@ -57,13 +77,12 @@ const PERSONA_OPTIONS = [
 
 export default function OnboardingPage() {
   const router = useRouter();
-  const [step, setStep] = useState<1 | 2 | 3 | 4>(1);
-  const TOTAL_STEPS = 4;
+  const [step, setStep] = useState<Step>(1);
 
   // Estado do formulário
   const [fashionPreference, setFashionPreference] = useState<UpdateProfileRequestDto["fashionPreference"]>("FEMALE");
-  const [cityName, setCityName] = useState("");
-  const [cityCoordinates, setCityCoordinates] = useState("");
+  const [age, setAge] = useState("");
+  const [city, setCity] = useState<CityValue>({ cityName: "", cityCoordinates: "" });
   const [isLocating, setIsLocating] = useState(false);
   const [lifestyles, setLifestyles] = useState<string[]>([]);
   const [stellaPersona, setStellaPersona] = useState("AMIGA");
@@ -85,8 +104,8 @@ export default function OnboardingPage() {
         return;
       }
       setFashionPreference(user.fashionPreference ?? "FEMALE");
-      setCityName(user.cityName ?? "");
-      setCityCoordinates(user.cityCoordinates ?? "");
+      setAge(user.age ? String(user.age) : "");
+      setCity({ cityName: user.cityName ?? "", cityCoordinates: user.cityCoordinates ?? "" });
       setLifestyles(user.lifestyles ?? []);
       setStellaPersona(user.stellaPersona ?? "AMIGA");
       setIsCheckingSession(false);
@@ -109,21 +128,14 @@ export default function OnboardingPage() {
     navigator.geolocation.getCurrentPosition(
       async (position) => {
         const { latitude, longitude } = position.coords;
-        setCityCoordinates(`${latitude},${longitude}`);
-
         try {
-          // Geocoding reverso via OpenStreetMap (Gratuito e sem chave API)
-          const res = await fetch(
-            `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}`
-          );
-          const data = await res.json();
-          const city =
-            data.address?.city ||
-            data.address?.town ||
-            data.address?.municipality ||
-            data.address?.state_district ||
-            "";
-          setCityName(city);
+          const found = await geoService.reverseCity(latitude, longitude);
+          if (found) {
+            setCity({ cityName: found.label, cityCoordinates: toCoordinates(found) });
+          } else {
+            setCity((current) => ({ ...current, cityCoordinates: toCoordinates({ latitude, longitude }) }));
+            setError("Não foi possível identificar o nome da cidade automaticamente. Digite abaixo.");
+          }
         } catch {
           setError("Não foi possível identificar o nome da cidade automaticamente. Digite abaixo.");
         } finally {
@@ -147,8 +159,8 @@ export default function OnboardingPage() {
   // Envio final para o Back-end
   async function handleSubmit() {
     if (isSubmitting || isCheckingSession) return;
-    if (!cityName.trim() || lifestyles.length === 0) {
-      setError("Informe sua cidade e selecione pelo menos um estilo de vida.");
+    if (!isValidAge(age) || !city.cityName.trim() || lifestyles.length === 0) {
+      setError("Informe sua idade, sua cidade e selecione pelo menos um estilo de vida.");
       return;
     }
     setIsSubmitting(true);
@@ -157,8 +169,9 @@ export default function OnboardingPage() {
     try {
       const user = await authService.updateOnboarding({
         fashionPreference,
-        cityName,
-        cityCoordinates,
+        age: Number(age),
+        cityName: city.cityName.trim(),
+        cityCoordinates: city.cityCoordinates,
         lifestyles,
         stellaPersona,
       });
@@ -196,7 +209,7 @@ export default function OnboardingPage() {
         {step > 1 ? (
           <button
             type="button"
-            onClick={() => setStep((prev) => (prev - 1) as 1 | 2 | 3 | 4)}
+            onClick={() => setStep((prev) => (prev - 1) as Step)}
             className="p-2 -ml-2 text-stone-500 hover:text-stone-900 transition-colors cursor-pointer"
             aria-label="Voltar passo"
           >
@@ -206,7 +219,7 @@ export default function OnboardingPage() {
           <div className="w-8" />
         )}
 
-        <Logo size="sm" showText={false} />
+        <Logo framed />
         <div className="w-8 text-right text-xs text-stone-500 font-mono">
           {step}/{TOTAL_STEPS}
         </div>
@@ -270,8 +283,72 @@ export default function OnboardingPage() {
           </div>
         )}
 
-        {/* PASSO 2: CIDADE & GEOLOCALIZAÇÃO */}
+        {/* PASSO 2: IDADE */}
         {step === 2 && (
+          <div className="stella-stagger">
+            <h1 className="text-2xl sm:text-3xl font-serif text-center font-medium">
+              Qual é a sua idade?
+            </h1>
+            <p className="mt-2 text-xs text-stone-500 text-center">
+              Assim a Stella ajusta referências, peças e ocasiões ao seu momento de vida.
+            </p>
+
+            <form
+              onSubmit={(event) => {
+                event.preventDefault();
+                if (isValidAge(age)) setStep(3);
+              }}
+            >
+              <div className="mt-10 flex items-center justify-center gap-4">
+                <button
+                  type="button"
+                  onClick={() => setAge((current) => String(clampAge(Number(current || DEFAULT_AGE) - 1)))}
+                  aria-label="Diminuir idade"
+                  className="h-11 w-11 rounded-full border border-stone-200/90 bg-white text-lg text-stone-600 hover:border-stone-400 hover:text-stone-900 transition-all cursor-pointer"
+                >
+                  −
+                </button>
+                <label className="flex items-baseline gap-2">
+                  <span className="sr-only">Idade em anos</span>
+                  <input
+                    type="text"
+                    inputMode="numeric"
+                    autoFocus
+                    value={age}
+                    onChange={(event) => setAge(event.target.value.replace(/\D/g, "").slice(0, 3))}
+                    placeholder="--"
+                    className="w-24 bg-transparent text-center font-serif text-5xl text-stone-900 placeholder-stone-300 outline-none border-b border-stone-200 focus:border-stone-400 pb-1 transition-colors"
+                  />
+                  <span className="text-sm text-stone-500">anos</span>
+                </label>
+                <button
+                  type="button"
+                  onClick={() => setAge((current) => String(clampAge(Number(current || DEFAULT_AGE - 1) + 1)))}
+                  aria-label="Aumentar idade"
+                  className="h-11 w-11 rounded-full border border-stone-200/90 bg-white text-lg text-stone-600 hover:border-stone-400 hover:text-stone-900 transition-all cursor-pointer"
+                >
+                  +
+                </button>
+              </div>
+              <p className={`mt-4 text-center text-xs ${age && !isValidAge(age) ? "text-red-700" : "text-stone-400"}`}>
+                {age && !isValidAge(age)
+                  ? `Informe uma idade entre ${MIN_AGE} e ${MAX_AGE} anos.`
+                  : "Usamos apenas para personalizar as sugestões."}
+              </p>
+
+              <button
+                type="submit"
+                disabled={!isValidAge(age)}
+                className="w-full mt-8 py-3.5 rounded-2xl bg-stone-900 text-white font-medium text-sm hover:bg-stone-800 transition-all disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
+              >
+                Continuar
+              </button>
+            </form>
+          </div>
+        )}
+
+        {/* PASSO 3: CIDADE & GEOLOCALIZAÇÃO */}
+        {step === 3 && (
           <div className="stella-stagger">
             <h1 className="text-2xl sm:text-3xl font-serif text-center font-medium">
               Onde você está localizado(a)?
@@ -305,24 +382,18 @@ export default function OnboardingPage() {
                 </span>
               </div>
 
-              <div>
-                <input
-                  type="text"
-                  value={cityName}
-                  onChange={(e) => {
-                    setCityName(e.target.value);
-                    setCityCoordinates("");
-                  }}
-                  placeholder="Ex: São Paulo, SP ou Jacarezinho, PR"
-                  className="w-full p-4 rounded-2xl border border-stone-200/90 bg-white text-sm text-stone-900 placeholder-stone-400 outline-none focus:border-stone-400 focus:ring-1 focus:ring-stone-400/20 transition-all"
-                />
-              </div>
+              <CityAutocomplete
+                value={city}
+                onChange={setCity}
+                placeholder="Ex: São Paulo, Lisboa, Jacarezinho..."
+                inputClassName="w-full p-4 rounded-2xl border border-stone-200/90 bg-white text-sm text-stone-900 placeholder-stone-400 outline-none focus:border-stone-400 focus:ring-1 focus:ring-stone-400/20 transition-all"
+              />
             </div>
 
             <button
               type="button"
-              onClick={() => setStep(3)}
-              disabled={!cityName.trim()}
+              onClick={() => setStep(4)}
+              disabled={!city.cityName.trim()}
               className="w-full mt-8 py-3.5 rounded-2xl bg-stone-900 text-white font-medium text-sm hover:bg-stone-800 transition-all disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
             >
               Continuar
@@ -330,8 +401,8 @@ export default function OnboardingPage() {
           </div>
         )}
 
-        {/* PASSO 3: ESTILO DE VIDA (MÚLTIPLA ESCOLHA) */}
-        {step === 3 && (
+        {/* PASSO 4: ESTILO DE VIDA (MÚLTIPLA ESCOLHA) */}
+        {step === 4 && (
           <div className="stella-stagger">
             <h1 className="text-2xl sm:text-3xl font-serif text-center font-medium">
               Qual é o seu estilo de vida?
@@ -373,7 +444,7 @@ export default function OnboardingPage() {
 
             <button
               type="button"
-              onClick={() => setStep(4)}
+              onClick={() => setStep(5)}
               disabled={lifestyles.length === 0}
               className="w-full mt-8 py-3.5 rounded-2xl bg-stone-900 text-white font-medium text-sm hover:bg-stone-800 transition-all disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
             >
@@ -382,8 +453,8 @@ export default function OnboardingPage() {
           </div>
         )}
 
-        {/* PASSO 4: COMPORTAMENTO DA STELLA */}
-        {step === 4 && (
+        {/* PASSO 5: COMPORTAMENTO DA STELLA */}
+        {step === 5 && (
           <div className="stella-stagger">
             <h1 className="text-2xl sm:text-3xl font-serif text-center font-medium">
               Como a Stella deve se comportar?
