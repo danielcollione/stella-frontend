@@ -8,7 +8,6 @@ import {
   Plus,
   Shirt,
   Menu,
-  Copy,
   ThumbsUp,
   ThumbsDown,
   ArrowUp,
@@ -23,6 +22,7 @@ import Image from "next/image";
 import { SuggestionPills } from "@/components/features/SuggestionPills";
 import { SecureImage } from "@/components/ui/SecureImage";
 import { PageContent } from "@/components/layout/PageContent";
+import { CopyMessageButton } from "@/components/ui/CopyMessageButton";
 
 function ThumbnailPreview({ file, onRemove }: { file: File; onRemove: () => void }) {
   const imageRef = useRef<HTMLImageElement>(null);
@@ -71,9 +71,12 @@ export default function ChatPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [newestMessageId, setNewestMessageId] = useState<string | number | null>(null);
+  const [pendingFeedback, setPendingFeedback] = useState<Set<string>>(new Set());
+  const feedbackRequests = useRef(new Set<string>());
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const lastMessage = messages[messages.length - 1];
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -81,7 +84,36 @@ export default function ChatPage() {
 
   useEffect(() => {
     scrollToBottom();
-  }, [messages, isLoading]);
+  }, [messages.length, lastMessage?.id, lastMessage?.content, isLoading]);
+
+  async function handleFeedback(message: ChatMessage, selected: 'LIKE' | 'DISLIKE') {
+    if (message.sender !== 'STELLA' || !message.id) return;
+    const messageId = String(message.id);
+    if (feedbackRequests.current.has(messageId)) return;
+    const previous = message.feedback ?? 'NONE';
+    const feedback = previous === selected ? 'NONE' : selected;
+    feedbackRequests.current.add(messageId);
+    setPendingFeedback((current) => new Set(current).add(messageId));
+    setMessages((current) => current.map((item) =>
+      String(item.id) === messageId ? { ...item, feedback } : item));
+
+    try {
+      await chatService.sendFeedback(messageId, feedback);
+      setMessages((current) => current.map((item) =>
+        String(item.id) === messageId ? { ...item, feedback } : item));
+    } catch {
+      setMessages((current) => current.map((item) =>
+        String(item.id) === messageId && item.feedback === feedback
+          ? { ...item, feedback: previous } : item));
+    } finally {
+      feedbackRequests.current.delete(messageId);
+      setPendingFeedback((current) => {
+        const next = new Set(current);
+        next.delete(messageId);
+        return next;
+      });
+    }
+  }
 
   const loadConversation = useEffectEvent(async (signal: AbortSignal) => {
     if (signal.aborted) return;
@@ -315,13 +347,27 @@ export default function ChatPage() {
                         S
                       </div>
                       <div className="flex items-center gap-1">
-                        <button className="p-1.5 hover:text-stone-700 hover:bg-stone-200/50 rounded-md transition-colors">
-                          <Copy className="w-3.5 h-3.5" />
-                        </button>
-                        <button className="p-1.5 hover:text-stone-700 hover:bg-stone-200/50 rounded-md transition-colors">
+                        <CopyMessageButton text={msg.content || ""} />
+                        <button
+                          type="button"
+                          onClick={() => void handleFeedback(msg, "LIKE")}
+                          disabled={!msg.id || pendingFeedback.has(String(msg.id))}
+                          aria-pressed={msg.feedback === "LIKE"}
+                          aria-label={msg.feedback === "LIKE" ? "Remover gostei" : "Gostei da resposta"}
+                          title={msg.feedback === "LIKE" ? "Remover gostei" : "Gostei da resposta"}
+                          className={`p-1.5 rounded-md transition-colors disabled:cursor-not-allowed ${msg.feedback === "LIKE" ? "text-stone-900 bg-stone-200/70" : "text-stone-400 hover:text-stone-700 hover:bg-stone-200/50"}`}
+                        >
                           <ThumbsUp className="w-3.5 h-3.5" />
                         </button>
-                        <button className="p-1.5 hover:text-stone-700 hover:bg-stone-200/50 rounded-md transition-colors">
+                        <button
+                          type="button"
+                          onClick={() => void handleFeedback(msg, "DISLIKE")}
+                          disabled={!msg.id || pendingFeedback.has(String(msg.id))}
+                          aria-pressed={msg.feedback === "DISLIKE"}
+                          aria-label={msg.feedback === "DISLIKE" ? "Remover nao gostei" : "Nao gostei da resposta"}
+                          title={msg.feedback === "DISLIKE" ? "Remover nao gostei" : "Nao gostei da resposta"}
+                          className={`p-1.5 rounded-md transition-colors disabled:cursor-not-allowed ${msg.feedback === "DISLIKE" ? "text-stone-900 bg-stone-200/70" : "text-stone-400 hover:text-stone-700 hover:bg-stone-200/50"}`}
+                        >
                           <ThumbsDown className="w-3.5 h-3.5" />
                         </button>
                       </div>

@@ -74,6 +74,10 @@ export const chatService = {
     return normalizeMessage(response.data);
   },
 
+  async sendFeedback(messageId: string, feedback: NonNullable<ChatMessage['feedback']>): Promise<void> {
+    await api.post(`/chat/messages/${encodeURIComponent(messageId)}/feedback`, { feedback });
+  },
+
   // Apagar conversa
   async deleteThread(threadId: string): Promise<void> {
     await api.delete(`/chat/threads/${threadId}`);

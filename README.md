@@ -18,6 +18,14 @@ Open [http://localhost:3000](http://localhost:3000) with your browser to see the
 
 ## Authentication and routes
 
+Chat thumbs-up/down controls send `LIKE`, `DISLIKE`, or `NONE` through
+`chatService.sendFeedback`. Clicking an already selected icon removes the vote;
+clicking the other icon replaces it. Updates are optimistic, with silent rollback
+on failure and a per-message pending guard to prevent concurrent submissions.
+History responses include `feedback`, so selections survive reloading. Local
+error messages without a persisted ID cannot receive feedback. Feedback changes
+do not trigger automatic chat scrolling.
+
 Profile selection fields use the reusable Radix-based `Select` component, with
 keyboard navigation, focus management, and a consistently styled popup menu.
 The profile form also sends an optional `name` through the existing profile

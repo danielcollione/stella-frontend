@@ -10,6 +10,7 @@ export interface ChatMessage {
   content?: string;
   payloadJson?: string | null;
   imageUrls?: string[];
+  feedback?: 'LIKE' | 'DISLIKE' | 'NONE';
 }
 
 export interface SuggestionItem {
