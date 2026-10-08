@@ -23,6 +23,12 @@ import { SuggestionPills } from "@/components/features/SuggestionPills";
 import { SecureImage } from "@/components/ui/SecureImage";
 import { PageContent } from "@/components/layout/PageContent";
 import { CopyMessageButton } from "@/components/ui/CopyMessageButton";
+import { WardrobeSaveToggle } from "@/components/features/WardrobeSaveToggle";
+import { WardrobeSaveResult } from "@/components/features/WardrobeSaveResult";
+import { useSaveToWardrobePreference } from "@/utils/wardrobePreference";
+import { MentionInput } from "@/components/features/mentions/MentionInput";
+import { MentionedItems, MentionedText } from "@/components/features/mentions/MentionedContent";
+import type { ClothingItem } from "@/types/wardrobe";
 
 function ThumbnailPreview({ file, onRemove }: { file: File; onRemove: () => void }) {
   const imageRef = useRef<HTMLImageElement>(null);
@@ -68,10 +74,12 @@ export default function ChatPage() {
   const [isInitializing, setIsInitializing] = useState(true);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState("");
+  const [mentions, setMentions] = useState<ClothingItem[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [newestMessageId, setNewestMessageId] = useState<string | number | null>(null);
   const [pendingFeedback, setPendingFeedback] = useState<Set<string>>(new Set());
+  const [saveToWardrobe, setSaveToWardrobe] = useSaveToWardrobePreference();
   const feedbackRequests = useRef(new Set<string>());
 
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -155,15 +163,17 @@ export default function ChatPage() {
 
   const handleSend = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
-    if ((!input.trim() && selectedFiles.length === 0) || isLoading) return;
+    if ((!input.trim() && selectedFiles.length === 0 && mentions.length === 0) || isLoading) return;
 
     playSendSound();
 
     const userText = input;
     const filesToSend = selectedFiles;
+    const mentionsToSend = mentions;
 
     setInput("");
     setSelectedFiles([]);
+    setMentions([]);
 
     const optimisticImageUrls = filesToSend.map((f) => URL.createObjectURL(f));
 
@@ -171,6 +181,7 @@ export default function ChatPage() {
       sender: "USER",
       content: userText || undefined,
       imageUrls: optimisticImageUrls.length > 0 ? optimisticImageUrls : undefined,
+      mentionedItems: mentionsToSend.length > 0 ? mentionsToSend : undefined,
     };
 
     setMessages((prev) => [...prev, userMsg]);
@@ -193,7 +204,8 @@ export default function ChatPage() {
       const responseMessage = await chatService.sendMessage(
         threadId,
         userText || undefined,
-        filesToSend.length > 0 ? filesToSend : undefined
+        filesToSend.length > 0 ? filesToSend : undefined,
+        { saveToWardrobe, wardrobeItemIds: mentionsToSend.map((item) => item.id) },
       );
 
       playReceiveSound();
@@ -257,7 +269,8 @@ export default function ChatPage() {
           </div>
 
           <div className="flex items-center gap-2">
-            <span className="text-xs font-medium text-stone-500 bg-stone-200/50 px-3 py-1 rounded-full border border-stone-300/40">
+            <WardrobeSaveToggle enabled={saveToWardrobe} onChange={setSaveToWardrobe} />
+            <span className="hidden sm:inline text-xs font-medium text-stone-500 bg-stone-200/50 px-3 py-1 rounded-full border border-stone-300/40">
               Estilista Ativa
             </span>
           </div>
@@ -308,9 +321,13 @@ export default function ChatPage() {
                       </div>
                     )}
 
+                    {msg.mentionedItems && msg.mentionedItems.length > 0 && (
+                      <MentionedItems items={msg.mentionedItems} />
+                    )}
+
                     {msg.content && (
                       <div className="bg-stone-900 text-stone-50 px-5 py-3.5 rounded-2xl rounded-tr-xs text-sm leading-relaxed shadow-sm">
-                        {msg.content}
+                        <MentionedText content={msg.content} items={msg.mentionedItems} />
                       </div>
                     )}
                   </div>
@@ -341,6 +358,8 @@ export default function ChatPage() {
                       isStella={true}
                       isNew={String(msg.id) === String(newestMessageId)}
                     />
+
+                    {msg.wardrobeResult && <WardrobeSaveResult result={msg.wardrobeResult} />}
 
                     <div className="flex items-center gap-3 pt-1 text-stone-400">
                       <div className="w-6 h-6 rounded-lg bg-stone-900 flex items-center justify-center text-white text-[10px] font-serif italic">
@@ -393,7 +412,7 @@ export default function ChatPage() {
         </main>
 
         <footer className="p-4 sm:p-6 bg-[#FAF8F5]">
-          {threads.length === 0 && messages.length === 0 && (
+          {!isInitializing && !activeThreadId && messages.length === 0 && (
             <SuggestionPills onSelectSuggestion={(prompt) => setInput(prompt)} />
           )}
 
@@ -421,12 +440,12 @@ export default function ChatPage() {
             onSubmit={handleSend}
             className="bg-white border border-stone-200/90 rounded-3xl p-2 shadow-sm focus-within:border-stone-400 focus-within:ring-1 focus-within:ring-stone-400/20 transition-all"
           >
-            <input
-              type="text"
+            <MentionInput
               value={input}
-              onChange={(e) => setInput(e.target.value)}
-              placeholder="Envie uma mensagem ou anexe fotos do seu look..."
-              className="w-full px-4 pt-2 pb-3 text-sm bg-transparent focus:outline-none placeholder:text-stone-400 text-stone-900 font-light"
+              onChange={setInput}
+              mentions={mentions}
+              onMentionsChange={setMentions}
+              placeholder="Envie uma mensagem, anexe fotos ou use @ para citar uma peça..."
             />
 
             <div className="flex items-center justify-between pt-1 border-t border-stone-100 px-1">
@@ -451,7 +470,7 @@ export default function ChatPage() {
 
               <button
                 type="submit"
-                disabled={(!input.trim() && selectedFiles.length === 0) || isLoading}
+                disabled={(!input.trim() && selectedFiles.length === 0 && mentions.length === 0) || isLoading}
                 className="p-2.5 bg-stone-900 text-white rounded-full hover:bg-stone-800 transition-colors shadow-xs disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer"
               >
                 <ArrowUp className="w-4 h-4" />

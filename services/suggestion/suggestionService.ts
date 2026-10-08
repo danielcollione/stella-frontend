@@ -24,7 +24,12 @@ export const suggestionService = {
    */
   getRandomSet(count: number = 3, excludeIds: string[] = []): SuggestionItem[] {
     const available = SUGGESTIONS_POOL.filter((item) => !excludeIds.includes(item.id));
-    const shuffled = [...available].sort(() => 0.5 - Math.random());
+    // Fisher-Yates: embaralhamento uniforme (o sort com Math.random é enviesado)
+    const shuffled = [...available];
+    for (let i = shuffled.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+    }
     return shuffled.slice(0, count);
   },
 };

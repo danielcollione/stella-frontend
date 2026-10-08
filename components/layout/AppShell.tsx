@@ -81,10 +81,10 @@ function SidebarContent({ expanded, mobile, toggle, closeMenu }: {
           <Plus className={`w-5 h-5 shrink-0 ${mobile ? "" : "text-stone-900"}`} />
           <MenuLabel visible={expanded}>Nova conversa</MenuLabel>
         </button>
-        <button type="button" title="Guarda-roupa" className={mobile ? "flex items-center gap-3 w-full px-4 py-2.5 text-stone-700 hover:bg-stone-200/60 rounded-xl font-medium text-sm transition-colors" : "flex items-center gap-3 text-stone-600 hover:text-stone-900 hover:bg-stone-100 text-sm font-medium transition-all w-full px-3.5 py-2.5 rounded-xl justify-start overflow-hidden active:scale-[0.98]"}>
+        <Link href="/wardrobe" onClick={closeMenu} title="Guarda-roupa" aria-current={pathname === "/wardrobe" ? "page" : undefined} className={`${mobile ? "flex items-center gap-3 w-full px-4 py-2.5 text-stone-700 hover:bg-stone-200/60 rounded-xl font-medium text-sm transition-colors" : "flex items-center gap-3 text-stone-600 hover:text-stone-900 hover:bg-stone-100 text-sm font-medium transition-all w-full px-3.5 py-2.5 rounded-xl justify-start overflow-hidden active:scale-[0.98]"} ${pathname === "/wardrobe" ? (mobile ? "bg-stone-200/70 text-stone-900" : "bg-stone-100 text-stone-900") : ""}`}>
           <Shirt className="w-5 h-5 shrink-0" />
           <MenuLabel visible={expanded}>Guarda-roupa</MenuLabel>
-        </button>
+        </Link>
         <AnimatePresence initial={false}>
           {expanded && (
             <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }} transition={{ duration: 0.22 }} className="mt-2 flex flex-col overflow-hidden">

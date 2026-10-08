@@ -1,5 +1,17 @@
 @import "tailwindcss";
 
+/* Esconde a barra de rolagem mantendo o scroll (abas, pílulas e miniaturas horizontais).
+   Precisa de !important dentro de um layer para vencer o `* { scrollbar-width: thin !important }` abaixo. */
+@layer utilities {
+  .scrollbar-none {
+    scrollbar-width: none !important;
+  }
+
+  .scrollbar-none::-webkit-scrollbar {
+    display: none !important;
+  }
+}
+
 body {
   background-color: #FAF8F5;
   color: #1c1917;
