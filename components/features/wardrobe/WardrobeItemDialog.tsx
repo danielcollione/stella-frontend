@@ -8,11 +8,13 @@ import { ClothingItemForm } from "@/components/features/wardrobe/ClothingItemFor
 import { displayName } from "@/services/wardrobe/wardrobeCatalog";
 import { DuplicateClothingItemError, apiErrorMessage, wardrobeService } from "@/services/wardrobe/wardrobeService";
 import type { ClothingItem } from "@/types/wardrobe";
+import { compressImage } from "@/utils/imageCompression";
 
 export type WardrobeDialogTarget = { kind: "create" } | { kind: "edit"; item: ClothingItem };
 
-// O back-end lê JPEG/PNG (ImageIO); WebP/HEIC falhariam no servidor
-const ACCEPTED_TYPES = ["image/jpeg", "image/png"];
+// Qualquer foto é aceita na escolha: o front converte para JPEG (inclusive HEIC do iPhone, quando o navegador
+// decodifica). Depois da conversão, só seguem JPEG/PNG, que o back-end (ImageIO) lê.
+const UPLOAD_TYPES = ["image/jpeg", "image/png"];
 const MAX_FILE_BYTES = 10 * 1024 * 1024;
 
 type View =
@@ -56,10 +58,11 @@ export function WardrobeItemDialog({ target, onClose, onSaved, onDeleted }: Ward
     }
   }
 
-  function selectFile(file: File | undefined) {
-    if (!file) return;
-    if (!ACCEPTED_TYPES.includes(file.type)) {
-      setView({ step: "pick", error: "Envie uma foto em JPG ou PNG." });
+  async function selectFile(selected: File | undefined) {
+    if (!selected) return;
+    const file = await compressImage(selected);
+    if (!UPLOAD_TYPES.includes(file.type)) {
+      setView({ step: "pick", error: "Não conseguimos ler esse formato de foto. Tente uma foto em JPG ou PNG." });
       return;
     }
     if (file.size > MAX_FILE_BYTES) {
@@ -149,14 +152,14 @@ function describe(view: View): { title: string; description?: string } {
   }
 }
 
-function PhotoPicker({ error, onSelect }: { error?: string; onSelect: (file: File | undefined) => void }) {
+function PhotoPicker({ error, onSelect }: { error?: string; onSelect: (file: File | undefined) => void | Promise<void> }) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [dragging, setDragging] = useState(false);
 
   function handleDrop(event: DragEvent<HTMLButtonElement>) {
     event.preventDefault();
     setDragging(false);
-    onSelect(event.dataTransfer.files[0]);
+    void onSelect(event.dataTransfer.files[0]);
   }
 
   return (
@@ -176,16 +179,16 @@ function PhotoPicker({ error, onSelect }: { error?: string; onSelect: (file: Fil
           <ImagePlus size={20} strokeWidth={1.5} />
         </span>
         <span className="text-sm font-medium text-stone-800">Escolha uma foto ou arraste aqui</span>
-        <span className="mt-1 text-xs text-stone-400">JPG ou PNG, até 10 MB. Uma peça por foto funciona melhor.</span>
+        <span className="mt-1 text-xs text-stone-400">Fotos da galeria ou da câmera. Uma peça por foto funciona melhor.</span>
       </button>
       <input
         ref={inputRef}
         type="file"
-        accept={ACCEPTED_TYPES.join(",")}
+        accept="image/*,.heic,.heif"
         className="sr-only"
         tabIndex={-1}
         onChange={(event: ChangeEvent<HTMLInputElement>) => {
-          onSelect(event.target.files?.[0]);
+          void onSelect(event.target.files?.[0]);
           event.target.value = "";
         }}
       />

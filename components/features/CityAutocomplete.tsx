@@ -34,6 +34,7 @@ export function CityAutocomplete({ id, value, onChange, placeholder, disabled, i
   const [open, setOpen] = useState(false);
   const [activeIndex, setActiveIndex] = useState(0);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const panelRef = useRef<HTMLDivElement>(null);
   const controllerRef = useRef<AbortController | null>(null);
 
   useEffect(() => () => {
@@ -61,6 +62,8 @@ export function CityAutocomplete({ id, value, onChange, placeholder, disabled, i
         if (controller.signal.aborted) return;
         setResults(found);
         setActiveIndex(0);
+        // No celular o teclado ocupa metade da tela: traz a lista para a área visível
+        requestAnimationFrame(() => panelRef.current?.scrollIntoView({ block: "nearest", behavior: "smooth" }));
       } catch {
         if (controller.signal.aborted) return;
         setResults([]);
@@ -132,7 +135,7 @@ export function CityAutocomplete({ id, value, onChange, placeholder, disabled, i
       </span>
 
       {open && (
-        <div className="absolute left-0 right-0 top-full z-30 mt-2 overflow-hidden rounded-2xl border border-stone-200/90 bg-white text-left shadow-[0_12px_32px_rgba(28,25,23,0.10),0_2px_8px_rgba(28,25,23,0.04)]">
+        <div ref={panelRef} className="absolute left-0 right-0 top-full z-30 mt-2 scroll-mb-4 overflow-hidden rounded-2xl border border-stone-200/90 bg-white text-left shadow-[0_12px_32px_rgba(28,25,23,0.10),0_2px_8px_rgba(28,25,23,0.04)]">
           {status === "loading" && results.length === 0 ? (
             <p role="status" className="flex items-center gap-2 px-4 py-3.5 text-sm text-stone-500">
               <LoaderCircle size={14} className="animate-spin" />Buscando cidades...

@@ -357,7 +357,9 @@ export default function OnboardingPage() {
               Para considerar o clima da sua região ao sugerir Looks.
             </p>
 
-            <div className="mt-8 space-y-4">
+            {/* relative z-20: cada bloco do stella-stagger cria sua própria camada (transform da animação);
+                sem isso, o botão "Continuar" (bloco seguinte) seria desenhado por cima da lista de cidades */}
+            <div className="relative z-20 mt-8 space-y-4">
               <button
                 type="button"
                 onClick={handleGetLocation}

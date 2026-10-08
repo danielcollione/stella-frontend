@@ -26,6 +26,7 @@ import { CopyMessageButton } from "@/components/ui/CopyMessageButton";
 import { WardrobeSaveToggle } from "@/components/features/WardrobeSaveToggle";
 import { WardrobeSaveResult } from "@/components/features/WardrobeSaveResult";
 import { useSaveToWardrobePreference } from "@/utils/wardrobePreference";
+import { compressImage } from "@/utils/imageCompression";
 import { MentionInput } from "@/components/features/mentions/MentionInput";
 import { MentionedItems, MentionedText } from "@/components/features/mentions/MentionedContent";
 import type { ClothingItem } from "@/types/wardrobe";
@@ -201,10 +202,12 @@ export default function ChatPage() {
         setThreads((prev) => [newThread, ...prev]);
       }
 
+      // Fotos reduzidas e convertidas para JPEG no próprio aparelho antes do upload
+      const compressedFiles = await Promise.all(filesToSend.map(compressImage));
       const responseMessage = await chatService.sendMessage(
         threadId,
         userText || undefined,
-        filesToSend.length > 0 ? filesToSend : undefined,
+        compressedFiles.length > 0 ? compressedFiles : undefined,
         { saveToWardrobe, wardrobeItemIds: mentionsToSend.map((item) => item.id) },
       );
 
@@ -454,7 +457,7 @@ export default function ChatPage() {
                   type="file"
                   ref={fileInputRef}
                   onChange={handleFileChange}
-                  accept="image/*"
+                  accept="image/*,.heic,.heif"
                   multiple
                   className="hidden"
                 />
