@@ -15,7 +15,7 @@ export type WardrobeDialogTarget = { kind: "create" } | { kind: "edit"; item: Cl
 // Qualquer foto é aceita na escolha: o front converte para JPEG (inclusive HEIC do iPhone, quando o navegador
 // decodifica). Depois da conversão, só seguem JPEG/PNG, que o back-end (ImageIO) lê.
 const UPLOAD_TYPES = ["image/jpeg", "image/png"];
-const MAX_FILE_BYTES = 10 * 1024 * 1024;
+const MAX_FILE_BYTES = 25 * 1024 * 1024; // mesmo limite do back-end (spring.servlet.multipart.max-file-size)
 
 type View =
   | { step: "pick"; error?: string }
@@ -66,7 +66,7 @@ export function WardrobeItemDialog({ target, onClose, onSaved, onDeleted }: Ward
       return;
     }
     if (file.size > MAX_FILE_BYTES) {
-      setView({ step: "pick", error: "A foto deve ter no máximo 10 MB." });
+      setView({ step: "pick", error: "A foto deve ter no máximo 25 MB." });
       return;
     }
     void upload(file, URL.createObjectURL(file), false);
