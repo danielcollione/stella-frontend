@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import ReactMarkdown from "react-markdown";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
-import { Check, ChevronLeft, ChevronRight, LoaderCircle, ShoppingBag, Shirt, Sparkles } from "lucide-react";
+import { Check, ChevronLeft, ChevronRight, CloudSun, LoaderCircle, ShoppingBag, Shirt, Sparkles } from "lucide-react";
 import { displayName } from "@/services/wardrobe/wardrobeCatalog";
 import type { EventLook } from "@/types/events";
 import type { ClothingItem } from "@/types/wardrobe";
@@ -63,6 +63,17 @@ export function EventLookView({ looks, index, chosenLookId, choosing, onIndexCha
             )}
           </div>
 
+          {(look.analysis || look.weatherSummary) && (
+            <div className="mt-3 rounded-2xl bg-[#FAF8F5] px-4 py-3">
+              {look.weatherSummary && (
+                <p className="inline-flex items-center gap-1.5 text-[11px] font-medium uppercase tracking-[0.1em] text-stone-500">
+                  <CloudSun size={13} className="text-stone-400" />{look.weatherSummary}
+                </p>
+              )}
+              {look.analysis && <p className={`text-sm italic leading-relaxed text-stone-600 ${look.weatherSummary ? "mt-1" : ""}`}>{look.analysis}</p>}
+            </div>
+          )}
+
           {look.items.length > 0 && (
             <div className="mt-5">
               <p className="mb-2.5 text-xs font-medium text-stone-500">Do seu guarda-roupa</p>
@@ -72,9 +83,20 @@ export function EventLookView({ looks, index, chosenLookId, choosing, onIndexCha
             </div>
           )}
 
+          {look.basics.length > 0 && (
+            <div className="mt-5">
+              <p className="mb-2.5 text-xs font-medium text-stone-500">{look.items.length > 0 ? "Com básicos que você já deve ter" : "Básicos que você já deve ter"}</p>
+              <ul className="flex flex-wrap gap-2">
+                {look.basics.map((basic) => (
+                  <li key={basic} className="rounded-full border border-stone-200 bg-white px-3.5 py-2 text-sm text-stone-700">{basic}</li>
+                ))}
+              </ul>
+            </div>
+          )}
+
           {look.shoppingSuggestions.length > 0 && (
             <div className="mt-5">
-              <p className="mb-2.5 text-xs font-medium text-stone-500">Para completar</p>
+              <p className="mb-2.5 text-xs font-medium text-stone-500">Para elevar o look</p>
               <ul className="grid gap-2 sm:grid-cols-2">
                 {look.shoppingSuggestions.map((suggestion) => (
                   <li key={suggestion} className="flex items-center gap-3 rounded-2xl border border-dashed border-stone-300 bg-white/60 px-3.5 py-3">
@@ -127,10 +149,10 @@ function LookItem({ item }: { item: ClothingItem }) {
 }
 
 const GENERATING_STEPS = [
+  "Consultando a previsão do tempo",
+  "Entendendo a ocasião",
   "Abrindo o seu guarda-roupa",
-  "Pensando no dress code",
   "Harmonizando cores e texturas",
-  "Escolhendo os acessórios",
   "Finalizando os detalhes",
 ];
 

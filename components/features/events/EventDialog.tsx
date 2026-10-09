@@ -9,7 +9,7 @@ import type { EventFormSubmit } from "@/components/features/events/EventForm";
 import { EventLookView, GeneratingLook } from "@/components/features/events/EventLookView";
 import { planLimitFrom } from "@/services/billing/billingService";
 import { eventService } from "@/services/events/eventService";
-import { dressCodeLabel, formatLongDate, formatTime, occasionOf, relativeDay, todayIso } from "@/services/events/eventCatalog";
+import { dressCodeLabel, formatLongDate, formatTime, occasionOf, relativeDay, shortCity, todayIso } from "@/services/events/eventCatalog";
 import { apiErrorMessage } from "@/services/wardrobe/wardrobeService";
 import type { CalendarEvent, EventLook } from "@/types/events";
 
@@ -189,7 +189,9 @@ function EventDetail({ event, detailFailed, pending, problem, lookIndex, confirm
             <span className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: occasion.tone }} />{occasion.label}
           </span>
           {event.time && <Chip icon={<Clock size={12} />}>{formatTime(event.time)}</Chip>}
-          {event.location && <Chip icon={<MapPin size={12} />}>{event.location}</Chip>}
+          {(event.cityName || event.location) && (
+            <Chip icon={<MapPin size={12} />}>{[shortCity(event.cityName), event.location].filter(Boolean).join(" · ")}</Chip>
+          )}
           {dressCode && <Chip icon={<Shirt size={12} />}>{dressCode}</Chip>}
         </div>
         {event.notes && <p className="mt-3 text-sm italic leading-relaxed text-stone-500">“{event.notes}”</p>}

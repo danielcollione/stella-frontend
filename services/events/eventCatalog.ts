@@ -86,3 +86,9 @@ export function monthGrid(month: Date): Date[] {
   const start = addDays(first, -first.getDay());
   return Array.from({ length: 42 }, (_, index) => addDays(start, index));
 }
+
+/** "Itu, São Paulo, Brasil" -> "Itu" */
+export function shortCity(cityName: string | null): string | null {
+  const city = cityName?.split(",")[0].trim();
+  return city || null;
+}

@@ -2,7 +2,7 @@
 
 import { CalendarPlus, Clock, MapPin, Shirt, Sparkles } from "lucide-react";
 import { displayName } from "@/services/wardrobe/wardrobeCatalog";
-import { daysBetween, formatLongDate, formatTime, occasionOf, parseIsoDate, relativeDay } from "@/services/events/eventCatalog";
+import { daysBetween, formatLongDate, formatTime, occasionOf, parseIsoDate, relativeDay, shortCity } from "@/services/events/eventCatalog";
 import type { CalendarEvent, EventLook } from "@/types/events";
 
 interface EventAgendaProps {
@@ -128,7 +128,9 @@ function EventRow({ event, withDate, past, onOpen }: { event: CalendarEvent; wit
         <span className="mt-0.5 flex min-w-0 items-center gap-2.5 text-xs text-stone-400">
           <span className="shrink-0" style={{ color: occasion.tone }}>{occasion.label}</span>
           {time && <span className="inline-flex shrink-0 items-center gap-1"><Clock size={11} />{time}</span>}
-          {event.location && <span className="inline-flex min-w-0 items-center gap-1"><MapPin size={11} className="shrink-0" /><span className="truncate">{event.location}</span></span>}
+          {(event.cityName || event.location) && (
+            <span className="inline-flex min-w-0 items-center gap-1"><MapPin size={11} className="shrink-0" /><span className="truncate">{shortCity(event.cityName) ?? event.location}</span></span>
+          )}
         </span>
       </span>
       {event.featuredLook ? (

@@ -4,6 +4,9 @@ import { useState } from "react";
 import type { FormEvent } from "react";
 import { LoaderCircle, Sparkles } from "lucide-react";
 import { Select } from "@/components/ui/Select";
+import { useAppShell } from "@/components/layout/AppShell";
+import { CityAutocomplete } from "@/components/features/CityAutocomplete";
+import type { CityValue } from "@/components/features/CityAutocomplete";
 import { DRESS_CODES, OCCASIONS, todayIso } from "@/services/events/eventCatalog";
 import type { CalendarEvent, DressCode, EventOccasion, EventRequest } from "@/types/events";
 
@@ -22,6 +25,7 @@ interface FormState {
   date: string;
   time: string;
   location: string;
+  city: CityValue;
   dressCode: DressCodeOption;
   notes: string;
 }
@@ -40,12 +44,17 @@ interface EventFormProps {
 
 export function EventForm({ event, defaultDate, busy, pending, error, onSubmit, onCancel }: EventFormProps) {
   const editing = Boolean(event);
+  const { user } = useAppShell();
   const [form, setForm] = useState<FormState>(() => ({
     title: event?.title ?? "",
     occasion: event?.occasion ?? null,
     date: event?.date ?? defaultDate,
     time: event?.time?.slice(0, 5) ?? "",
     location: event?.location ?? "",
+    // Novo evento começa na cidade do perfil; quem vai viajar troca pelo destino
+    city: event
+      ? { cityName: event.cityName ?? "", cityCoordinates: event.cityCoordinates ?? "" }
+      : { cityName: user?.cityName ?? "", cityCoordinates: user?.cityCoordinates ?? "" },
     dressCode: event?.dressCode ?? "AUTO",
     notes: event?.notes ?? "",
   }));
@@ -69,6 +78,8 @@ export function EventForm({ event, defaultDate, busy, pending, error, onSubmit, 
       date: form.date,
       time: form.time || null,
       location: form.location.trim() || null,
+      cityName: form.city.cityName.trim() || null,
+      cityCoordinates: form.city.cityName.trim() ? form.city.cityCoordinates || null : null,
       dressCode: form.dressCode === "AUTO" ? null : form.dressCode,
       notes: form.notes.trim() || null,
     }, { generateLook });
@@ -122,10 +133,23 @@ export function EventForm({ event, defaultDate, busy, pending, error, onSubmit, 
           </div>
         </div>
 
+        <div>
+          <label htmlFor="event-city" className={labelClass}>Cidade</label>
+          <CityAutocomplete
+            id="event-city"
+            value={form.city}
+            onChange={(city) => update("city", city)}
+            placeholder="Ex: Itu, Lisboa, Rio de Janeiro..."
+            disabled={busy}
+            inputClassName={fieldClass}
+          />
+          <p className="mt-1.5 text-[11px] text-stone-400">Vai viajar? Escolha o destino: a Stella usa a previsão do tempo de lá.</p>
+        </div>
+
         <div className="grid gap-4 sm:grid-cols-2">
           <div>
-            <label htmlFor="event-location" className={labelClass}>Local <span className="text-stone-400">(opcional)</span></label>
-            <input id="event-location" value={form.location} onChange={(change) => update("location", change.target.value)} maxLength={160} placeholder="Ex: Fazenda Santa Bárbara, Itu" className={fieldClass} autoComplete="off" />
+            <label htmlFor="event-location" className={labelClass}>Lugar <span className="text-stone-400">(opcional)</span></label>
+            <input id="event-location" value={form.location} onChange={(change) => update("location", change.target.value)} maxLength={160} placeholder="Ex: salão de festas, sítio, praia" className={fieldClass} autoComplete="off" />
           </div>
           <div>
             <label htmlFor="event-dress-code" className={labelClass}>Dress code</label>

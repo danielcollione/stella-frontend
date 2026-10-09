@@ -12,6 +12,19 @@
   }
 }
 
+/* Tailwind v4 tirou o cursor de "mãozinha" dos botões. Volta só onde há ação ao clicar: botões habilitados e
+   opções de listas (sugestões de cidade, menus). Desabilitados mantêm o cursor padrão. Fica na camada base,
+   então classes como cursor-not-allowed continuam vencendo. */
+@layer base {
+  button:not(:disabled),
+  [role="button"]:not([aria-disabled="true"]),
+  [role="option"]:not([aria-disabled="true"]):not([data-disabled]),
+  [role="menuitem"]:not([aria-disabled="true"]),
+  [role="tab"]:not([aria-disabled="true"]) {
+    cursor: pointer;
+  }
+}
+
 body {
   background-color: #FAF8F5;
   color: #1c1917;
