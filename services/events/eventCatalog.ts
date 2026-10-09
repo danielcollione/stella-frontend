@@ -2,16 +2,16 @@ import type { DressCode, EventOccasion } from "@/types/events";
 
 // Tons discretos por ocasião (pontos do calendário e marcadores da agenda)
 export const OCCASIONS: readonly { value: EventOccasion; label: string; tone: string }[] = [
-  { value: "WEDDING", label: "Casamento", tone: "#C9A27E" },
-  { value: "PARTY", label: "Festa", tone: "#A383A0" },
-  { value: "BIRTHDAY", label: "Aniversário", tone: "#D4A373" },
-  { value: "DINNER", label: "Jantar", tone: "#B07D72" },
-  { value: "DATE", label: "Encontro", tone: "#C98B8B" },
-  { value: "WORK", label: "Trabalho", tone: "#7D8CA3" },
-  { value: "INTERVIEW", label: "Entrevista", tone: "#6E7F8D" },
-  { value: "GRADUATION", label: "Formatura", tone: "#8C7A5B" },
-  { value: "TRAVEL", label: "Viagem", tone: "#8FA58A" },
-  { value: "OTHER", label: "Outro", tone: "#A8A29E" },
+  { value: "WEDDING", label: "Casamento", tone: "#C0915F" },
+  { value: "PARTY", label: "Festa", tone: "#9A6B96" },
+  { value: "BIRTHDAY", label: "Aniversário", tone: "#D08F4E" },
+  { value: "DINNER", label: "Jantar", tone: "#AD6A5C" },
+  { value: "DATE", label: "Encontro", tone: "#C97272" },
+  { value: "WORK", label: "Trabalho", tone: "#5F7699" },
+  { value: "INTERVIEW", label: "Entrevista", tone: "#55697B" },
+  { value: "GRADUATION", label: "Formatura", tone: "#8A7146" },
+  { value: "TRAVEL", label: "Viagem", tone: "#6F9668" },
+  { value: "OTHER", label: "Outro", tone: "#948C86" },
 ];
 
 const OCCASION_BY_VALUE = new Map(OCCASIONS.map((occasion) => [occasion.value, occasion]));

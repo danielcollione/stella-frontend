@@ -137,13 +137,13 @@ function DayCell({ day, iso, events, outside, isToday, isPast, isSelected, onSel
       {events.length > 0 && (
         <span className="flex gap-0.5 sm:hidden" aria-hidden="true">
           {events.slice(0, 3).map((event) => (
-            <span key={event.id} className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: occasionOf(event.occasion).tone }} />
+            <span key={event.id} className="h-2 w-2 rounded-full" style={{ backgroundColor: occasionOf(event.occasion).tone }} />
           ))}
         </span>
       )}
       <span className="hidden min-w-0 flex-col gap-0.5 sm:flex" aria-hidden="true">
         {events.slice(0, 2).map((event) => (
-          <span key={event.id} className={`flex min-w-0 items-center gap-1.5 rounded-md px-1.5 py-0.5 text-[11px] leading-tight ${isPast ? "text-stone-400" : "text-stone-700"}`} style={{ backgroundColor: `${occasionOf(event.occasion).tone}1F` }}>
+          <span key={event.id} className={`flex min-w-0 items-center gap-1.5 rounded-md px-1.5 py-0.5 text-[11px] leading-tight ${isPast ? "text-stone-400" : "text-stone-700"}`} style={{ backgroundColor: `${occasionOf(event.occasion).tone}2E` }}>
             <span className="h-1.5 w-1.5 shrink-0 rounded-full" style={{ backgroundColor: occasionOf(event.occasion).tone }} />
             <span className="truncate">{event.title}</span>
           </span>

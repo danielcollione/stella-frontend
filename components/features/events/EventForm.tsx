@@ -114,7 +114,7 @@ export function EventForm({ event, defaultDate, busy, pending, error, onSubmit, 
                   onClick={() => update("occasion", occasion.value)}
                   className={`inline-flex items-center gap-2 rounded-full border px-3.5 py-2 text-xs font-medium outline-none transition-colors focus-visible:ring-2 focus-visible:ring-stone-300 ${selected ? "border-stone-900 bg-stone-900 text-white" : "border-stone-200 bg-white text-stone-600 hover:border-stone-300 hover:text-stone-900"}`}
                 >
-                  <span aria-hidden="true" className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: occasion.tone }} />
+                  <span aria-hidden="true" className="h-2 w-2 rounded-full" style={{ backgroundColor: occasion.tone }} />
                   {occasion.label}
                 </button>
               );

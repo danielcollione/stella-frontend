@@ -185,7 +185,7 @@ function EventDetail({ event, detailFailed, pending, problem, lookIndex, confirm
     <div className="flex flex-col">
       <div className="px-6 py-6 sm:px-7">
         <div className="flex flex-wrap gap-1.5 text-xs">
-          <span className="inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 font-medium text-stone-700" style={{ backgroundColor: `${occasion.tone}26` }}>
+          <span className="inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 font-medium text-stone-700" style={{ backgroundColor: `${occasion.tone}33` }}>
             <span className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: occasion.tone }} />{occasion.label}
           </span>
           {event.time && <Chip icon={<Clock size={12} />}>{formatTime(event.time)}</Chip>}
