@@ -60,6 +60,8 @@ export function WardrobeItemDialog({ target, onClose, onSaved, onDeleted }: Ward
 
   async function selectFile(selected: File | undefined) {
     if (!selected) return;
+    // A compressão leva ~1 s no celular: já mostra o estado de análise para ninguém tocar de novo
+    setView({ step: "analyzing", file: selected, previewUrl: URL.createObjectURL(selected) });
     const file = await compressImage(selected);
     if (!UPLOAD_TYPES.includes(file.type)) {
       setView({ step: "pick", error: "Não conseguimos ler esse formato de foto. Tente uma foto em JPG ou PNG." });
