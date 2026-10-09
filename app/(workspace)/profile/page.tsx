@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import {
   ArrowLeft, ChevronRight, CreditCard, Eye, EyeOff, Headphones,
   KeyRound, LoaderCircle, LogOut, MapPin, Menu, Save, UserRound,
@@ -10,15 +10,15 @@ import {
 import { useAppShell } from "@/components/layout/AppShell";
 import { PageContent } from "@/components/layout/PageContent";
 import { Select } from "@/components/ui/Select";
+import { PlanStatusPanel } from "@/components/features/billing/PlanStatusPanel";
 import { CityAutocomplete } from "@/components/features/CityAutocomplete";
 import { authService } from "@/services/authService";
 import type { UpdateProfileRequestDto, UserResponseDto } from "@/types/auth";
 
 type ProfileView = "overview" | "plan" | "details" | "password";
 
-const STATUS_LABELS: Record<UserResponseDto["subscriptionStatus"], string> = {
-  INACTIVE: "Gratuito", ACTIVE: "Assinatura ativa", TRIALING: "Em avaliacao",
-  PAST_DUE: "Pagamento pendente", CANCELED: "Cancelado",
+const PLAN_LABELS: Record<NonNullable<UserResponseDto["plan"]>, string> = {
+  FREE: "Provador", ATELIER: "Atelier", COUTURE: "Couture",
 };
 
 const LIFESTYLES = [
@@ -68,7 +68,9 @@ function profileValues(user: UserResponseDto): UpdateProfileRequestDto {
 export default function ProfilePage() {
   const router = useRouter();
   const { user, setUser, openMobileMenu } = useAppShell();
-  const [view, setView] = useState<ProfileView>("overview");
+  const searchParams = useSearchParams();
+  // ?view=plan: retorno do portal do Stripe abre direto na seção do plano
+  const [view, setView] = useState<ProfileView>(() => searchParams.get("view") === "plan" ? "plan" : "overview");
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
   const [saving, setSaving] = useState(false);
@@ -147,7 +149,6 @@ export default function ProfilePage() {
 
   if (!user) return <main className="h-full flex items-center justify-center text-stone-500" role="status">Carregando...</main>;
 
-  const periodEnd = user.currentPeriodEnd ? new Date(user.currentPeriodEnd) : null;
   const titles: Record<ProfileView, string> = { overview: user.name, plan: "Plano", details: "Perfil", password: "Alterar Senha" };
   const rows = [
     { label: "Plano", icon: CreditCard, target: "plan" as const },
@@ -182,7 +183,7 @@ export default function ProfilePage() {
               <div className="grid grid-cols-2 gap-3 mb-8">
                 <button type="button" onClick={() => openView("plan")} className="rounded-lg border border-stone-200/70 bg-white px-4 py-5 text-left hover:border-stone-400 transition-colors">
                   <CreditCard size={19} className="text-stone-500 mb-3" />
-                  <p className="text-sm font-semibold break-words">{STATUS_LABELS[user.subscriptionStatus]}</p>
+                  <p className="text-sm font-semibold break-words">{PLAN_LABELS[user.plan ?? "FREE"]}</p>
                   <p className="text-xs text-stone-500 mt-1">Plano</p>
                 </button>
                 <button type="button" onClick={() => openView("details")} className="rounded-lg border border-stone-200/70 bg-white px-4 py-5 text-left hover:border-stone-400 transition-colors">
@@ -203,12 +204,7 @@ export default function ProfilePage() {
             </>
           )}
 
-          {view === "plan" && (
-            <dl className="divide-y divide-stone-200 border-y border-stone-200">
-              <div className="flex justify-between gap-4 py-5"><dt className="text-sm text-stone-500">Status</dt><dd className="text-sm font-medium text-right">{STATUS_LABELS[user.subscriptionStatus]}</dd></div>
-              <div className="flex justify-between gap-4 py-5"><dt className="text-sm text-stone-500">Fim do periodo atual</dt><dd className="text-sm font-medium text-right">{periodEnd && !Number.isNaN(periodEnd.getTime()) ? periodEnd.toLocaleDateString("pt-BR") : "Nao informado"}</dd></div>
-            </dl>
-          )}
+          {view === "plan" && <PlanStatusPanel />}
 
           {view === "details" && (
             <form onSubmit={saveProfile} className="space-y-6">

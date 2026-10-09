@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { AlertCircle, Check, Shirt } from "lucide-react";
+import { AlertCircle, Check, Lock, Shirt } from "lucide-react";
 import type { WardrobeSaveResult as Result } from "@/types/chat";
 
 // Confirmação discreta, abaixo da resposta da Stella, do que aconteceu com as fotos no guarda-roupa
@@ -20,6 +20,18 @@ export function WardrobeSaveResult({ result }: { result: Result }) {
         <Link href="/wardrobe" className="inline-flex items-center gap-1.5 rounded-full border border-stone-200 bg-white px-3 py-1 font-medium text-stone-600 shadow-2xs transition-colors hover:border-stone-300 hover:text-stone-900">
           <Shirt aria-hidden="true" className="h-3.5 w-3.5 text-stone-500" />
           {duplicates === 1 ? "Já estava no guarda-roupa" : `${duplicates} peças já estavam no guarda-roupa`}
+        </Link>
+      )}
+      {result.planRequired && (
+        <Link href="/planos" className="inline-flex items-center gap-1.5 rounded-full border border-stone-200 bg-white px-3 py-1 font-medium text-stone-600 shadow-2xs transition-colors hover:border-stone-300 hover:text-stone-900">
+          <Lock aria-hidden="true" className="h-3.5 w-3.5 text-stone-500" />
+          Salvar do chat é do plano Atelier
+        </Link>
+      )}
+      {result.limitReached && (
+        <Link href="/planos" className="inline-flex items-center gap-1.5 rounded-full border border-amber-200 bg-amber-50 px-3 py-1 font-medium text-amber-800 transition-colors hover:border-amber-300">
+          <AlertCircle aria-hidden="true" className="h-3.5 w-3.5" />
+          Guarda-roupa cheio no seu plano
         </Link>
       )}
       {failed > 0 && (

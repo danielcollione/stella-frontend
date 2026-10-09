@@ -9,6 +9,7 @@ export interface UserResponseDto {
   cityName?: string | null;
   cityCoordinates?: string | null;
   age?: number | null;
+  plan?: 'FREE' | 'ATELIER' | 'COUTURE'; // plano efetivo agora
   lifestyles: string[];
   stellaPersona?: string | null;
   onboardingCompleted: boolean;

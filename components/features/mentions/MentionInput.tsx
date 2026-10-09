@@ -10,6 +10,8 @@ import type { ClothingItem } from "@/types/wardrobe";
 
 // Limites alinhados ao back-end (ChatService.MAX_MENTIONED_ITEMS)
 export const MAX_MENTIONS = 5;
+// Limite por conversa, igual em todos os planos (chat.mentions.per_conversation)
+export const MENTIONS_PER_CONVERSATION = 15;
 const MAX_RESULTS = 8;
 // URLs das fotos são pré-assinadas (15 min): recarrega o catálogo antes de expirarem
 const CATALOG_TTL_MS = 10 * 60 * 1000;
@@ -39,6 +41,8 @@ interface ActiveQuery {
 }
 
 interface MentionInputProps {
+  // Quantas peças ainda podem ser marcadas nesta conversa (limite por conversa, aplicado só no front)
+  remainingInConversation?: number;
   value: string;
   onChange: (value: string) => void;
   mentions: ClothingItem[];
@@ -46,7 +50,7 @@ interface MentionInputProps {
   placeholder?: string;
 }
 
-export function MentionInput({ value, onChange, mentions, onMentionsChange, placeholder }: MentionInputProps) {
+export function MentionInput({ value, onChange, mentions, onMentionsChange, placeholder, remainingInConversation = Infinity }: MentionInputProps) {
   const inputRef = useRef<HTMLInputElement>(null);
   const mirrorRef = useRef<HTMLDivElement>(null);
   const listboxId = useId();
@@ -88,7 +92,8 @@ export function MentionInput({ value, onChange, mentions, onMentionsChange, plac
 
   // Com espaço na busca e nenhum resultado, a pessoa provavelmente só escreveu "@" no texto: fecha a lista
   const open = query !== null && !(catalogStatus === "ready" && results.length === 0 && /\s/.test(query.text));
-  const limitReached = mentions.length >= MAX_MENTIONS;
+  const conversationLimitReached = mentions.length >= remainingInConversation;
+  const limitReached = mentions.length >= MAX_MENTIONS || conversationLimitReached;
 
   function detectQuery(nextValue: string, caret: number): ActiveQuery | null {
     const match = MENTION_PATTERN.exec(nextValue.slice(0, caret));
@@ -177,6 +182,7 @@ export function MentionInput({ value, onChange, mentions, onMentionsChange, plac
             results={results}
             activeIndex={activeIndex}
             limitReached={limitReached}
+            conversationLimitReached={conversationLimitReached}
             onHover={setActiveIndex}
             onSelect={select}
           />
@@ -237,13 +243,14 @@ export function MentionInput({ value, onChange, mentions, onMentionsChange, plac
   );
 }
 
-function MentionResults({ listboxId, status, hasCatalog, results, activeIndex, limitReached, onHover, onSelect }: {
+function MentionResults({ listboxId, status, hasCatalog, results, activeIndex, limitReached, conversationLimitReached, onHover, onSelect }: {
   listboxId: string;
   status: "idle" | "loading" | "ready" | "error";
   hasCatalog: boolean;
   results: ClothingItem[];
   activeIndex: number;
   limitReached: boolean;
+  conversationLimitReached: boolean;
   onHover: (index: number) => void;
   onSelect: (item: ClothingItem) => void;
 }) {
@@ -253,6 +260,7 @@ function MentionResults({ listboxId, status, hasCatalog, results, activeIndex, l
     return <p role="status" className="flex items-center gap-2 px-4 py-4 text-sm text-stone-500"><LoaderCircle size={14} className="animate-spin" />Carregando peças...</p>;
   }
   if (status === "error") return message("Não foi possível carregar seu guarda-roupa.");
+  if (conversationLimitReached) return message(`Você já marcou ${MENTIONS_PER_CONVERSATION} peças nesta conversa. Comece uma nova conversa para marcar outras.`);
   if (limitReached) return message(`Você pode mencionar até ${MAX_MENTIONS} peças por mensagem.`);
   if (status === "ready" && !hasCatalog) {
     return (

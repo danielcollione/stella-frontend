@@ -1,15 +1,31 @@
 "use client";
 
+import Link from "next/link";
 import { motion, useReducedMotion } from "framer-motion";
-import { Shirt } from "lucide-react";
+import { Lock, Shirt } from "lucide-react";
 
 interface WardrobeSaveToggleProps {
   enabled: boolean;
   onChange: (enabled: boolean) => void;
+  locked?: boolean; // plano sem o recurso: vira um atalho para os planos
 }
 
-export function WardrobeSaveToggle({ enabled, onChange }: WardrobeSaveToggleProps) {
+export function WardrobeSaveToggle({ enabled, onChange, locked }: WardrobeSaveToggleProps) {
   const reducedMotion = useReducedMotion();
+  if (locked) {
+    return (
+      <Link
+        href="/planos"
+        title="Salvar fotos do chat no guarda-roupa é um recurso dos planos Atelier e Couture"
+        className="inline-flex items-center gap-2 rounded-full border border-stone-200/80 py-1 pl-2.5 pr-1.5 text-xs font-medium text-stone-500 transition-colors hover:border-stone-300 hover:text-stone-700"
+      >
+        <Lock aria-hidden="true" className="h-3.5 w-3.5 text-stone-400" />
+        <span className="hidden sm:inline">Salvar no guarda-roupa</span>
+        <span className="sm:hidden">Guarda-roupa</span>
+        <span className="rounded-full bg-stone-100 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.08em] text-stone-500">Atelier</span>
+      </Link>
+    );
+  }
   const title = enabled
     ? "As fotos enviadas serão salvas no seu guarda-roupa"
     : "As fotos enviadas não serão salvas no guarda-roupa";

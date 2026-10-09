@@ -27,7 +27,10 @@ import { WardrobeSaveToggle } from "@/components/features/WardrobeSaveToggle";
 import { WardrobeSaveResult } from "@/components/features/WardrobeSaveResult";
 import { useSaveToWardrobePreference } from "@/utils/wardrobePreference";
 import { compressImage } from "@/utils/imageCompression";
-import { MentionInput } from "@/components/features/mentions/MentionInput";
+import { MentionInput, MENTIONS_PER_CONVERSATION } from "@/components/features/mentions/MentionInput";
+import { PlanLimitNotice } from "@/components/features/billing/PlanLimitNotice";
+import { planLimitFrom } from "@/services/billing/billingService";
+import { apiErrorMessage } from "@/services/wardrobe/wardrobeService";
 import { MentionedItems, MentionedText } from "@/components/features/mentions/MentionedContent";
 import type { ClothingItem } from "@/types/wardrobe";
 
@@ -81,6 +84,10 @@ export default function ChatPage() {
   const [newestMessageId, setNewestMessageId] = useState<string | number | null>(null);
   const [pendingFeedback, setPendingFeedback] = useState<Set<string>>(new Set());
   const [saveToWardrobe, setSaveToWardrobe] = useSaveToWardrobePreference();
+  // Salvar do chat é recurso dos planos pagos; no Provador o toggle vira um atalho para os planos
+  const saveLocked = (currentUser?.plan ?? "FREE") === "FREE";
+  const mentionsUsedInConversation = messages.reduce(
+    (total, message) => total + (message.sender === "USER" ? message.mentionedItems?.length ?? 0 : 0), 0);
   const feedbackRequests = useRef(new Set<string>());
 
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -208,7 +215,7 @@ export default function ChatPage() {
         threadId,
         userText || undefined,
         compressedFiles.length > 0 ? compressedFiles : undefined,
-        { saveToWardrobe, wardrobeItemIds: mentionsToSend.map((item) => item.id) },
+        { saveToWardrobe: saveToWardrobe && !saveLocked, wardrobeItemIds: mentionsToSend.map((item) => item.id) },
       );
 
       playReceiveSound();
@@ -223,13 +230,16 @@ export default function ChatPage() {
     } catch (error) {
       console.error("Erro no envio:", error);
       playReceiveSound();
+      // Limite do plano (402): convite para os planos, no lugar de uma mensagem de erro
+      const planLimit = planLimitFrom(error);
       setMessages((prev) => [
         ...prev,
-        {
-          sender: "STELLA",
-          content:
-            "Desculpe, ocorreu um erro ao processar o seu pedido no servidor. Tente novamente.",
-        },
+        planLimit
+          ? { sender: "STELLA", content: planLimit.message, planLimit }
+          : {
+              sender: "STELLA",
+              content: apiErrorMessage(error, "Desculpe, ocorreu um erro ao processar o seu pedido no servidor. Tente novamente."),
+            },
       ]);
     } finally {
       setIsLoading(false);
@@ -272,7 +282,7 @@ export default function ChatPage() {
           </div>
 
           <div className="flex items-center gap-2">
-            <WardrobeSaveToggle enabled={saveToWardrobe} onChange={setSaveToWardrobe} />
+            <WardrobeSaveToggle enabled={saveToWardrobe} onChange={setSaveToWardrobe} locked={saveLocked} />
             <span className="hidden sm:inline text-xs font-medium text-stone-500 bg-stone-200/50 px-3 py-1 rounded-full border border-stone-300/40">
               Estilista Ativa
             </span>
@@ -356,15 +366,19 @@ export default function ChatPage() {
                       </div>
                     )}
 
-                    <ChatMessageContent
-                      content={msg.content || ""}
-                      isStella={true}
-                      isNew={String(msg.id) === String(newestMessageId)}
-                    />
+                    {msg.planLimit ? (
+                      <PlanLimitNotice message={msg.planLimit.message} />
+                    ) : (
+                      <ChatMessageContent
+                        content={msg.content || ""}
+                        isStella={true}
+                        isNew={String(msg.id) === String(newestMessageId)}
+                      />
+                    )}
 
                     {msg.wardrobeResult && <WardrobeSaveResult result={msg.wardrobeResult} />}
 
-                    <div className="flex items-center gap-3 pt-1 text-stone-400">
+                    {!msg.planLimit && <div className="flex items-center gap-3 pt-1 text-stone-400">
                       <div className="w-6 h-6 rounded-lg bg-stone-900 flex items-center justify-center text-white text-[10px] font-serif italic">
                         S
                       </div>
@@ -393,7 +407,7 @@ export default function ChatPage() {
                           <ThumbsDown className="w-3.5 h-3.5" />
                         </button>
                       </div>
-                    </div>
+                    </div>}
                   </div>
                 )}
               </div>
@@ -444,6 +458,7 @@ export default function ChatPage() {
             className="bg-white border border-stone-200/90 rounded-3xl p-2 shadow-sm focus-within:border-stone-400 focus-within:ring-1 focus-within:ring-stone-400/20 transition-all"
           >
             <MentionInput
+              remainingInConversation={Math.max(0, MENTIONS_PER_CONVERSATION - mentionsUsedInConversation)}
               value={input}
               onChange={setInput}
               mentions={mentions}

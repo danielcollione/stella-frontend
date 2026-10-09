@@ -7,9 +7,9 @@ function isStringArray(value: unknown): value is string[] {
 
 function parseWardrobeResult(value: unknown): WardrobeSaveResult | null {
   if (!value || typeof value !== "object") return null;
-  const { savedItemIds, duplicateItemIds, failedCount } = value as Record<string, unknown>;
+  const { savedItemIds, duplicateItemIds, failedCount, limitReached, planRequired } = value as Record<string, unknown>;
   if (!isStringArray(savedItemIds) || !isStringArray(duplicateItemIds) || typeof failedCount !== "number") return null;
-  return { savedItemIds, duplicateItemIds, failedCount };
+  return { savedItemIds, duplicateItemIds, failedCount, limitReached: limitReached === true, planRequired: planRequired === true };
 }
 
 function normalizeMessage(message: ChatMessage): ChatMessage {

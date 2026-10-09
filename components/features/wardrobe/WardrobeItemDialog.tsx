@@ -9,6 +9,8 @@ import { displayName } from "@/services/wardrobe/wardrobeCatalog";
 import { DuplicateClothingItemError, apiErrorMessage, wardrobeService } from "@/services/wardrobe/wardrobeService";
 import type { ClothingItem } from "@/types/wardrobe";
 import { compressImage } from "@/utils/imageCompression";
+import { PlanLimitNotice } from "@/components/features/billing/PlanLimitNotice";
+import { planLimitFrom } from "@/services/billing/billingService";
 
 export type WardrobeDialogTarget = { kind: "create" } | { kind: "edit"; item: ClothingItem };
 
@@ -18,7 +20,7 @@ const UPLOAD_TYPES = ["image/jpeg", "image/png"];
 const MAX_FILE_BYTES = 25 * 1024 * 1024; // mesmo limite do back-end (spring.servlet.multipart.max-file-size)
 
 type View =
-  | { step: "pick"; error?: string }
+  | { step: "pick"; error?: string; planLimit?: boolean }
   | { step: "analyzing"; file: File; previewUrl: string }
   | { step: "duplicate"; file: File; previewUrl: string; existing: ClothingItem; matchType: "SAME_PHOTO" | "SAME_GARMENT" }
   | { step: "form"; item: ClothingItem; isNew: boolean };
@@ -54,7 +56,11 @@ export function WardrobeItemDialog({ target, onClose, onSaved, onDeleted }: Ward
         setView({ step: "duplicate", file, previewUrl, existing: failure.existingItem, matchType: failure.matchType });
         return;
       }
-      setView({ step: "pick", error: apiErrorMessage(failure, "Não foi possível analisar a foto. Tente novamente.") });
+      // Guarda-roupa cheio no plano atual (402): convite para os planos em vez de erro
+      const planLimit = planLimitFrom(failure);
+      setView(planLimit
+        ? { step: "pick", error: planLimit.message, planLimit: true }
+        : { step: "pick", error: apiErrorMessage(failure, "Não foi possível analisar a foto. Tente novamente.") });
     }
   }
 
@@ -78,7 +84,7 @@ export function WardrobeItemDialog({ target, onClose, onSaved, onDeleted }: Ward
 
   return (
     <Modal open onClose={onClose} title={title} description={description} dismissible={!busy}>
-      {view.step === "pick" && <PhotoPicker error={view.error} onSelect={selectFile} />}
+      {view.step === "pick" && <PhotoPicker error={view.error} planLimit={view.planLimit} onSelect={selectFile} />}
 
       {view.step === "analyzing" && (
         <div className="flex flex-col items-center px-6 py-10 text-center sm:px-7">
@@ -154,7 +160,9 @@ function describe(view: View): { title: string; description?: string } {
   }
 }
 
-function PhotoPicker({ error, onSelect }: { error?: string; onSelect: (file: File | undefined) => void | Promise<void> }) {
+function PhotoPicker({ error, planLimit, onSelect }: {
+  error?: string; planLimit?: boolean; onSelect: (file: File | undefined) => void | Promise<void>;
+}) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [dragging, setDragging] = useState(false);
 
@@ -194,7 +202,9 @@ function PhotoPicker({ error, onSelect }: { error?: string; onSelect: (file: Fil
           event.target.value = "";
         }}
       />
-      {error && <p role="alert" className="mt-4 rounded-lg border border-red-200 bg-red-50 px-3.5 py-2.5 text-sm text-red-700">{error}</p>}
+      {error && (planLimit
+        ? <div className="mt-4"><PlanLimitNotice message={error} compact /></div>
+        : <p role="alert" className="mt-4 rounded-lg border border-red-200 bg-red-50 px-3.5 py-2.5 text-sm text-red-700">{error}</p>)}
     </div>
   );
 }
