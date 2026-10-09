@@ -1,3 +1,4 @@
+import { api } from '@/services/api';
 import type { SuggestionItem } from '@/types/chat';
 
 export type { SuggestionItem } from '@/types/chat';
@@ -20,6 +21,21 @@ export const SUGGESTIONS_POOL: SuggestionItem[] = [
 ];
 
 export const suggestionService = {
+  /**
+   * Sugestões personalizadas (eventos próximos, clima, peças do guarda-roupa, paleta), montadas pelo back-end
+   * sem IA. Vêm em ordem de relevância.
+   */
+  async fetchPersonalized(signal?: AbortSignal): Promise<SuggestionItem[]> {
+    const { data } = await api.get<SuggestionItem[]>('/chat/suggestions', { signal });
+    return data;
+  },
+
+  /** Personalizadas primeiro, depois as genéricas embaralhadas (sem repetir o mesmo rótulo). */
+  buildPool(personalized: SuggestionItem[]): SuggestionItem[] {
+    const labels = new Set(personalized.map((item) => item.label));
+    return [...personalized, ...this.getRandomSet(SUGGESTIONS_POOL.length).filter((item) => !labels.has(item.label))];
+  },
+
   /**
    * Retorna 'count' sugestões aleatórias garantindo que nenhuma delas esteja nos 'excludeIds'
    */

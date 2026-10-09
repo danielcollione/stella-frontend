@@ -11,6 +11,7 @@ import {
   ThumbsUp,
   ThumbsDown,
   ArrowUp,
+  X,
 } from "lucide-react";
 import { authService } from "@/services/authService";
 import type { ChatMessage, FeedbackReason } from "@/types/chat";
@@ -57,22 +58,31 @@ function ThumbnailPreview({ file, onRemove }: { file: File; onRemove: () => void
 
   return (
     <div className="relative group shrink-0">
-      <img 
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
         ref={imageRef}
-        alt="Preview" 
-        className="w-14 h-14 sm:w-16 sm:h-16 object-cover rounded-xl border border-stone-200/80 shadow-sm" 
+        alt="Foto anexada"
+        className="h-20 w-20 sm:h-24 sm:w-24 object-cover rounded-2xl border border-stone-200/80 bg-stone-100"
       />
       <button
         type="button"
         onClick={onRemove}
         aria-label={`Remover ${file.name}`}
         title="Remover foto"
-        className="absolute -top-1.5 -right-1.5 bg-white text-stone-500 hover:text-red-600 border border-stone-200 rounded-full w-5 h-5 flex items-center justify-center text-[10px] font-bold shadow-sm opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity cursor-pointer z-10"
+        className="absolute right-1.5 top-1.5 flex h-6 w-6 items-center justify-center rounded-full bg-stone-900/70 text-white shadow-sm backdrop-blur-sm transition-opacity hover:bg-stone-900 sm:opacity-0 sm:group-hover:opacity-100 focus-visible:opacity-100"
       >
-        ✕
+        <X className="h-3.5 w-3.5" />
       </button>
     </div>
   );
+}
+
+// Só fotos: o seletor do sistema às vezes deixa escolher qualquer arquivo (ex: "Todos os arquivos")
+const IMAGE_EXTENSIONS = /\.(jpe?g|png|webp|gif|heic|heif|avif|bmp)$/i;
+
+function isImageFile(file: File): boolean {
+  // HEIC do iPhone às vezes chega sem tipo; a extensão resolve
+  return file.type.startsWith("image/") || (file.type === "" && IMAGE_EXTENSIONS.test(file.name));
 }
 
 export default function ChatPage() {
@@ -99,6 +109,9 @@ export default function ChatPage() {
   const [reasonFor, setReasonFor] = useState<string | null>(null);
   const [reasonThanks, setReasonThanks] = useState<string | null>(null);
   const [viewerImage, setViewerImage] = useState<string | null>(null);
+  const [attachNotice, setAttachNotice] = useState("");
+  const [draggingFiles, setDraggingFiles] = useState(false);
+  const attachNoticeTimer = useRef<number | null>(null);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -304,12 +317,38 @@ export default function ChatPage() {
     }
   };
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files.length > 0) {
-      const newFiles = Array.from(e.target.files);
-      setSelectedFiles((prev) => [...prev, ...newFiles]);
+  function addFiles(files: File[]) {
+    if (files.length === 0) return;
+    const images = files.filter(isImageFile);
+    if (images.length > 0) setSelectedFiles((prev) => [...prev, ...images]);
+    if (images.length < files.length) {
+      setAttachNotice(images.length === 0
+        ? "Só é possível anexar fotos."
+        : "Alguns arquivos foram ignorados: só é possível anexar fotos.");
+      if (attachNoticeTimer.current) window.clearTimeout(attachNoticeTimer.current);
+      attachNoticeTimer.current = window.setTimeout(() => setAttachNotice(""), 4000);
     }
+  }
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    addFiles(Array.from(e.target.files ?? []));
+    e.target.value = ""; // permite escolher o mesmo arquivo de novo
   };
+
+  // Colar (Ctrl+V) ou arrastar fotos para a caixa de mensagem
+  function handlePaste(event: React.ClipboardEvent<HTMLFormElement>) {
+    const files = Array.from(event.clipboardData.files);
+    if (files.length === 0) return; // texto colado segue normal
+    event.preventDefault();
+    addFiles(files);
+  }
+
+  function handleDrop(event: React.DragEvent<HTMLFormElement>) {
+    if (event.dataTransfer.files.length === 0) return;
+    event.preventDefault();
+    setDraggingFiles(false);
+    addFiles(Array.from(event.dataTransfer.files));
+  }
 
   const handleRemoveFile = (indexToRemove: number) => {
     setSelectedFiles((prev) => prev.filter((_, idx) => idx !== indexToRemove));
@@ -341,9 +380,6 @@ export default function ChatPage() {
 
           <div className="flex items-center gap-2">
             <WardrobeSaveToggle enabled={saveToWardrobe} onChange={setSaveToWardrobe} locked={saveLocked} />
-            <span className="hidden sm:inline text-xs font-medium text-stone-500 bg-stone-200/50 px-3 py-1 rounded-full border border-stone-300/40">
-              Estilista Ativa
-            </span>
           </div>
         </header>
 
@@ -506,30 +542,43 @@ export default function ChatPage() {
             <SuggestionPills onSelectSuggestion={(prompt) => setInput(prompt)} />
           )}
 
-          {selectedFiles.length > 0 && (
-            <div className="flex items-center gap-3 overflow-x-auto mb-3 pb-2 scrollbar-none px-1">
-              <AnimatePresence>
-                {selectedFiles.map((file, idx) => (
-                  <motion.div
-                    key={`${file.name}-${idx}`}
-                    initial={{ opacity: 0, scale: 0.8 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    exit={{ opacity: 0, scale: 0.8 }}
-                  >
-                    <ThumbnailPreview
-                      file={file}
-                      onRemove={() => handleRemoveFile(idx)}
-                    />
-                  </motion.div>
-                ))}
-              </AnimatePresence>
-            </div>
+          {attachNotice && (
+            <p role="status" className="mb-2 px-2 text-xs text-stone-500">{attachNotice}</p>
           )}
 
           <form
             onSubmit={handleSend}
-            className="bg-white border border-stone-200/90 rounded-3xl p-2 shadow-sm focus-within:border-stone-400 focus-within:ring-1 focus-within:ring-stone-400/20 transition-all"
+            onPaste={handlePaste}
+            onDragOver={(event) => {
+              if (!event.dataTransfer.types.includes("Files")) return;
+              event.preventDefault();
+              setDraggingFiles(true);
+            }}
+            onDragLeave={(event) => {
+              if (!event.currentTarget.contains(event.relatedTarget as Node | null)) setDraggingFiles(false);
+            }}
+            onDrop={handleDrop}
+            className={`bg-white border rounded-3xl p-2 shadow-sm focus-within:border-stone-400 focus-within:ring-1 focus-within:ring-stone-400/20 transition-all ${draggingFiles ? "border-stone-500 ring-2 ring-stone-300/40" : "border-stone-200/90"}`}
           >
+            {/* Fotos anexadas ficam dentro da caixa, acima do texto */}
+            {selectedFiles.length > 0 && (
+              <div className="flex items-center gap-2.5 overflow-x-auto scrollbar-none px-2 pt-2 pb-1">
+                <AnimatePresence>
+                  {selectedFiles.map((file, idx) => (
+                    <motion.div
+                      key={`${file.name}-${file.lastModified}-${idx}`}
+                      initial={{ opacity: 0, scale: 0.9 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      exit={{ opacity: 0, scale: 0.9 }}
+                      transition={{ duration: 0.15 }}
+                    >
+                      <ThumbnailPreview file={file} onRemove={() => handleRemoveFile(idx)} />
+                    </motion.div>
+                  ))}
+                </AnimatePresence>
+              </div>
+            )}
+
             <MentionInput
               remainingInConversation={Math.max(0, MENTIONS_PER_CONVERSATION - mentionsUsedInConversation)}
               value={input}
@@ -546,6 +595,7 @@ export default function ChatPage() {
                   ref={fileInputRef}
                   onChange={handleFileChange}
                   accept="image/*,.heic,.heif"
+                  aria-label="Anexar fotos"
                   multiple
                   className="hidden"
                 />
