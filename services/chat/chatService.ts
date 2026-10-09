@@ -1,4 +1,4 @@
-import { ChatMessage, ChatThread, WardrobeSaveResult } from "@/types/chat";
+import { ChatMessage, ChatThread, FeedbackReason, WardrobeSaveResult } from "@/types/chat";
 import { api } from "@/services/api";
 
 function isStringArray(value: unknown): value is string[] {
@@ -99,8 +99,9 @@ export const chatService = {
     return normalizeMessage(response.data);
   },
 
-  async sendFeedback(messageId: string, feedback: NonNullable<ChatMessage['feedback']>): Promise<void> {
-    await api.post(`/chat/messages/${encodeURIComponent(messageId)}/feedback`, { feedback });
+  // Só grava o sinal (sem IA no clique); o motivo é opcional e só vale para DISLIKE
+  async sendFeedback(messageId: string, feedback: NonNullable<ChatMessage['feedback']>, reason?: FeedbackReason): Promise<void> {
+    await api.post(`/chat/messages/${encodeURIComponent(messageId)}/feedback`, { feedback, reason: reason ?? null });
   },
 
   // Apagar conversa

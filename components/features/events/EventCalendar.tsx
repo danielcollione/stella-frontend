@@ -117,13 +117,13 @@ function DayCell({ day, iso, events, outside, isToday, isPast, isSelected, onSel
       aria-label={label}
       aria-pressed={isSelected}
       data-date={iso}
-      className={`group relative flex h-14 flex-col items-center gap-1 px-1 pt-1.5 text-left outline-none transition-colors focus-visible:z-10 focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-stone-300 sm:h-24 sm:items-stretch sm:px-2 sm:pt-2 ${outside ? "bg-stone-50/70" : "bg-white"} ${isSelected ? "" : "hover:bg-[#FAF8F5]"}`}
+      className={`group relative flex h-[3.75rem] flex-col items-center gap-1 px-1 pt-1.5 text-left outline-none transition-colors focus-visible:z-10 focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-stone-300 sm:h-24 sm:items-stretch sm:px-2 sm:pt-2 ${outside ? "bg-stone-50/70" : "bg-white"} ${isSelected ? "" : "hover:bg-[#FAF8F5]"}`}
     >
-      <span className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-[13px] tabular-nums transition-colors sm:self-start ${
+      <span className={`font-rounded flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-[15px] font-bold tabular-nums transition-colors sm:self-start sm:text-base ${
         isSelected
-          ? "bg-stone-900 font-semibold text-white"
+          ? "bg-stone-900 text-white"
           : isToday
-            ? "font-semibold text-stone-900 ring-1 ring-stone-900"
+            ? "text-stone-900 ring-[1.5px] ring-stone-900"
             : outside
               ? "text-stone-300"
               : isPast

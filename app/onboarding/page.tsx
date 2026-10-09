@@ -159,8 +159,9 @@ export default function OnboardingPage() {
   // Envio final para o Back-end
   async function handleSubmit() {
     if (isSubmitting || isCheckingSession) return;
-    if (!isValidAge(age) || !city.cityName.trim() || lifestyles.length === 0) {
-      setError("Informe sua idade, sua cidade e selecione pelo menos um estilo de vida.");
+    // Idade vazia = "Prefiro não informar"
+    if ((age !== "" && !isValidAge(age)) || !city.cityName.trim() || lifestyles.length === 0) {
+      setError("Informe uma idade válida, sua cidade e selecione pelo menos um estilo de vida.");
       return;
     }
     setIsSubmitting(true);
@@ -169,7 +170,7 @@ export default function OnboardingPage() {
     try {
       const user = await authService.updateOnboarding({
         fashionPreference,
-        age: Number(age),
+        age: age ? Number(age) : undefined,
         cityName: city.cityName.trim(),
         cityCoordinates: city.cityCoordinates,
         lifestyles,
@@ -342,6 +343,16 @@ export default function OnboardingPage() {
                 className="w-full mt-8 py-3.5 rounded-2xl bg-stone-900 text-white font-medium text-sm hover:bg-stone-800 transition-all disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
               >
                 Continuar
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setAge("");
+                  setStep(3);
+                }}
+                className="mx-auto mt-3 block rounded-full px-4 py-2 text-xs font-medium text-stone-500 underline-offset-4 transition-colors hover:text-stone-900 hover:underline"
+              >
+                Prefiro não informar
               </button>
             </form>
           </div>

@@ -6,6 +6,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
 import { CalendarHeart, Gem, LogOut, MessageSquare, PanelLeft, PanelLeftClose, Plus, Shirt, Trash2, X } from "lucide-react";
+import { StellaMark } from "@/components/ui/StellaMark";
 import { authService } from "@/services/authService";
 import { chatService } from "@/services/chat/chatService";
 import type { UserResponseDto } from "@/types/auth";
@@ -70,12 +71,23 @@ function SidebarContent({ expanded, mobile, toggle, closeMenu }: {
     <>
       <div className={`flex flex-col w-full ${mobile ? "gap-5" : "gap-4"}`}>
         <div className={`flex items-center justify-between ${mobile ? "" : "w-full min-h-[40px]"}`}>
-          {mobile ? <span className="font-serif italic text-2xl font-semibold tracking-tight text-stone-900">stella</span> : (
-            <AnimatePresence initial={false}>{expanded && <motion.span initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -10 }} transition={{ duration: 0.15 }} className="font-serif italic text-2xl font-semibold tracking-tight text-stone-900 whitespace-nowrap pl-1">stella</motion.span>}</AnimatePresence>
+          {mobile || expanded ? (
+            <Link href="/chat" onClick={closeMenu} aria-label="Stella" className="flex items-center gap-2.5 rounded-xl pl-1 pr-2 py-0.5 transition-opacity hover:opacity-80">
+              <StellaMark size={36} decorative />
+              <span className="font-serif italic text-2xl font-semibold tracking-tight text-stone-900 whitespace-nowrap">stella</span>
+            </Link>
+          ) : (
+            // Recolhido: o logo ocupa o topo; ao passar o mouse vira o botão de expandir
+            <button type="button" onClick={toggle} aria-label="Expandir menu" title="Expandir menu" className="group relative mx-auto flex h-10 w-10 items-center justify-center rounded-xl transition-colors hover:bg-stone-100">
+              <StellaMark size={34} decorative className="transition-opacity group-hover:opacity-0" />
+              <PanelLeft className="absolute w-5 h-5 text-stone-600 opacity-0 transition-opacity group-hover:opacity-100" />
+            </button>
           )}
-          <button type="button" onClick={toggle} aria-label={mobile ? "Fechar menu" : expanded ? "Recolher menu" : "Expandir menu"} title={mobile ? "Fechar menu" : expanded ? "Recolher menu" : "Expandir menu"} className="p-2 text-stone-500 hover:text-stone-900 hover:bg-stone-100 rounded-xl transition-colors ml-auto shrink-0">
-            {mobile ? <X className="w-5 h-5" /> : expanded ? <PanelLeftClose className="w-5 h-5" /> : <PanelLeft className="w-5 h-5" />}
-          </button>
+          {(mobile || expanded) && (
+            <button type="button" onClick={toggle} aria-label={mobile ? "Fechar menu" : "Recolher menu"} title={mobile ? "Fechar menu" : "Recolher menu"} className="p-2 text-stone-500 hover:text-stone-900 hover:bg-stone-100 rounded-xl transition-colors ml-auto shrink-0">
+              {mobile ? <X className="w-5 h-5" /> : <PanelLeftClose className="w-5 h-5" />}
+            </button>
+          )}
         </div>
         <button type="button" onClick={newChat} title="Nova conversa" className={mobile ? "flex items-center gap-3 w-full px-4 py-3 bg-stone-900 text-white rounded-2xl font-medium text-sm shadow-sm active:scale-95 transition-transform" : "flex items-center gap-3 bg-stone-100 hover:bg-stone-200/80 text-stone-800 font-medium text-sm transition-all shadow-2xs w-full px-3.5 py-3 rounded-2xl justify-start overflow-hidden active:scale-[0.98]"}>
           <Plus className={`w-5 h-5 shrink-0 ${mobile ? "" : "text-stone-900"}`} />

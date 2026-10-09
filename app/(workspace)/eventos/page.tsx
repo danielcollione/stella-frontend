@@ -82,9 +82,12 @@ export default function EventsPage() {
   function selectDay(iso: string) {
     setSelected(iso);
     if (iso.slice(0, 7) !== toIsoDate(month).slice(0, 7)) setMonth(firstOfMonth(iso));
-    // Dia livre a partir de hoje: já abre o planejamento do evento
-    const hasEvents = monthEvents.some((event) => event.date === iso);
-    if (!hasEvents && iso >= today && monthData?.key === monthKey) openDialog({ kind: "create", date: iso });
+    if (monthData?.key !== monthKey) return; // calendário ainda carregando: só seleciona o dia
+    const eventsOfDay = monthEvents.filter((event) => event.date === iso);
+    // Um evento: abre direto. Vários: a agenda ao lado lista todos para escolher.
+    // Dia livre a partir de hoje: já abre o planejamento de um evento novo.
+    if (eventsOfDay.length === 1) openDialog({ kind: "open", event: eventsOfDay[0] });
+    else if (eventsOfDay.length === 0 && iso >= today) openDialog({ kind: "create", date: iso });
   }
 
   const refresh = () => setVersion((current) => current + 1);

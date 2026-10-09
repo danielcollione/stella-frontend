@@ -13,7 +13,7 @@ import {
   ArrowUp,
 } from "lucide-react";
 import { authService } from "@/services/authService";
-import type { ChatMessage } from "@/types/chat";
+import type { ChatMessage, FeedbackReason } from "@/types/chat";
 import { useAppShell } from "@/components/layout/AppShell";
 import { playSendSound, playReceiveSound } from "@/utils/sound";
 import { chatService } from "@/services/chat/chatService";
@@ -28,6 +28,8 @@ import { WardrobeSaveResult } from "@/components/features/WardrobeSaveResult";
 import { useSaveToWardrobePreference } from "@/utils/wardrobePreference";
 import { compressImage } from "@/utils/imageCompression";
 import { MentionInput, MENTIONS_PER_CONVERSATION } from "@/components/features/mentions/MentionInput";
+import { StellaMark } from "@/components/ui/StellaMark";
+import { FeedbackReasonPicker } from "@/components/features/FeedbackReasonPicker";
 import { PlanLimitNotice } from "@/components/features/billing/PlanLimitNotice";
 import { planLimitFrom } from "@/services/billing/billingService";
 import { apiErrorMessage } from "@/services/wardrobe/wardrobeService";
@@ -89,6 +91,9 @@ export default function ChatPage() {
   const mentionsUsedInConversation = messages.reduce(
     (total, message) => total + (message.sender === "USER" ? message.mentionedItems?.length ?? 0 : 0), 0);
   const feedbackRequests = useRef(new Set<string>());
+  // "Não gostei" recém-marcado: mostra os motivos logo abaixo daquela resposta
+  const [reasonFor, setReasonFor] = useState<string | null>(null);
+  const [reasonThanks, setReasonThanks] = useState<string | null>(null);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -116,7 +121,9 @@ export default function ChatPage() {
     try {
       await chatService.sendFeedback(messageId, feedback);
       setMessages((current) => current.map((item) =>
-        String(item.id) === messageId ? { ...item, feedback } : item));
+        String(item.id) === messageId ? { ...item, feedback, feedbackReason: null } : item));
+      setReasonThanks(null);
+      setReasonFor(feedback === "DISLIKE" ? messageId : (current) => (current === messageId ? null : current));
     } catch {
       setMessages((current) => current.map((item) =>
         String(item.id) === messageId && item.feedback === feedback
@@ -128,6 +135,21 @@ export default function ChatPage() {
         next.delete(messageId);
         return next;
       });
+    }
+  }
+
+  async function handleFeedbackReason(message: ChatMessage, reason: FeedbackReason) {
+    if (!message.id) return;
+    const messageId = String(message.id);
+    setReasonFor(null);
+    setReasonThanks(messageId);
+    setMessages((current) => current.map((item) =>
+      String(item.id) === messageId ? { ...item, feedbackReason: reason } : item));
+    window.setTimeout(() => setReasonThanks((current) => (current === messageId ? null : current)), 2500);
+    try {
+      await chatService.sendFeedback(messageId, "DISLIKE", reason);
+    } catch {
+      // O "não gostei" já está salvo; sem o motivo, a Stella ainda aprende com o sinal
     }
   }
 
@@ -378,10 +400,8 @@ export default function ChatPage() {
 
                     {msg.wardrobeResult && <WardrobeSaveResult result={msg.wardrobeResult} />}
 
-                    {!msg.planLimit && <div className="flex items-center gap-3 pt-1 text-stone-400">
-                      <div className="w-6 h-6 rounded-lg bg-stone-900 flex items-center justify-center text-white text-[10px] font-serif italic">
-                        S
-                      </div>
+                    {!msg.planLimit && <div className="flex items-center justify-between gap-3 pt-1 text-stone-400">
+                      <StellaMark size={28} decorative />
                       <div className="flex items-center gap-1">
                         <CopyMessageButton text={msg.content || ""} />
                         <button
@@ -408,6 +428,17 @@ export default function ChatPage() {
                         </button>
                       </div>
                     </div>}
+                    <AnimatePresence>
+                      {reasonFor === String(msg.id) && msg.feedback === "DISLIKE" && (
+                        <FeedbackReasonPicker
+                          onPick={(reason) => void handleFeedbackReason(msg, reason)}
+                          onDismiss={() => setReasonFor(null)}
+                        />
+                      )}
+                    </AnimatePresence>
+                    {reasonThanks === String(msg.id) && (
+                      <p role="status" className="mt-2 text-xs italic text-stone-500">Obrigada! Vou levar isso em conta.</p>
+                    )}
                   </div>
                 )}
               </div>
@@ -416,9 +447,7 @@ export default function ChatPage() {
 
           {isLoading && (
             <div className="flex items-center gap-3 text-stone-500 text-xs py-2">
-              <div className="w-6 h-6 rounded-lg bg-stone-900 flex items-center justify-center text-white text-[10px] font-serif italic animate-pulse">
-                S
-              </div>
+              <StellaMark size={28} decorative className="animate-pulse" />
               <span className="animate-pulse">
                 A Stella está a analisar o seu estilo...
               </span>

@@ -25,6 +25,12 @@
   }
 }
 
+@layer utilities {
+  .font-rounded {
+    font-family: var(--font-nunito), ui-rounded, system-ui, sans-serif;
+  }
+}
+
 body {
   background-color: #FAF8F5;
   color: #1c1917;

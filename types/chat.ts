@@ -7,6 +7,8 @@ export interface ChatThread {
   createdAt?: string;
 }
 
+export type FeedbackReason = 'TOO_FORMAL' | 'TOO_CASUAL' | 'NOT_MY_STYLE' | 'WRONG_WEATHER' | 'COLORS' | 'OTHER';
+
 export interface ChatMessage {
   id?: string | number;
   sender: 'USER' | 'STELLA';
@@ -14,6 +16,7 @@ export interface ChatMessage {
   payloadJson?: string | null;
   imageUrls?: string[];
   feedback?: 'LIKE' | 'DISLIKE' | 'NONE';
+  feedbackReason?: FeedbackReason | null; // motivo opcional do "não gostei"
   wardrobeResult?: WardrobeSaveResult;
   mentionedItems?: ClothingItem[]; // peças do guarda-roupa marcadas com "@"
   planLimit?: PlanLimitError; // resposta local quando o plano não permitiu a mensagem (HTTP 402)
