@@ -2,7 +2,7 @@ import type { SuggestionItem } from '@/types/chat';
 
 export type { SuggestionItem } from '@/types/chat';
 
-// Banco com 12 sugestões variadas de estilo
+// Banco com 13 sugestões variadas de estilo
 export const SUGGESTIONS_POOL: SuggestionItem[] = [
   { id: '1', emoji: '👖', label: 'Look casual com jeans', prompt: 'Sugerir um look casual elegante com jeans' },
   { id: '2', emoji: '💼', label: 'Look para reunião', prompt: 'O que vestir para uma reunião profissional importante?' },
@@ -16,6 +16,7 @@ export const SUGGESTIONS_POOL: SuggestionItem[] = [
   { id: '10', emoji: '☀️', label: 'Look para dia quente', prompt: 'Sugestões de visual leve, fresco e estiloso para dias de calor' },
   { id: '11', emoji: '👞', label: 'Calçados versáteis', prompt: 'Quais calçados coringa são indispensáveis para qualquer estilo?' },
   { id: '12', emoji: '✈️', label: 'Look para viagem', prompt: 'Como compor um visual confortável e elegante para viajar?' },
+  { id: '13', emoji: '🗓️', label: 'Meus próximos eventos', prompt: 'Quais eventos eu tenho nas próximas semanas e o que você sugere vestir em cada um?' },
 ];
 
 export const suggestionService = {
