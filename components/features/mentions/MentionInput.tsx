@@ -1,20 +1,26 @@
 "use client";
 
-import { useEffect, useId, useMemo, useRef, useState } from "react";
+import { useId, useLayoutEffect, useMemo, useRef, useState } from "react";
 import type { ChangeEvent, KeyboardEvent } from "react";
 import Link from "next/link";
 import { AtSign, LoaderCircle, Shirt, X } from "lucide-react";
-import { wardrobeService } from "@/services/wardrobe/wardrobeService";
-import { CATEGORY_LABELS, STATUS_LABELS, displayName, matchesQuery } from "@/services/wardrobe/wardrobeCatalog";
+import { CATEGORY_LABELS, STATUS_LABELS, displayName } from "@/services/wardrobe/wardrobeCatalog";
+import { InfiniteScrollSentinel } from "@/components/features/wardrobe/InfiniteScrollSentinel";
+import { useMentionSearch } from "@/components/features/mentions/useMentionSearch";
+import type { MentionSearchStatus } from "@/components/features/mentions/useMentionSearch";
 import type { ClothingItem } from "@/types/wardrobe";
 
 // Limites alinhados ao back-end (ChatService.MAX_MENTIONED_ITEMS)
 export const MAX_MENTIONS = 5;
 // Limite por conversa, igual em todos os planos (chat.mentions.per_conversation)
 export const MENTIONS_PER_CONVERSATION = 15;
-const MAX_RESULTS = 8;
-// URLs das fotos são pré-assinadas (15 min): recarrega o catálogo antes de expirarem
-const CATALOG_TTL_MS = 10 * 60 * 1000;
+
+// Altura máxima do campo antes de passar a rolar (o compositor não toma a tela inteira)
+const MAX_FIELD_HEIGHT = 220;
+
+function isTouchDevice() {
+  return typeof window !== "undefined" && window.matchMedia("(pointer: coarse)").matches;
+}
 
 // "@" no início ou depois de espaço, seguido do que a pessoa está digitando até o cursor
 const MENTION_PATTERN = /(?:^|\s)@([^@\n]{0,40})$/;
@@ -51,47 +57,22 @@ interface MentionInputProps {
 }
 
 export function MentionInput({ value, onChange, mentions, onMentionsChange, placeholder, remainingInConversation = Infinity }: MentionInputProps) {
-  const inputRef = useRef<HTMLInputElement>(null);
+  const inputRef = useRef<HTMLTextAreaElement>(null);
   const mirrorRef = useRef<HTMLDivElement>(null);
   const listboxId = useId();
-  const [catalog, setCatalog] = useState<ClothingItem[]>([]);
-  const [catalogStatus, setCatalogStatus] = useState<"idle" | "loading" | "ready" | "error">("idle");
-  const loadedAtRef = useRef(0);
-  const controllerRef = useRef<AbortController | null>(null);
   const [query, setQuery] = useState<ActiveQuery | null>(null);
   const [activeIndex, setActiveIndex] = useState(0);
 
-  useEffect(() => () => controllerRef.current?.abort(), []);
-
-  // Carrega o guarda-roupa só quando a pessoa digita "@" pela primeira vez (ou quando as URLs envelheceram)
-  async function ensureCatalog() {
-    const fresh = catalogStatus === "ready" && Date.now() - loadedAtRef.current < CATALOG_TTL_MS;
-    if (fresh || catalogStatus === "loading") return;
-    controllerRef.current?.abort();
-    const controller = new AbortController();
-    controllerRef.current = controller;
-    setCatalogStatus("loading");
-    try {
-      const items = await wardrobeService.listItems({ signal: controller.signal });
-      if (controller.signal.aborted) return;
-      loadedAtRef.current = Date.now();
-      setCatalog(items.filter((item) => item.status !== "ARCHIVED"));
-      setCatalogStatus("ready");
-    } catch {
-      if (!controller.signal.aborted) setCatalogStatus("error");
-    }
-  }
+  const search = useMentionSearch(query?.text ?? null);
+  const [listElement, setListElement] = useState<HTMLUListElement | null>(null);
 
   const results = useMemo(() => {
-    if (!query) return [];
     const mentionedIds = new Set(mentions.map((item) => item.id));
-    return catalog
-      .filter((item) => !mentionedIds.has(item.id) && matchesQuery(item, query.text))
-      .slice(0, MAX_RESULTS);
-  }, [catalog, query, mentions]);
+    return search.items.filter((item) => !mentionedIds.has(item.id));
+  }, [search.items, mentions]);
 
   // Com espaço na busca e nenhum resultado, a pessoa provavelmente só escreveu "@" no texto: fecha a lista
-  const open = query !== null && !(catalogStatus === "ready" && results.length === 0 && /\s/.test(query.text));
+  const open = query !== null && !(search.status === "ready" && !search.stale && results.length === 0 && /\s/.test(query.text));
   const conversationLimitReached = mentions.length >= remainingInConversation;
   const limitReached = mentions.length >= MAX_MENTIONS || conversationLimitReached;
 
@@ -106,10 +87,9 @@ export function MentionInput({ value, onChange, mentions, onMentionsChange, plac
     const next = caret === null ? null : detectQuery(nextValue, caret);
     setQuery(next);
     setActiveIndex(0);
-    if (next) void ensureCatalog();
   }
 
-  function handleChange(event: ChangeEvent<HTMLInputElement>) {
+  function handleChange(event: ChangeEvent<HTMLTextAreaElement>) {
     const nextValue = event.target.value;
     onChange(nextValue);
     // Peça cujo "@Nome" foi apagado do texto deixa de ser mencionada
@@ -139,15 +119,33 @@ export function MentionInput({ value, onChange, mentions, onMentionsChange, plac
     inputRef.current?.focus();
   }
 
-  // O espelho acompanha a rolagem horizontal do campo quando o texto passa da largura
+  // O espelho acompanha a rolagem do campo quando o texto passa da altura máxima
   function syncMirrorScroll() {
     requestAnimationFrame(() => {
-      if (mirrorRef.current && inputRef.current) mirrorRef.current.scrollLeft = inputRef.current.scrollLeft;
+      if (mirrorRef.current && inputRef.current) mirrorRef.current.scrollTop = inputRef.current.scrollTop;
     });
   }
 
-  function handleKeyDown(event: KeyboardEvent<HTMLInputElement>) {
-    if (!open) return;
+  // O campo cresce para cima conforme o texto (o compositor fica preso ao rodapé), até um teto; depois rola
+  useLayoutEffect(() => {
+    const field = inputRef.current;
+    if (!field) return;
+    field.style.height = "auto";
+    const maxHeight = Math.min(MAX_FIELD_HEIGHT, Math.round(window.innerHeight * 0.4));
+    field.style.height = `${Math.min(field.scrollHeight, maxHeight)}px`;
+    field.style.overflowY = field.scrollHeight > maxHeight ? "auto" : "hidden";
+    if (mirrorRef.current) mirrorRef.current.scrollTop = field.scrollTop;
+  }, [value]);
+
+  function handleKeyDown(event: KeyboardEvent<HTMLTextAreaElement>) {
+    if (!open) {
+      // Enter envia; Shift+Enter quebra a linha. No celular, Enter quebra a linha e o envio é pelo botão.
+      if (event.key === "Enter" && !event.shiftKey && !event.nativeEvent.isComposing && !isTouchDevice()) {
+        event.preventDefault();
+        event.currentTarget.form?.requestSubmit();
+      }
+      return;
+    }
     if (event.key === "Escape") {
       event.preventDefault();
       setQuery(null);
@@ -157,7 +155,14 @@ export function MentionInput({ value, onChange, mentions, onMentionsChange, plac
     if (event.key === "ArrowDown" || event.key === "ArrowUp") {
       event.preventDefault();
       const step = event.key === "ArrowDown" ? 1 : -1;
-      setActiveIndex((current) => (current + step + results.length) % results.length);
+      const current = Math.min(activeIndex, results.length - 1);
+      // Chegando ao fim pelo teclado: carrega a próxima página em vez de voltar ao topo
+      if (step === 1 && current >= results.length - 3 && search.hasMore) void search.loadMore();
+      const next = step === 1 && current === results.length - 1 && search.hasMore
+        ? current
+        : (current + step + results.length) % results.length;
+      setActiveIndex(next);
+      listElement?.querySelector(`#${CSS.escape(`${listboxId}-${next}`)}`)?.scrollIntoView({ block: "nearest" });
     } else if (event.key === "Enter" || event.key === "Tab") {
       // Enter escolhe a peça em vez de enviar a mensagem
       event.preventDefault();
@@ -174,11 +179,19 @@ export function MentionInput({ value, onChange, mentions, onMentionsChange, plac
           <div className="flex items-center gap-1.5 border-b border-stone-100 px-4 py-2.5 text-[11px] font-semibold uppercase tracking-[0.12em] text-stone-400">
             <AtSign size={12} />
             Seu guarda-roupa
+            {search.status === "loading" && search.hasResults && <LoaderCircle size={12} className="ml-auto animate-spin text-stone-300" aria-label="Buscando" />}
           </div>
           <MentionResults
             listboxId={listboxId}
-            status={catalogStatus}
-            hasCatalog={catalog.length > 0}
+            status={search.status}
+            hasResults={search.hasResults}
+            wardrobeEmpty={search.wardrobeEmpty}
+            stale={search.stale}
+            hasMore={search.hasMore}
+            loadingMore={search.loadingMore}
+            onLoadMore={() => void search.loadMore()}
+            listRef={setListElement}
+            listElement={listElement}
             results={results}
             activeIndex={activeIndex}
             limitReached={limitReached}
@@ -204,21 +217,21 @@ export function MentionInput({ value, onChange, mentions, onMentionsChange, plac
       )}
 
       <div className="relative">
-      {/* Camada espelho: um <input> não colore trechos do texto, então o texto visível é desenhado aqui,
+      {/* Camada espelho: um <textarea> não colore trechos do texto, então o texto visível é desenhado aqui,
           com as menções destacadas, e o campo por cima fica com texto transparente (só o cursor aparece).
           Mesma fonte, tamanho e padding do campo; o destaque não muda peso nem espaçamento para não desalinhar o cursor. */}
       <div
         ref={mirrorRef}
         aria-hidden="true"
-        className="pointer-events-none absolute inset-0 overflow-hidden whitespace-pre px-4 pt-2 pb-3 text-sm font-light text-stone-900"
+        className="pointer-events-none absolute inset-0 overflow-hidden whitespace-pre-wrap break-words px-4 pt-2 pb-3 text-sm leading-relaxed font-light text-stone-900"
       >
         {splitByMentions(value, mentions).map((part, index) => part.mention
           ? <span key={index} className="rounded-[4px] bg-[#EDE3D6] text-stone-950 [box-shadow:0_0_0_2px_#EDE3D6]">{part.text}</span>
           : <span key={index}>{part.text}</span>)}
       </div>
-      <input
+      <textarea
         ref={inputRef}
-        type="text"
+        rows={1}
         value={value}
         onChange={(event) => {
           handleChange(event);
@@ -236,17 +249,24 @@ export function MentionInput({ value, onChange, mentions, onMentionsChange, plac
         aria-expanded={open}
         aria-controls={open ? listboxId : undefined}
         aria-activedescendant={activeOptionId}
-        className="relative w-full px-4 pt-2 pb-3 text-sm bg-transparent focus:outline-none placeholder:text-stone-400 text-transparent caret-stone-900 font-light selection:bg-stone-300/60"
+        className="relative block w-full resize-none overflow-hidden whitespace-pre-wrap break-words px-4 pt-2 pb-3 text-sm leading-relaxed bg-transparent focus:outline-none placeholder:text-stone-400 text-transparent caret-stone-900 font-light selection:bg-stone-300/60 scrollbar-none"
       />
       </div>
     </div>
   );
 }
 
-function MentionResults({ listboxId, status, hasCatalog, results, activeIndex, limitReached, conversationLimitReached, onHover, onSelect }: {
+function MentionResults({ listboxId, status, hasResults, wardrobeEmpty, stale, hasMore, loadingMore, onLoadMore, listRef, listElement, results, activeIndex, limitReached, conversationLimitReached, onHover, onSelect }: {
   listboxId: string;
-  status: "idle" | "loading" | "ready" | "error";
-  hasCatalog: boolean;
+  status: MentionSearchStatus;
+  hasResults: boolean;
+  wardrobeEmpty: boolean;
+  stale: boolean;
+  hasMore: boolean;
+  loadingMore: boolean;
+  onLoadMore: () => void;
+  listRef: (element: HTMLUListElement | null) => void;
+  listElement: HTMLUListElement | null;
   results: ClothingItem[];
   activeIndex: number;
   limitReached: boolean;
@@ -256,13 +276,13 @@ function MentionResults({ listboxId, status, hasCatalog, results, activeIndex, l
 }) {
   const message = (text: string) => <p className="px-4 py-4 text-sm text-stone-500">{text}</p>;
 
-  if (status === "loading" && !hasCatalog) {
+  if (!hasResults && status !== "error") {
     return <p role="status" className="flex items-center gap-2 px-4 py-4 text-sm text-stone-500"><LoaderCircle size={14} className="animate-spin" />Carregando peças...</p>;
   }
   if (status === "error") return message("Não foi possível carregar seu guarda-roupa.");
   if (conversationLimitReached) return message(`Você já marcou ${MENTIONS_PER_CONVERSATION} peças nesta conversa. Comece uma nova conversa para marcar outras.`);
   if (limitReached) return message(`Você pode mencionar até ${MAX_MENTIONS} peças por mensagem.`);
-  if (status === "ready" && !hasCatalog) {
+  if (wardrobeEmpty) {
     return (
       <div className="px-4 py-4 text-sm text-stone-500">
         Seu guarda-roupa ainda está vazio.{" "}
@@ -271,10 +291,10 @@ function MentionResults({ listboxId, status, hasCatalog, results, activeIndex, l
       </div>
     );
   }
-  if (results.length === 0) return message("Nenhuma peça encontrada.");
+  if (results.length === 0 && !stale && !hasMore) return message("Nenhuma peça encontrada.");
 
   return (
-    <ul id={listboxId} role="listbox" aria-label="Peças do guarda-roupa" className="max-h-72 overflow-y-auto p-1.5">
+    <ul ref={listRef} id={listboxId} role="listbox" aria-label="Peças do guarda-roupa" className={`max-h-72 overflow-y-auto overscroll-contain p-1.5 transition-opacity ${stale ? "opacity-60" : ""}`}>
       {results.map((item, index) => {
         const active = index === Math.min(activeIndex, results.length - 1);
         return (
@@ -302,6 +322,13 @@ function MentionResults({ listboxId, status, hasCatalog, results, activeIndex, l
           </li>
         );
       })}
+      {/* Infinite scroll dentro da lista: a próxima página chega antes do fim da rolagem */}
+      {hasMore && (
+        <li role="presentation">
+          <InfiniteScrollSentinel onVisible={onLoadMore} root={listElement} rootMargin="0px 0px 160px 0px" disabled={!listElement || loadingMore} watch={results.length} />
+          {loadingMore && <p className="flex items-center justify-center gap-2 py-2.5 text-xs text-stone-400"><LoaderCircle size={12} className="animate-spin" />Carregando mais...</p>}
+        </li>
+      )}
     </ul>
   );
 }
@@ -313,7 +340,7 @@ export function MentionThumb({ item, className = "" }: { item: ClothingItem; cla
       {failed ? <Shirt size={12} /> : (
         // URL pré-assinada do R2: <img> simples, sem o otimizador do Next
         // eslint-disable-next-line @next/next/no-img-element
-        <img src={item.imageUrl} alt="" className="h-full w-full object-cover" onError={() => setFailed(true)} />
+        <img src={item.thumbnailUrl ?? item.imageUrl} alt="" loading="lazy" decoding="async" className="h-full w-full object-cover" onError={() => setFailed(true)} />
       )}
     </span>
   );

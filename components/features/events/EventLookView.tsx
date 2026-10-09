@@ -5,6 +5,7 @@ import ReactMarkdown from "react-markdown";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { Check, ChevronLeft, ChevronRight, CloudSun, LoaderCircle, ShoppingBag, Shirt, Sparkles } from "lucide-react";
 import { displayName } from "@/services/wardrobe/wardrobeCatalog";
+import { ImageViewer } from "@/components/ui/ImageViewer";
 import type { EventLook } from "@/types/events";
 import type { ClothingItem } from "@/types/wardrobe";
 
@@ -131,19 +132,26 @@ export function EventLookView({ looks, index, chosenLookId, choosing, onIndexCha
 
 function LookItem({ item }: { item: ClothingItem }) {
   const [failed, setFailed] = useState<string | null>(null);
+  const [viewerOpen, setViewerOpen] = useState(false);
   const name = displayName(item);
+  const src = item.thumbnailUrl ?? item.imageUrl;
   return (
     <li className="w-28 shrink-0 snap-start sm:w-auto">
-      <div className="aspect-[4/5] overflow-hidden rounded-2xl border border-stone-200/80 bg-stone-100">
-        {failed === item.imageUrl ? (
-          <div className="flex h-full items-center justify-center text-stone-300"><Shirt size={24} strokeWidth={1.25} /></div>
+      {/* Miniatura no look; tocar abre a foto original */}
+      <button type="button" onClick={() => setViewerOpen(true)} aria-label={`Ampliar ${name}`} className="block aspect-[4/5] w-full overflow-hidden rounded-2xl border border-stone-200/80 bg-stone-100 outline-none focus-visible:ring-2 focus-visible:ring-stone-300">
+        {failed === src ? (
+          <span className="flex h-full items-center justify-center text-stone-300"><Shirt size={24} strokeWidth={1.25} /></span>
         ) : (
           // URLs pré-assinadas do R2 expiram: <img> simples, sem o otimizador do Next
           // eslint-disable-next-line @next/next/no-img-element
-          <img src={item.imageUrl} alt={name} loading="lazy" decoding="async" onError={() => setFailed(item.imageUrl)} className="h-full w-full object-cover" />
+          <img src={src} alt={name} loading="lazy" decoding="async" onError={() => setFailed(src)} className="h-full w-full object-cover" />
         )}
-      </div>
+      </button>
       <p className="mt-1.5 truncate text-center text-[10px] font-medium uppercase tracking-[0.08em] text-stone-600" title={name}>{name}</p>
+      <ImageViewer open={viewerOpen} onClose={() => setViewerOpen(false)} label={name}>
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src={item.imageUrl} alt={name} className="max-h-[calc(100dvh-5rem)] max-w-full rounded-xl object-contain shadow-2xl" />
+      </ImageViewer>
     </li>
   );
 }

@@ -14,7 +14,8 @@ export interface ChatMessage {
   sender: 'USER' | 'STELLA';
   content?: string;
   payloadJson?: string | null;
-  imageUrls?: string[];
+  imageUrls?: string[]; // fotos originais
+  thumbnailUrls?: string[]; // miniaturas para a conversa (mesma ordem de imageUrls)
   feedback?: 'LIKE' | 'DISLIKE' | 'NONE';
   feedbackReason?: FeedbackReason | null; // motivo opcional do "não gostei"
   wardrobeResult?: WardrobeSaveResult;

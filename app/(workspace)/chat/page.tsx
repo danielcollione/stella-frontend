@@ -30,11 +30,15 @@ import { compressImage } from "@/utils/imageCompression";
 import { MentionInput, MENTIONS_PER_CONVERSATION } from "@/components/features/mentions/MentionInput";
 import { StellaMark } from "@/components/ui/StellaMark";
 import { FeedbackReasonPicker } from "@/components/features/FeedbackReasonPicker";
+import { ImageViewer } from "@/components/ui/ImageViewer";
 import { PlanLimitNotice } from "@/components/features/billing/PlanLimitNotice";
 import { planLimitFrom } from "@/services/billing/billingService";
 import { apiErrorMessage } from "@/services/wardrobe/wardrobeService";
 import { MentionedItems, MentionedText } from "@/components/features/mentions/MentionedContent";
 import type { ClothingItem } from "@/types/wardrobe";
+
+// Distância do fim da conversa em que ainda se considera que a pessoa "está lá embaixo"
+const FOLLOW_THRESHOLD_PX = 120;
 
 function ThumbnailPreview({ file, onRemove }: { file: File; onRemove: () => void }) {
   const imageRef = useRef<HTMLImageElement>(null);
@@ -94,18 +98,50 @@ export default function ChatPage() {
   // "Não gostei" recém-marcado: mostra os motivos logo abaixo daquela resposta
   const [reasonFor, setReasonFor] = useState<string | null>(null);
   const [reasonThanks, setReasonThanks] = useState<string | null>(null);
+  const [viewerImage, setViewerImage] = useState<string | null>(null);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const lastMessage = messages[messages.length - 1];
 
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  const conversationRef = useRef<HTMLElement>(null);
+  // Segue o fim da conversa (como no ChatGPT) enquanto a pessoa está lá embaixo; se ela rolar para cima para
+  // reler, para de seguir até voltar ao fim ou enviar uma nova mensagem
+  const followBottomRef = useRef(true);
+
+  const scrollToBottom = (behavior: ScrollBehavior = "smooth") => {
+    messagesEndRef.current?.scrollIntoView({ behavior, block: "end" });
   };
 
+  function handleConversationScroll() {
+    const element = conversationRef.current;
+    if (!element) return;
+    followBottomRef.current = element.scrollHeight - element.scrollTop - element.clientHeight < FOLLOW_THRESHOLD_PX;
+  }
+
+  // Mensagem nova (enviada ou recebida) ou "Stella pensando": vai até o fim
   useEffect(() => {
-    scrollToBottom();
-  }, [messages.length, lastMessage?.id, lastMessage?.content, isLoading]);
+    if (lastMessage?.sender === "USER") followBottomRef.current = true;
+    if (followBottomRef.current) scrollToBottom();
+  }, [messages.length, lastMessage?.id, lastMessage?.sender, isLoading]);
+
+  // A resposta aparece palavra por palavra e as fotos carregam depois: acompanha o crescimento do conteúdo
+  useEffect(() => {
+    const element = conversationRef.current;
+    if (!element) return;
+    const follow = () => {
+      if (followBottomRef.current) element.scrollTop = element.scrollHeight;
+    };
+    const observer = new MutationObserver(follow);
+    observer.observe(element, { childList: true, subtree: true, characterData: true });
+    // "load" de imagens não sobe pela árvore; na fase de captura dá para ouvir no contêiner
+    element.addEventListener("load", follow, true);
+    return () => {
+      observer.disconnect();
+      element.removeEventListener("load", follow, true);
+    };
+    // A conversa só existe depois do "Carregando...": liga o observador quando ela aparece
+  }, [isInitializing]);
 
   async function handleFeedback(message: ChatMessage, selected: 'LIKE' | 'DISLIKE') {
     if (message.sender !== 'STELLA' || !message.id) return;
@@ -311,7 +347,7 @@ export default function ChatPage() {
           </div>
         </header>
 
-        <main className="flex-1 overflow-y-auto px-4 sm:px-8 py-6 space-y-6">
+        <main ref={conversationRef} onScroll={handleConversationScroll} className="flex-1 overflow-y-auto px-4 sm:px-8 py-6 space-y-6">
           {messages.length === 0 ? (
             <div className="h-full flex flex-col items-center justify-center text-center my-auto py-16">
               <div className="w-30 h-30 sm:w-36 sm:h-36 rounded-full bg-white border border-stone-200/80 flex items-center justify-center mb-4 shadow-sm overflow-hidden shrink-0">
@@ -346,12 +382,20 @@ export default function ChatPage() {
                     {msg.imageUrls && msg.imageUrls.length > 0 && (
                       <div className="flex flex-wrap gap-2 justify-end">
                         {msg.imageUrls.map((url, i) => (
-                          <SecureImage
+                          // Miniatura na conversa; tocar abre a foto original em tela cheia
+                          <button
                             key={i}
-                            src={url}
-                            alt={`Upload ${i}`}
-                            className="w-32 h-32 sm:w-48 sm:h-48 object-cover rounded-xl border border-stone-200/30 shadow-sm"
-                          />
+                            type="button"
+                            onClick={() => setViewerImage(url)}
+                            aria-label="Ampliar foto"
+                            className="rounded-xl outline-none focus-visible:ring-2 focus-visible:ring-stone-400"
+                          >
+                            <SecureImage
+                              src={msg.thumbnailUrls?.[i] ?? url}
+                              alt={`Foto enviada ${i + 1}`}
+                              className="w-32 h-32 sm:w-48 sm:h-48 object-cover rounded-xl border border-stone-200/30 shadow-sm"
+                            />
+                          </button>
                         ))}
                       </div>
                     )}
@@ -526,6 +570,11 @@ export default function ChatPage() {
           </form>
         </footer>
       </PageContent>
+      <ImageViewer open={viewerImage !== null} onClose={() => setViewerImage(null)} label="Foto enviada">
+        {viewerImage && (
+          <SecureImage src={viewerImage} alt="Foto enviada" className="max-h-[calc(100dvh-5rem)] max-w-full rounded-xl object-contain shadow-2xl" />
+        )}
+      </ImageViewer>
     </div>
   );
 }

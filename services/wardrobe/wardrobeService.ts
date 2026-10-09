@@ -1,6 +1,6 @@
 import axios from "axios";
 import { api } from "@/services/api";
-import type { ClothingItem, ClothingStatus, UpdateClothingItemRequest } from "@/types/wardrobe";
+import type { ClothingCategory, ClothingItem, ClothingStatus, UpdateClothingItemRequest, WardrobePage, WardrobeScope } from "@/types/wardrobe";
 
 interface ListItemsOptions {
   status?: ClothingStatus;
@@ -37,6 +37,17 @@ export const wardrobeService = {
   async listItems({ status, query, signal }: ListItemsOptions = {}): Promise<ClothingItem[]> {
     const response = await api.get<ClothingItem[]>("/wardrobe/items", {
       params: { status, q: query?.trim() || undefined },
+      signal,
+    });
+    return response.data;
+  },
+
+  // Uma página do guarda-roupa (infinite scroll), já filtrada e com as contagens das abas
+  async pageItems({ scope = "ACTIVE", category, query, page = 0, size = 40, signal }: {
+    scope?: WardrobeScope; category?: ClothingCategory; query?: string; page?: number; size?: number; signal?: AbortSignal;
+  }): Promise<WardrobePage> {
+    const response = await api.get<WardrobePage>("/wardrobe/items/page", {
+      params: { scope, category, q: query?.trim() || undefined, page, size },
       signal,
     });
     return response.data;

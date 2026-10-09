@@ -27,11 +27,14 @@ function normalizeMessage(message: ChatMessage): ChatMessage {
       return message;
     }
 
+    const isUrl = (url: unknown): url is string => typeof url === "string" && url.trim().length > 0;
+    const imageUrls = payload.imageUrls.filter(isUrl);
+    const thumbnails = "thumbnailUrls" in payload && Array.isArray(payload.thumbnailUrls) ? payload.thumbnailUrls : [];
     return {
       ...message,
-      imageUrls: payload.imageUrls.filter(
-        (url): url is string => typeof url === "string" && url.trim().length > 0,
-      ),
+      imageUrls,
+      // Mensagens antigas não têm miniatura: a conversa mostra a própria original
+      thumbnailUrls: imageUrls.map((url, index) => (isUrl(thumbnails[index]) ? thumbnails[index] : url)),
     };
   } catch {
     return message;

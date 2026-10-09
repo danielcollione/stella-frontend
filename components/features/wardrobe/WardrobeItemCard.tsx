@@ -16,8 +16,10 @@ type ImageState = "loading" | "loaded" | "failed";
 
 export function WardrobeItemCard({ item, priority, onImageError, onSelect }: WardrobeItemCardProps) {
   // O estado da imagem é ligado à URL: quando a URL pré-assinada é renovada, a foto tenta carregar de novo
-  const [image, setImage] = useState<{ url: string; state: ImageState }>({ url: item.imageUrl, state: "loading" });
-  const imageState = image.url === item.imageUrl ? image.state : "loading";
+  // A grade usa a miniatura (leve); a foto original fica para quando a peça é aberta
+  const src = item.thumbnailUrl ?? item.imageUrl;
+  const [image, setImage] = useState<{ url: string; state: ImageState }>({ url: src, state: "loading" });
+  const imageState = image.url === src ? image.state : "loading";
   const name = displayName(item);
   const details = displayDetails(item);
   const inactive = item.status !== "AVAILABLE";
@@ -41,15 +43,15 @@ export function WardrobeItemCard({ item, priority, onImageError, onSelect }: War
           // URLs pré-assinadas do R2 expiram: <img> simples evita que o otimizador do Next guarde URLs vencidas
           // eslint-disable-next-line @next/next/no-img-element
           <img
-            src={item.imageUrl}
+            src={src}
             alt={name}
             loading={priority ? "eager" : "lazy"}
             fetchPriority={priority ? "high" : "auto"}
             decoding="async"
             draggable={false}
-            onLoad={() => setImage({ url: item.imageUrl, state: "loaded" })}
+            onLoad={() => setImage({ url: src, state: "loaded" })}
             onError={() => {
-              setImage({ url: item.imageUrl, state: "failed" });
+              setImage({ url: src, state: "failed" });
               onImageError();
             }}
             className={`h-full w-full object-cover transition-[opacity,transform,filter] duration-500 ease-out motion-safe:group-hover:scale-[1.03] ${imageState === "loaded" ? "opacity-100" : "opacity-0"} ${inactive ? "grayscale-[35%]" : ""}`}

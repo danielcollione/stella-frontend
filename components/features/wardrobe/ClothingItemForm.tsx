@@ -2,7 +2,8 @@
 
 import { useState } from "react";
 import type { FormEvent } from "react";
-import { LoaderCircle, Lock, Trash2 } from "lucide-react";
+import { LoaderCircle, Lock, Maximize2, Trash2 } from "lucide-react";
+import { ImageViewer } from "@/components/ui/ImageViewer";
 import { Select } from "@/components/ui/Select";
 import {
   CATEGORY_LABELS, CATEGORY_ORDER, FORMALITY_LABELS, FORMALITY_ORDER, STATUS_LABELS, displayName,
@@ -71,6 +72,7 @@ export function ClothingItemForm({ item, isNew, onBusyChange, onSaved, onDeleted
   const [pending, setPending] = useState<"save" | "delete" | null>(null);
   const [confirmingDelete, setConfirmingDelete] = useState(false);
   const [error, setError] = useState("");
+  const [viewerOpen, setViewerOpen] = useState(false);
   const dirty = JSON.stringify(form) !== JSON.stringify(initial);
   const busy = pending !== null;
 
@@ -117,11 +119,19 @@ export function ClothingItemForm({ item, isNew, onBusyChange, onSaved, onDeleted
     <form onSubmit={handleSubmit} className="flex flex-col">
       <div className="grid gap-6 px-6 py-6 sm:grid-cols-[minmax(0,14rem)_1fr] sm:px-7">
         <figure className="mx-auto w-40 sm:w-full">
-          <div className="aspect-[4/5] overflow-hidden rounded-2xl border border-stone-200/80 bg-stone-100">
+          {/* Miniatura no formulário; tocar abre a foto original em tamanho real */}
+          <button type="button" onClick={() => setViewerOpen(true)} aria-label="Ampliar foto" title="Ampliar foto" className="group relative block aspect-[4/5] w-full overflow-hidden rounded-2xl border border-stone-200/80 bg-stone-100 outline-none focus-visible:ring-2 focus-visible:ring-stone-300">
             {/* URL pré-assinada do R2 (expira): <img> simples, sem o otimizador do Next */}
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={item.imageUrl} alt={displayName(item)} className="h-full w-full object-cover" />
-          </div>
+            <img src={item.thumbnailUrl ?? item.imageUrl} alt={displayName(item)} className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.02]" />
+            <span className="absolute bottom-2 right-2 rounded-full bg-white/90 p-1.5 text-stone-700 opacity-0 shadow-sm transition-opacity group-hover:opacity-100 group-focus-visible:opacity-100">
+              <Maximize2 size={14} />
+            </span>
+          </button>
+          <ImageViewer open={viewerOpen} onClose={() => setViewerOpen(false)} label={displayName(item)}>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={item.imageUrl} alt={displayName(item)} className="max-h-[calc(100dvh-5rem)] max-w-full rounded-xl object-contain shadow-2xl" />
+          </ImageViewer>
           <figcaption className="mt-2 flex items-center justify-center gap-1.5 text-[11px] text-stone-400 sm:justify-start">
             <Lock aria-hidden="true" size={11} />
             A foto não pode ser alterada

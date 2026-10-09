@@ -158,7 +158,7 @@ export function LookThumbs({ look, size, dark }: { look: EventLook; size: "sm" |
     <span className="flex shrink-0 -space-x-2.5" title={look.headline}>
       {items.map((item) => (
         // eslint-disable-next-line @next/next/no-img-element
-        <img key={item.id} src={item.imageUrl} alt={displayName(item)} loading="lazy" decoding="async" className={`${dimension} rounded-full bg-stone-100 object-cover ring-2 ${ring}`} />
+        <img key={item.id} src={item.thumbnailUrl ?? item.imageUrl} alt={displayName(item)} loading="lazy" decoding="async" className={`${dimension} rounded-full bg-stone-100 object-cover ring-2 ${ring}`} />
       ))}
       {look.items.length > 3 && (
         <span className={`flex ${dimension} items-center justify-center rounded-full text-[10px] font-semibold ring-2 ${ring} ${dark ? "bg-stone-700 text-stone-200" : "bg-stone-100 text-stone-500"}`}>+{look.items.length - 3}</span>

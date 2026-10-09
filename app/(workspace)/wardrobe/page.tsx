@@ -1,9 +1,9 @@
 "use client";
 
-import { useDeferredValue, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
-import { AlertCircle, ImagePlus, Menu, MessageCircle, Plus, Search, SearchX, Shirt, X } from "lucide-react";
+import { AlertCircle, ImagePlus, LoaderCircle, Menu, MessageCircle, Plus, Search, SearchX, Shirt, X } from "lucide-react";
 import { useAppShell } from "@/components/layout/AppShell";
 import { PageContent } from "@/components/layout/PageContent";
 import { Select } from "@/components/ui/Select";
@@ -12,10 +12,11 @@ import type { CategoryTab } from "@/components/features/wardrobe/CategoryTabs";
 import { WardrobeGrid, WardrobeGridSkeleton, WardrobeMessage } from "@/components/features/wardrobe/WardrobeGrid";
 import { useWardrobeItems } from "@/components/features/wardrobe/useWardrobeItems";
 import { WardrobeItemDialog } from "@/components/features/wardrobe/WardrobeItemDialog";
+import { InfiniteScrollSentinel } from "@/components/features/wardrobe/InfiniteScrollSentinel";
 import type { WardrobeDialogTarget } from "@/components/features/wardrobe/WardrobeItemDialog";
 import {
   CATEGORY_LABELS, CATEGORY_ORDER, STATUS_FILTER_OPTIONS,
-  isCategory, isStatusFilter, matchesQuery, matchesStatus,
+  isCategory, isStatusFilter,
 } from "@/services/wardrobe/wardrobeCatalog";
 import type { StatusFilter } from "@/services/wardrobe/wardrobeCatalog";
 import type { ClothingCategory } from "@/types/wardrobe";
@@ -23,6 +24,17 @@ import type { ClothingCategory } from "@/types/wardrobe";
 type CategoryFilter = "ALL" | ClothingCategory;
 
 const GRID_ID = "wardrobe-grid";
+const SEARCH_DEBOUNCE_MS = 250;
+
+// Espera a pessoa parar de digitar antes de buscar no servidor
+function useDebouncedValue<T>(value: T, delayMs: number): T {
+  const [debounced, setDebounced] = useState(value);
+  useEffect(() => {
+    const timer = window.setTimeout(() => setDebounced(value), delayMs);
+    return () => window.clearTimeout(timer);
+  }, [value, delayMs]);
+  return debounced;
+}
 const secondaryButtonClass = "inline-flex items-center justify-center gap-2 rounded-full border border-stone-200 bg-white px-5 py-2.5 text-sm font-medium text-stone-700 shadow-2xs transition-colors hover:border-stone-300 hover:text-stone-900 active:scale-[0.98]";
 const buttonClass = "inline-flex items-center justify-center gap-2 rounded-full bg-stone-900 px-5 py-2.5 text-sm font-medium text-white transition-colors hover:bg-stone-800 active:scale-[0.98]";
 
@@ -30,7 +42,6 @@ export default function WardrobePage() {
   const { openMobileMenu } = useAppShell();
   const pathname = usePathname();
   const searchParams = useSearchParams();
-  const { items, status, retry, handleImageError, upsertItem, removeItem } = useWardrobeItems();
   const [dialog, setDialog] = useState<{ key: number; target: WardrobeDialogTarget } | null>(null);
 
   // A key remonta o diálogo a cada abertura, zerando o estado interno (passo, formulário, prévia)
@@ -38,13 +49,17 @@ export default function WardrobePage() {
     setDialog((current) => ({ key: (current?.key ?? 0) + 1, target }));
   }
   const [query, setQuery] = useState("");
-  const deferredQuery = useDeferredValue(query);
+  const debouncedQuery = useDebouncedValue(query, SEARCH_DEBOUNCE_MS);
 
   // Categoria e status ficam na URL: a aba sobrevive ao refresh e pode ser compartilhada
   const categoryParam = searchParams.get("categoria");
   const statusParam = searchParams.get("status");
   const category: CategoryFilter = isCategory(categoryParam) ? categoryParam : "ALL";
   const statusFilter: StatusFilter = isStatusFilter(statusParam) ? statusParam : "ACTIVE";
+
+  // Filtros, busca e paginação acontecem no back-end: a tela só recebe uma página por vez
+  const { items, meta, status, refreshing, loadingMore, loadMore, retry, handleImageError, upsertItem, removeItem } =
+    useWardrobeItems({ scope: statusFilter, category: category === "ALL" ? undefined : category, query: debouncedQuery });
 
   function updateFilters(next: { categoria?: CategoryFilter; status?: StatusFilter }) {
     const params = new URLSearchParams(searchParams.toString());
@@ -59,30 +74,23 @@ export default function WardrobePage() {
     window.history.replaceState(null, "", search ? `${pathname}?${search}` : pathname);
   }
 
-  const inStatus = useMemo(
-    () => items.filter((item) => matchesStatus(item, statusFilter)),
-    [items, statusFilter],
-  );
-
   // Só exibe abas de categorias que o usuário tem (mais a aba atual, para não sumir com a seleção)
   const tabs = useMemo<CategoryTab<CategoryFilter>[]>(() => {
-    const counts = new Map<ClothingCategory, number>();
-    inStatus.forEach((item) => counts.set(item.category, (counts.get(item.category) ?? 0) + 1));
+    const counts = meta?.categoryCounts ?? {};
+    const total = Object.values(counts).reduce((sum, count) => sum + (count ?? 0), 0);
     return [
-      { value: "ALL", label: "Tudo", count: inStatus.length },
+      { value: "ALL", label: "Tudo", count: total },
       ...CATEGORY_ORDER
-        .filter((value) => counts.has(value) || value === category)
-        .map((value) => ({ value, label: CATEGORY_LABELS[value].plural, count: counts.get(value) ?? 0 })),
+        .filter((value) => (counts[value] ?? 0) > 0 || value === category)
+        .map((value) => ({ value, label: CATEGORY_LABELS[value].plural, count: counts[value] ?? 0 })),
     ];
-  }, [inStatus, category]);
+  }, [meta, category]);
 
-  const visibleItems = useMemo(
-    () => inStatus.filter((item) => (category === "ALL" || item.category === category) && matchesQuery(item, deferredQuery)),
-    [inStatus, category, deferredQuery],
-  );
+  const visibleItems = items;
+  const hasAnyItem = (meta?.allCount ?? 0) > 0;
 
-  const activeCount = items.filter((item) => item.status !== "ARCHIVED").length;
-  const isFiltered = category !== "ALL" || statusFilter !== "ACTIVE" || deferredQuery.trim() !== "";
+  const activeCount = meta?.activeCount ?? 0;
+  const isFiltered = category !== "ALL" || statusFilter !== "ACTIVE" || debouncedQuery.trim() !== "";
 
   function clearFilters() {
     setQuery("");
@@ -103,7 +111,7 @@ export default function WardrobePage() {
       );
     }
 
-    if (items.length === 0) {
+    if (!hasAnyItem) {
       return (
         <WardrobeMessage
           icon={<Shirt size={22} strokeWidth={1.5} />}
@@ -119,7 +127,7 @@ export default function WardrobePage() {
       );
     }
 
-    if (visibleItems.length === 0) {
+    if (visibleItems.length === 0 && !refreshing) {
       return (
         <WardrobeMessage
           icon={<SearchX size={22} strokeWidth={1.5} />}
@@ -131,13 +139,21 @@ export default function WardrobePage() {
     }
 
     return (
-      <WardrobeGrid
-        id={GRID_ID}
-        labelledBy={`wardrobe-tab-${category}`}
-        items={visibleItems}
-        onImageError={handleImageError}
-        onSelect={(item) => openDialog({ kind: "edit", item })}
-      />
+      <div className={`transition-opacity duration-200 ${refreshing ? "opacity-60" : ""}`}>
+        <WardrobeGrid
+          id={GRID_ID}
+          labelledBy={`wardrobe-tab-${category}`}
+          items={visibleItems}
+          onImageError={handleImageError}
+          onSelect={(item) => openDialog({ kind: "edit", item })}
+        />
+        <InfiniteScrollSentinel onVisible={() => void loadMore()} disabled={!meta?.hasMore || refreshing} watch={visibleItems.length} />
+        {loadingMore && (
+          <p role="status" className="flex items-center justify-center gap-2 py-6 text-xs text-stone-400">
+            <LoaderCircle size={14} className="animate-spin" />Carregando mais peças...
+          </p>
+        )}
+      </div>
     );
   }
 
@@ -155,7 +171,7 @@ export default function WardrobePage() {
                 <h1 className="font-serif text-3xl italic tracking-tight text-stone-900 sm:text-4xl">Guarda-roupa</h1>
               </div>
             </div>
-            {status === "ready" && items.length > 0 && (
+            {status === "ready" && hasAnyItem && (
               <div className="flex items-center gap-3 pb-1">
                 <p className="hidden text-sm tabular-nums text-stone-500 sm:block">
                   {activeCount} {activeCount === 1 ? "peça" : "peças"}
@@ -168,7 +184,7 @@ export default function WardrobePage() {
             )}
           </header>
 
-          {status === "ready" && items.length > 0 && (
+          {status === "ready" && hasAnyItem && (
             <div className="mb-3 flex items-center gap-2 px-5 sm:px-0">
               <div className="w-44 shrink-0">
                 <Select
@@ -199,15 +215,15 @@ export default function WardrobePage() {
             </div>
           )}
 
-          {status === "ready" && items.length > 0 && (
+          {status === "ready" && hasAnyItem && (
             <div className="mb-5">
               <CategoryTabs tabs={tabs} value={category} onChange={(value) => updateFilters({ categoria: value })} controls={GRID_ID} />
             </div>
           )}
 
           <section aria-live="polite" aria-busy={status === "loading"}>
-            {isFiltered && status === "ready" && visibleItems.length > 0 && (
-              <p className="sr-only">{visibleItems.length} peças exibidas</p>
+            {isFiltered && status === "ready" && meta && meta.total > 0 && (
+              <p className="sr-only">{meta.total} peças encontradas</p>
             )}
             {renderContent()}
           </section>

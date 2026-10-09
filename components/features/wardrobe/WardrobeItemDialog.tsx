@@ -105,7 +105,7 @@ export function WardrobeItemDialog({ target, onClose, onSaved, onDeleted }: Ward
         <div className="px-6 py-6 sm:px-7">
           <div className="grid grid-cols-2 gap-4">
             <Thumb src={view.previewUrl} label="Foto enviada" />
-            <Thumb src={view.existing.imageUrl} label={displayName(view.existing)} />
+            <Thumb src={view.existing.thumbnailUrl ?? view.existing.imageUrl} label={displayName(view.existing)} />
           </div>
           <p className="mt-5 text-sm leading-relaxed text-stone-600">
             {view.matchType === "SAME_PHOTO"

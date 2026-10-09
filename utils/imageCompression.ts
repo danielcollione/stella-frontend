@@ -3,7 +3,7 @@
 // JPEG e aplica a rotação da câmera, de modo que o back-end receba a foto já em pé (caminho mais leve dele).
 // JPEG porque é o formato que todo navegador gera e que o back-end (ImageIO) sempre consegue ler.
 
-const JPEG_QUALITY = 0.85;
+const JPEG_QUALITY = 0.8; // sem perda visível; ~20% menor que 85%
 // Limite de área do canvas no Safari do iOS (~16,7 MP). Só fotos maiores (ex: modo 48 MP do iPhone Pro) são
 // reduzidas, e apenas o suficiente para caber; abaixo disso, as dimensões são preservadas.
 const MAX_CANVAS_PIXELS = 16_000_000;

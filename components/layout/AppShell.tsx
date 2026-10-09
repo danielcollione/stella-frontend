@@ -69,7 +69,8 @@ function SidebarContent({ expanded, mobile, toggle, closeMenu }: {
 
   return (
     <>
-      <div className={`flex flex-col w-full ${mobile ? "gap-5" : "gap-4"}`}>
+      {/* min-h-0 + flex-1: só a lista de conversas rola; o perfil fica sempre fixo no rodapé da barra */}
+      <div className={`flex min-h-0 flex-1 flex-col w-full ${mobile ? "gap-5" : "gap-4"}`}>
         <div className={`flex items-center justify-between ${mobile ? "" : "w-full min-h-[40px]"}`}>
           {mobile || expanded ? (
             <Link href="/chat" onClick={closeMenu} aria-label="Stella" className="flex items-center gap-2.5 rounded-xl pl-1 pr-2 py-0.5 transition-opacity hover:opacity-80">
@@ -107,9 +108,9 @@ function SidebarContent({ expanded, mobile, toggle, closeMenu }: {
         </Link>
         <AnimatePresence initial={false}>
           {expanded && (
-            <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }} transition={{ duration: 0.22 }} className="mt-2 flex flex-col overflow-hidden">
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.22 }} className="mt-2 flex min-h-0 flex-1 flex-col overflow-hidden">
               <span className="text-[11px] font-semibold text-stone-400 px-2 uppercase tracking-wider mb-2">Recentes</span>
-              <div className={`overflow-y-auto space-y-1 pr-1 ${mobile ? "max-h-[calc(100dvh-320px)]" : "max-h-[calc(100dvh-300px)]"}`}>
+              <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain space-y-1 pr-1">
                 {threads.length === 0 ? <p className="text-xs text-stone-400 px-2 py-2 italic">Nenhuma conversa recente</p> : threads.map((thread) => (
                   <motion.div key={thread.id} whileHover={{ x: 2 }} className={`group flex items-center justify-between px-3 py-2.5 rounded-xl text-xs transition-colors ${pathname === "/chat" && activeThreadId === thread.id ? "bg-stone-200/70 text-stone-900 font-semibold" : "text-stone-600 hover:bg-stone-100 hover:text-stone-900"}`}>
                     <Link href={`/chat?thread=${encodeURIComponent(thread.id)}`} onClick={() => { setActiveThreadId(thread.id); closeMenu(); }} className="flex items-center gap-2.5 min-w-0 flex-1">
@@ -125,7 +126,7 @@ function SidebarContent({ expanded, mobile, toggle, closeMenu }: {
           )}
         </AnimatePresence>
       </div>
-      <div className={`flex items-center w-full justify-between border-t ${mobile ? "border-stone-200 pt-4" : "border-stone-200/60 pt-3"}`}>
+      <div className={`flex shrink-0 items-center w-full justify-between border-t ${mobile ? "border-stone-200 mt-4 pt-4" : "border-stone-200/60 mt-3 pt-3"}`}>
         <Link href="/profile" onClick={closeMenu} title={user?.name || "Meu perfil"} aria-label="Abrir meu perfil" aria-current={pathname === "/profile" ? "page" : undefined} className="flex items-center gap-2.5 min-w-0 flex-1 rounded-lg hover:bg-stone-100 transition-colors p-1">
           <div className="w-8 h-8 rounded-full bg-stone-200 border border-stone-300 flex items-center justify-center text-xs font-semibold text-stone-700 shrink-0">{initials}</div>
           <MenuLabel visible={expanded} className="text-xs font-medium text-stone-800 truncate">{user?.name || "Meu perfil"}</MenuLabel>
