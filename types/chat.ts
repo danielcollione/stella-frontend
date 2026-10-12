@@ -21,6 +21,14 @@ export interface ChatMessage {
   wardrobeResult?: WardrobeSaveResult;
   mentionedItems?: ClothingItem[]; // peças do guarda-roupa marcadas com "@"
   planLimit?: PlanLimitError; // resposta local quando o plano não permitiu a mensagem (HTTP 402)
+  retry?: ChatRetry; // resposta local quando o envio falhou por rede ou servidor: guarda o que reenviar
+}
+
+// O que a pessoa tinha enviado quando o servidor não respondeu, para o botão "Tentar de novo"
+export interface ChatRetry {
+  text: string;
+  files: File[];
+  mentions: ClothingItem[];
 }
 
 // Resultado do "salvar no guarda-roupa" devolvido no payload da resposta da Stella

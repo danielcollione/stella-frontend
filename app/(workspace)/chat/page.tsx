@@ -12,9 +12,10 @@ import {
   ThumbsDown,
   ArrowUp,
   X,
+  RotateCw,
 } from "lucide-react";
 import { authService } from "@/services/authService";
-import type { ChatMessage, FeedbackReason } from "@/types/chat";
+import type { ChatMessage, ChatRetry, FeedbackReason } from "@/types/chat";
 import { useAppShell } from "@/components/layout/AppShell";
 import { playSendSound, playReceiveSound } from "@/utils/sound";
 import { chatService } from "@/services/chat/chatService";
@@ -247,8 +248,6 @@ export default function ChatPage() {
     if (e) e.preventDefault();
     if ((!input.trim() && selectedFiles.length === 0 && mentions.length === 0) || isLoading) return;
 
-    playSendSound();
-
     const userText = input;
     const filesToSend = selectedFiles;
     const mentionsToSend = mentions;
@@ -256,6 +255,23 @@ export default function ChatPage() {
     setInput("");
     setSelectedFiles([]);
     setMentions([]);
+    await deliver({ text: userText, files: filesToSend, mentions: mentionsToSend });
+  };
+
+  // "Tentar de novo": tira da tela a pergunta que falhou e o aviso, e envia a mesma mensagem outra vez
+  const retrySend = (failed: ChatMessage) => {
+    if (!failed.retry || isLoading) return;
+    setMessages((prev) => {
+      const index = prev.indexOf(failed);
+      if (index < 0) return prev;
+      const from = index > 0 && prev[index - 1].sender === "USER" ? index - 1 : index;
+      return [...prev.slice(0, from), ...prev.slice(index + 1)];
+    });
+    void deliver(failed.retry);
+  };
+
+  const deliver = async ({ text: userText, files: filesToSend, mentions: mentionsToSend }: ChatRetry) => {
+    playSendSound();
 
     const optimisticImageUrls = filesToSend.map((f) => URL.createObjectURL(f));
 
@@ -306,13 +322,17 @@ export default function ChatPage() {
       playReceiveSound();
       // Limite do plano (402): convite para os planos, no lugar de uma mensagem de erro
       const planLimit = planLimitFrom(error);
+      // Sem resposta (rede, servidor reiniciando) ou erro 5xx: a mensagem não foi perdida, dá para reenviar
+      const status = axios.isAxiosError(error) ? error.response?.status : undefined;
+      const retryable = !planLimit && (status === undefined || status >= 500);
       setMessages((prev) => [
         ...prev,
         planLimit
           ? { sender: "STELLA", content: planLimit.message, planLimit }
           : {
               sender: "STELLA",
-              content: apiErrorMessage(error, "Desculpe, ocorreu um erro ao processar o seu pedido no servidor. Tente novamente."),
+              content: apiErrorMessage(error, "Não consegui responder agora. Sua mensagem não foi perdida: é só tentar de novo."),
+              retry: retryable ? { text: userText, files: filesToSend, mentions: mentionsToSend } : undefined,
             },
       ]);
     } finally {
@@ -488,9 +508,21 @@ export default function ChatPage() {
                       />
                     )}
 
+                    {msg.retry && (
+                      <button
+                        type="button"
+                        onClick={() => retrySend(msg)}
+                        disabled={isLoading}
+                        className="inline-flex items-center gap-1.5 rounded-full border border-stone-200 bg-white px-3.5 py-1.5 text-xs font-medium text-stone-700 shadow-2xs transition-colors hover:border-stone-300 hover:text-stone-900 disabled:cursor-not-allowed disabled:opacity-50"
+                      >
+                        <RotateCw aria-hidden="true" className="h-3.5 w-3.5 text-stone-500" />
+                        Tentar de novo
+                      </button>
+                    )}
+
                     {msg.wardrobeResult && <WardrobeSaveResult result={msg.wardrobeResult} />}
 
-                    {!msg.planLimit && <div className="flex items-center justify-between gap-3 pt-1 text-stone-400">
+                    {!msg.planLimit && !msg.retry && <div className="flex items-center justify-between gap-3 pt-1 text-stone-400">
                       <StellaMark size={28} decorative />
                       <div className="flex items-center gap-1">
                         <CopyMessageButton text={msg.content || ""} />
