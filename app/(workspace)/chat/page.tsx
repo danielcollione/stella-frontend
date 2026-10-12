@@ -376,12 +376,15 @@ export default function ChatPage() {
             >
               <Menu className="w-5 h-5" />
             </button>
-            <span className="font-serif italic text-2xl font-semibold tracking-tight text-stone-900 md:hidden">
-              stella
-            </span>
-            <div className="hidden min-[420px]:block">
-              <TodayWeather hasCity={!!currentUser?.cityName} />
-            </div>
+            {/* No celular o clima do dia ocupa o lugar do nome; sem previsão, o nome volta */}
+            <TodayWeather
+              hasCity={!!currentUser?.cityName}
+              fallback={
+                <span className="font-serif italic text-2xl font-semibold tracking-tight text-stone-900 md:hidden">
+                  stella
+                </span>
+              }
+            />
           </div>
 
           <div className="flex items-center gap-2">

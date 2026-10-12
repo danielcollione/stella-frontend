@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import type { ReactNode } from "react";
 import { WeatherIcon } from "@/components/features/weather/WeatherIcon";
 import { parseIsoDate } from "@/services/events/eventCatalog";
 import { weatherService } from "@/services/weather/weatherService";
@@ -14,8 +15,8 @@ function shortDate(iso: string): string {
     .replace(/\./g, "").replace(" de ", " ");
 }
 
-/** Clima de hoje na cidade do perfil, em duas linhas discretas. Sem cidade ou sem previsão, não aparece. */
-export function TodayWeather({ hasCity }: { hasCity: boolean }) {
+/** Clima de hoje na cidade do perfil, em duas linhas discretas. Sem cidade ou sem previsão, mostra o `fallback`. */
+export function TodayWeather({ hasCity, fallback = null }: { hasCity: boolean; fallback?: ReactNode }) {
   const [weather, setWeather] = useState<WeatherOverview | null>(null);
 
   useEffect(() => {
@@ -26,7 +27,7 @@ export function TodayWeather({ hasCity }: { hasCity: boolean }) {
   }, [hasCity]);
 
   const today = weather?.days[0];
-  if (!hasCity || !weather || !today) return null;
+  if (!hasCity || !weather || !today) return fallback;
   const rain = today.rainChance ?? 0;
 
   return (
