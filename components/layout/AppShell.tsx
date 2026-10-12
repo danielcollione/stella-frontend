@@ -98,9 +98,9 @@ function SidebarContent({ expanded, mobile, toggle, closeMenu }: {
           <Shirt className="w-5 h-5 shrink-0" />
           <MenuLabel visible={expanded}>Guarda-roupa</MenuLabel>
         </Link>
-        <Link href="/eventos" onClick={closeMenu} title="Eventos" aria-current={pathname === "/eventos" ? "page" : undefined} className={`${mobile ? "flex items-center gap-3 w-full px-4 py-2.5 text-stone-700 hover:bg-stone-200/60 rounded-xl font-medium text-sm transition-colors" : "flex items-center gap-3 text-stone-600 hover:text-stone-900 hover:bg-stone-100 text-sm font-medium transition-all w-full px-3.5 py-2.5 rounded-xl justify-start overflow-hidden active:scale-[0.98]"} ${pathname === "/eventos" ? (mobile ? "bg-stone-200/70 text-stone-900" : "bg-stone-100 text-stone-900") : ""}`}>
+        <Link href="/eventos" onClick={closeMenu} title="Planejador" aria-current={pathname === "/eventos" ? "page" : undefined} className={`${mobile ? "flex items-center gap-3 w-full px-4 py-2.5 text-stone-700 hover:bg-stone-200/60 rounded-xl font-medium text-sm transition-colors" : "flex items-center gap-3 text-stone-600 hover:text-stone-900 hover:bg-stone-100 text-sm font-medium transition-all w-full px-3.5 py-2.5 rounded-xl justify-start overflow-hidden active:scale-[0.98]"} ${pathname === "/eventos" ? (mobile ? "bg-stone-200/70 text-stone-900" : "bg-stone-100 text-stone-900") : ""}`}>
           <CalendarHeart className="w-5 h-5 shrink-0" />
-          <MenuLabel visible={expanded}>Eventos</MenuLabel>
+          <MenuLabel visible={expanded}>Planejador</MenuLabel>
         </Link>
         <Link href="/planos" onClick={closeMenu} title="Planos" aria-current={pathname === "/planos" ? "page" : undefined} className={`${mobile ? "flex items-center gap-3 w-full px-4 py-2.5 text-stone-700 hover:bg-stone-200/60 rounded-xl font-medium text-sm transition-colors" : "flex items-center gap-3 text-stone-600 hover:text-stone-900 hover:bg-stone-100 text-sm font-medium transition-all w-full px-3.5 py-2.5 rounded-xl justify-start overflow-hidden active:scale-[0.98]"} ${pathname === "/planos" ? (mobile ? "bg-stone-200/70 text-stone-900" : "bg-stone-100 text-stone-900") : ""}`}>
           <Gem className="w-5 h-5 shrink-0" />

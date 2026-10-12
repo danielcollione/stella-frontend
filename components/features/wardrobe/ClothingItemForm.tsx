@@ -1,10 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useId, useState } from "react";
 import type { FormEvent } from "react";
-import { LoaderCircle, Lock, Maximize2, Trash2 } from "lucide-react";
+import { ChevronLeft, ChevronRight, LoaderCircle, Lock, Maximize2, Trash2 } from "lucide-react";
 import { ImageViewer } from "@/components/ui/ImageViewer";
 import { Select } from "@/components/ui/Select";
+import { BrandInput } from "@/components/features/wardrobe/BrandInput";
 import {
   CATEGORY_LABELS, CATEGORY_ORDER, FORMALITY_LABELS, FORMALITY_ORDER, STATUS_LABELS, displayName,
 } from "@/services/wardrobe/wardrobeCatalog";
@@ -17,6 +18,7 @@ type FormalityOption = ClothingFormality | "NONE"; // Radix Select não aceita v
 
 interface FormState {
   name: string;
+  brand: string;
   category: ClothingCategory;
   color: string;
   style: string;
@@ -33,10 +35,12 @@ const STATUS_ORDER: readonly ClothingStatus[] = ["AVAILABLE", "LAUNDRY", "ARCHIV
 
 const fieldClass = "w-full rounded-lg border border-stone-200/90 bg-white px-3.5 py-3 text-sm text-stone-900 shadow-[0_1px_2px_rgba(28,25,23,0.03)] outline-none transition-[border-color,box-shadow] placeholder:text-stone-400 hover:border-stone-300 focus:border-stone-400 focus:ring-2 focus:ring-stone-200 disabled:bg-stone-100";
 const labelClass = "mb-1.5 block text-xs font-medium text-stone-500";
+const pagerButtonClass = "rounded-full border border-stone-200 bg-white p-2.5 text-stone-600 shadow-2xs transition-colors hover:border-stone-300 hover:text-stone-900 disabled:cursor-not-allowed disabled:opacity-40";
 
 function toFormState(item: ClothingItem): FormState {
   return {
     name: item.name ?? "",
+    brand: item.brand ?? "",
     category: item.category,
     color: item.color ?? "",
     style: item.style ?? "",
@@ -49,6 +53,7 @@ function toRequest(form: FormState): UpdateClothingItemRequest {
   const text = (value: string) => value.trim() || null;
   return {
     name: text(form.name),
+    brand: text(form.brand),
     category: form.category,
     color: text(form.color),
     style: text(form.style),
@@ -57,17 +62,27 @@ function toRequest(form: FormState): UpdateClothingItemRequest {
   };
 }
 
+// Várias peças recém-adicionadas: a mesma modal, com setas para alternar entre elas e "Salvar 1/3"
+export interface ClothingItemPager {
+  position: number; // 1 = primeira
+  total: number;
+  // saved: a peça já gravada, quando havia alterações ao trocar de peça
+  onStep: (delta: -1 | 1, saved?: ClothingItem) => void;
+}
+
 interface ClothingItemFormProps {
   item: ClothingItem;
   isNew?: boolean;
+  pager?: ClothingItemPager;
   onBusyChange: (busy: boolean) => void;
   onSaved: (item: ClothingItem) => void;
   onDeleted: (id: string) => void;
   onClose: () => void;
 }
 
-export function ClothingItemForm({ item, isNew, onBusyChange, onSaved, onDeleted, onClose }: ClothingItemFormProps) {
-  const [initial] = useState(() => toFormState(item));
+export function ClothingItemForm({ item, isNew, pager, onBusyChange, onSaved, onDeleted, onClose }: ClothingItemFormProps) {
+  const fieldId = useId();
+  const [initial, setInitial] = useState(() => toFormState(item));
   const [form, setForm] = useState(initial);
   const [pending, setPending] = useState<"save" | "delete" | null>(null);
   const [confirmingDelete, setConfirmingDelete] = useState(false);
@@ -100,11 +115,24 @@ export function ClothingItemForm({ item, isNew, onBusyChange, onSaved, onDeleted
       onClose();
       return;
     }
+    save(onSaved);
+  }
+
+  function save(then: (saved: ClothingItem) => void) {
     void run("save", async () => {
       const saved = await wardrobeService.updateItem(item.id, toRequest(form));
+      setInitial(form);
+      setPending(null);
       onBusyChange(false);
-      onSaved(saved);
+      then(saved);
     }, "Não foi possível salvar as alterações. Tente novamente.");
+  }
+
+  // Trocar de peça nunca descarta o que foi digitado: salva antes de ir
+  function step(delta: -1 | 1) {
+    if (!pager) return;
+    if (dirty) save((saved) => pager.onStep(delta, saved));
+    else pager.onStep(delta);
   }
 
   function handleDelete() {
@@ -140,34 +168,39 @@ export function ClothingItemForm({ item, isNew, onBusyChange, onSaved, onDeleted
 
         <fieldset disabled={busy} className="min-w-0 space-y-4">
           <div>
-            <label htmlFor="item-name" className={labelClass}>Nome</label>
-            <input id="item-name" value={form.name} onChange={(event) => update("name", event.target.value)} maxLength={255} placeholder="Ex: Camisa de linho" className={fieldClass} autoComplete="off" />
+            <label htmlFor={`${fieldId}-name`} className={labelClass}>Nome</label>
+            <input id={`${fieldId}-name`} value={form.name} onChange={(event) => update("name", event.target.value)} maxLength={255} placeholder="Ex: Camisa de linho" className={fieldClass} autoComplete="off" />
           </div>
 
           <div className="grid gap-4 sm:grid-cols-2">
             <div>
-              <label htmlFor="item-category" className={labelClass}>Categoria</label>
-              <Select id="item-category" value={form.category} onValueChange={(value) => update("category", value)} options={CATEGORY_OPTIONS} disabled={busy} />
+              <label htmlFor={`${fieldId}-category`} className={labelClass}>Categoria</label>
+              <Select id={`${fieldId}-category`} value={form.category} onValueChange={(value) => update("category", value)} options={CATEGORY_OPTIONS} disabled={busy} />
             </div>
             <div>
-              <label htmlFor="item-formality" className={labelClass}>Formalidade</label>
-              <Select id="item-formality" value={form.formality} onValueChange={(value) => update("formality", value)} options={FORMALITY_OPTIONS} disabled={busy} />
+              <label htmlFor={`${fieldId}-formality`} className={labelClass}>Formalidade</label>
+              <Select id={`${fieldId}-formality`} value={form.formality} onValueChange={(value) => update("formality", value)} options={FORMALITY_OPTIONS} disabled={busy} />
             </div>
           </div>
 
           <div className="grid gap-4 sm:grid-cols-2">
             <div>
-              <label htmlFor="item-color" className={labelClass}>Cor</label>
-              <input id="item-color" value={form.color} onChange={(event) => update("color", event.target.value)} maxLength={50} placeholder="Ex: azul marinho" className={fieldClass} autoComplete="off" />
+              <label htmlFor={`${fieldId}-color`} className={labelClass}>Cor</label>
+              <input id={`${fieldId}-color`} value={form.color} onChange={(event) => update("color", event.target.value)} maxLength={50} placeholder="Ex: azul marinho" className={fieldClass} autoComplete="off" />
             </div>
             <div>
-              <label htmlFor="item-style" className={labelClass}>Estilo</label>
-              <input id="item-style" value={form.style} onChange={(event) => update("style", event.target.value)} maxLength={50} placeholder="Ex: casual" className={fieldClass} autoComplete="off" />
+              <label htmlFor={`${fieldId}-style`} className={labelClass}>Estilo</label>
+              <input id={`${fieldId}-style`} value={form.style} onChange={(event) => update("style", event.target.value)} maxLength={50} placeholder="Ex: casual" className={fieldClass} autoComplete="off" />
             </div>
           </div>
 
-          <div role="radiogroup" aria-labelledby="item-status-label">
-            <span id="item-status-label" className={labelClass}>Situação</span>
+          <div>
+            <label htmlFor={`${fieldId}-brand`} className={labelClass}>Marca <span className="font-normal text-stone-400">(opcional)</span></label>
+            <BrandInput id={`${fieldId}-brand`} value={form.brand} onChange={(value) => update("brand", value)} disabled={busy} inputClassName={fieldClass} />
+          </div>
+
+          <div role="radiogroup" aria-labelledby={`${fieldId}-status-label`}>
+            <span id={`${fieldId}-status-label`} className={labelClass}>Situação</span>
             <div className="grid grid-cols-3 gap-1 rounded-xl border border-stone-200/90 bg-white p-1">
               {STATUS_ORDER.map((status) => {
                 const selected = form.status === status;
@@ -210,17 +243,33 @@ export function ClothingItemForm({ item, isNew, onBusyChange, onSaved, onDeleted
           </button>
         )}
 
-        <div className="ml-auto flex items-center gap-2">
-          <button type="button" onClick={onClose} disabled={busy} className="rounded-full px-4 py-2.5 text-sm font-medium text-stone-600 transition-colors hover:bg-stone-200/60 hover:text-stone-900 disabled:opacity-50">
-            {isNew && !dirty ? "Concluir" : "Cancelar"}
-          </button>
-          {(!isNew || dirty) && (
-            <button type="submit" disabled={busy || !dirty} className="inline-flex items-center gap-2 rounded-full bg-stone-900 px-5 py-2.5 text-sm font-medium text-white transition-colors hover:bg-stone-800 disabled:cursor-not-allowed disabled:opacity-40">
-              {pending === "save" && <LoaderCircle size={14} className="animate-spin" />}
-              Salvar
+        {pager ? (
+          <div className="ml-auto flex items-center gap-2">
+            <button type="button" onClick={() => step(-1)} disabled={busy || pager.position <= 1} aria-label="Peça anterior" title="Peça anterior" className={pagerButtonClass}>
+              <ChevronLeft size={16} />
             </button>
-          )}
-        </div>
+            <button type="button" onClick={() => step(1)} disabled={busy || pager.position >= pager.total} aria-label="Próxima peça" title="Próxima peça" className={pagerButtonClass}>
+              <ChevronRight size={16} />
+            </button>
+            {/* Sem alterações, só confirma e passa para a próxima peça */}
+            <button type="submit" disabled={busy} className="ml-1 inline-flex items-center gap-2 rounded-full bg-stone-900 px-5 py-2.5 text-sm font-medium tabular-nums text-white transition-colors hover:bg-stone-800 disabled:cursor-not-allowed disabled:opacity-40">
+              {pending === "save" && <LoaderCircle size={14} className="animate-spin" />}
+              Salvar {pager.position}/{pager.total}
+            </button>
+          </div>
+        ) : (
+          <div className="ml-auto flex items-center gap-2">
+            <button type="button" onClick={onClose} disabled={busy} className="rounded-full px-4 py-2.5 text-sm font-medium text-stone-600 transition-colors hover:bg-stone-200/60 hover:text-stone-900 disabled:opacity-50">
+              {isNew && !dirty ? "Concluir" : "Cancelar"}
+            </button>
+            {(!isNew || dirty) && (
+              <button type="submit" disabled={busy || !dirty} className="inline-flex items-center gap-2 rounded-full bg-stone-900 px-5 py-2.5 text-sm font-medium text-white transition-colors hover:bg-stone-800 disabled:cursor-not-allowed disabled:opacity-40">
+                {pending === "save" && <LoaderCircle size={14} className="animate-spin" />}
+                Salvar
+              </button>
+            )}
+          </div>
+        )}
       </footer>
     </form>
   );

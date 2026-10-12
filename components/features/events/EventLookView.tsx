@@ -6,6 +6,7 @@ import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { Check, ChevronLeft, ChevronRight, CloudSun, LoaderCircle, ShoppingBag, Shirt, Sparkles } from "lucide-react";
 import { displayName } from "@/services/wardrobe/wardrobeCatalog";
 import { ImageViewer } from "@/components/ui/ImageViewer";
+import { PartnerLinkNote, ShoppingLinks } from "@/components/features/shopping/ShoppingLinks";
 import type { EventLook } from "@/types/events";
 import type { ClothingItem } from "@/types/wardrobe";
 
@@ -100,15 +101,19 @@ export function EventLookView({ looks, index, chosenLookId, choosing, onIndexCha
               <p className="mb-2.5 text-xs font-medium text-stone-500">Para elevar o look</p>
               <ul className="grid gap-2 sm:grid-cols-2">
                 {look.shoppingSuggestions.map((suggestion) => (
-                  <li key={suggestion} className="flex items-center gap-3 rounded-2xl border border-dashed border-stone-300 bg-white/60 px-3.5 py-3">
-                    <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-stone-100 text-stone-500"><ShoppingBag size={14} strokeWidth={1.75} /></span>
-                    <span className="min-w-0">
-                      <span className="block text-sm text-stone-800">{suggestion}</span>
-                      <span className="text-[10px] font-medium uppercase tracking-[0.1em] text-stone-400">Sugestão de compra</span>
+                  <li key={suggestion} className="space-y-3 rounded-2xl border border-dashed border-stone-300 bg-white/60 px-3.5 py-3">
+                    <span className="flex items-center gap-3">
+                      <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-stone-100 text-stone-500"><ShoppingBag size={14} strokeWidth={1.75} /></span>
+                      <span className="min-w-0">
+                        <span className="block text-sm text-stone-800">{suggestion}</span>
+                        <span className="text-[10px] font-medium uppercase tracking-[0.1em] text-stone-400">Sugestão de compra</span>
+                      </span>
                     </span>
+                    <ShoppingLinks suggestion={suggestion} />
                   </li>
                 ))}
               </ul>
+              <div className="mt-2.5"><PartnerLinkNote /></div>
             </div>
           )}
 

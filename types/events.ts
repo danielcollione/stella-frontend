@@ -37,6 +37,12 @@ export interface CalendarEvent {
   looks: EventLook[] | null;
 }
 
+// Espelha o EventQuotaDto: eventos cadastrados e quantos o plano permite (max nulo = sem limite)
+export interface EventQuota {
+  used: number;
+  max: number | null;
+}
+
 // Espelha o EventRequestDto
 export interface EventRequest {
   title: string;

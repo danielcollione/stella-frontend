@@ -1,7 +1,7 @@
 import type { ClothingCategory, ClothingFormality, ClothingItem, ClothingStatus } from "@/types/wardrobe";
 
 // Ordem de exibição das abas: de cima para baixo no corpo, depois complementos
-export const CATEGORY_ORDER: readonly ClothingCategory[] = ['TOP', 'BOTTOM', 'ONE_PIECE', 'OUTERWEAR', 'FOOTWEAR', 'ACCESSORY'];
+export const CATEGORY_ORDER: readonly ClothingCategory[] = ['TOP', 'BOTTOM', 'ONE_PIECE', 'OUTERWEAR', 'FOOTWEAR', 'ACCESSORY', 'SWIMWEAR'];
 
 export const CATEGORY_LABELS: Record<ClothingCategory, { plural: string; singular: string }> = {
   TOP: { plural: 'Partes de cima', singular: 'Parte de cima' },
@@ -10,6 +10,7 @@ export const CATEGORY_LABELS: Record<ClothingCategory, { plural: string; singula
   OUTERWEAR: { plural: 'Casacos', singular: 'Casaco' },
   FOOTWEAR: { plural: 'Calçados', singular: 'Calçado' },
   ACCESSORY: { plural: 'Acessórios', singular: 'Acessório' },
+  SWIMWEAR: { plural: 'Praia e banho', singular: 'Moda praia' },
 };
 
 export const STATUS_LABELS: Record<ClothingStatus, string> = {

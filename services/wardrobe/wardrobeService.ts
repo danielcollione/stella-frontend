@@ -54,10 +54,12 @@ export const wardrobeService = {
   },
 
   // Envia a foto: o back-end sanitiza, analisa com IA, barra duplicatas e devolve a peça já cadastrada
-  async createItem(file: File, options: { allowDuplicate?: boolean; signal?: AbortSignal } = {}): Promise<ClothingItem> {
+  // batch: a foto faz parte de um envio de várias de uma vez (uma requisição por foto; recurso dos planos pagos)
+  async createItem(file: File, options: { allowDuplicate?: boolean; batch?: boolean; signal?: AbortSignal } = {}): Promise<ClothingItem> {
     const formData = new FormData();
     formData.append("file", file);
     if (options.allowDuplicate) formData.append("allowDuplicate", "true");
+    if (options.batch) formData.append("batch", "true");
     try {
       const response = await api.post<ClothingItem>("/wardrobe/items", formData, {
         headers: { "Content-Type": "multipart/form-data" },

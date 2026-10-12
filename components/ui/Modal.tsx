@@ -42,6 +42,11 @@ export function Modal({ open, onClose, title, description, children, dismissible
     if (!dialog) return;
     if (open && !dialog.open) dialog.showModal();
     if (!open && dialog.open) dialog.close();
+    // Ao navegar, a rota é preservada oculta (não desmontada): um <dialog> modal esquecido aberto
+    // deixaria a página seguinte inteira inerte. Fecha na limpeza; reabre sozinho se a rota voltar.
+    return () => {
+      if (dialog.open) dialog.close();
+    };
   }, [open]);
 
   return (

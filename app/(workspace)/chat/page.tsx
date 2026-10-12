@@ -19,6 +19,9 @@ import { useAppShell } from "@/components/layout/AppShell";
 import { playSendSound, playReceiveSound } from "@/utils/sound";
 import { chatService } from "@/services/chat/chatService";
 import { ChatMessageContent } from "@/components/features/ChatMessageContent";
+import { TodayWeather } from "@/components/features/weather/TodayWeather";
+import { ChatShoppingSuggestions } from "@/components/features/shopping/ShoppingLinks";
+import { shoppingSuggestionsIn } from "@/services/shopping/shoppingLinks";
 import Image from "next/image";
 import { SuggestionPills } from "@/components/features/SuggestionPills";
 import { SecureImage } from "@/components/ui/SecureImage";
@@ -138,7 +141,7 @@ export default function ChatPage() {
     if (followBottomRef.current) scrollToBottom();
   }, [messages.length, lastMessage?.id, lastMessage?.sender, isLoading]);
 
-  // A resposta aparece palavra por palavra e as fotos carregam depois: acompanha o crescimento do conteúdo
+  // A resposta aparece trecho a trecho e as fotos carregam depois: acompanha o crescimento do conteúdo
   useEffect(() => {
     const element = conversationRef.current;
     if (!element) return;
@@ -376,6 +379,9 @@ export default function ChatPage() {
             <span className="font-serif italic text-2xl font-semibold tracking-tight text-stone-900 md:hidden">
               stella
             </span>
+            <div className="hidden min-[420px]:block">
+              <TodayWeather hasCity={!!currentUser?.cityName} />
+            </div>
           </div>
 
           <div className="flex items-center gap-2">
@@ -411,7 +417,7 @@ export default function ChatPage() {
                 key={idx}
                 className={`flex flex-col ${
                   msg.sender === "USER" ? "items-end" : "items-start"
-                }`}
+                } ${msg.id ? "" : "stella-message-in"}`}
               >
                 {msg.sender === "USER" ? (
                   <div className="flex flex-col items-end gap-2 max-w-[85%] sm:max-w-[75%]">
@@ -475,6 +481,7 @@ export default function ChatPage() {
                         content={msg.content || ""}
                         isStella={true}
                         isNew={String(msg.id) === String(newestMessageId)}
+                        after={<ChatShoppingSuggestions suggestions={shoppingSuggestionsIn(msg.content || "")} />}
                       />
                     )}
 
@@ -526,7 +533,7 @@ export default function ChatPage() {
           )}
 
           {isLoading && (
-            <div className="flex items-center gap-3 text-stone-500 text-xs py-2">
+            <div className="flex items-center gap-3 text-stone-500 text-xs py-2 stella-message-in [animation-delay:250ms]">
               <StellaMark size={28} decorative className="animate-pulse" />
               <span className="animate-pulse">
                 A Stella está a analisar o seu estilo...

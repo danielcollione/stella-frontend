@@ -10,13 +10,15 @@ interface WardrobeSaveToggleProps {
   locked?: boolean; // plano sem o recurso: vira um atalho para os planos
 }
 
+const EXPLANATION = "Cada foto de roupa que você envia no chat é cadastrada automaticamente no seu guarda-roupa.";
+
 export function WardrobeSaveToggle({ enabled, onChange, locked }: WardrobeSaveToggleProps) {
   const reducedMotion = useReducedMotion();
   if (locked) {
     return (
       <Link
         href="/planos"
-        title="Salvar fotos do chat no guarda-roupa é um recurso dos planos Atelier e Couture"
+        title={`${EXPLANATION} Disponível nos planos Atelier e Couture.`}
         className="inline-flex items-center gap-2 rounded-full border border-stone-200/80 py-1.5 pl-3 pr-1.5 text-sm font-medium text-stone-500 transition-colors hover:border-stone-300 hover:text-stone-700"
       >
         <Lock aria-hidden="true" className="h-4 w-4 text-stone-400" />
@@ -26,9 +28,7 @@ export function WardrobeSaveToggle({ enabled, onChange, locked }: WardrobeSaveTo
       </Link>
     );
   }
-  const title = enabled
-    ? "As fotos enviadas serão salvas no seu guarda-roupa"
-    : "As fotos enviadas não serão salvas no guarda-roupa";
+  const title = enabled ? EXPLANATION : `${EXPLANATION} Está desligado agora.`;
 
   return (
     <button

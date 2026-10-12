@@ -1,17 +1,21 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import type { FormEvent } from "react";
 import { LoaderCircle, Sparkles } from "lucide-react";
 import { Select } from "@/components/ui/Select";
 import { useAppShell } from "@/components/layout/AppShell";
 import { CityAutocomplete } from "@/components/features/CityAutocomplete";
 import type { CityValue } from "@/components/features/CityAutocomplete";
+import { WeatherIcon } from "@/components/features/weather/WeatherIcon";
+import { weatherService } from "@/services/weather/weatherService";
+import type { DayWeather } from "@/services/weather/weatherService";
 import { DRESS_CODES, OCCASIONS, todayIso } from "@/services/events/eventCatalog";
 import type { CalendarEvent, DressCode, EventOccasion, EventRequest } from "@/types/events";
 
 const fieldClass = "w-full rounded-lg border border-stone-200/90 bg-white px-3.5 py-3 text-sm text-stone-900 shadow-[0_1px_2px_rgba(28,25,23,0.03)] outline-none transition-[border-color,box-shadow] placeholder:text-stone-400 hover:border-stone-300 focus:border-stone-400 focus:ring-2 focus:ring-stone-200 disabled:bg-stone-100";
 const labelClass = "mb-1.5 block text-xs font-medium text-stone-500";
+const WEATHER_DEBOUNCE_MS = 500;
 
 type DressCodeOption = DressCode | "AUTO";
 const DRESS_CODE_OPTIONS: readonly { value: DressCodeOption; label: string }[] = [
@@ -59,6 +63,28 @@ export function EventForm({ event, defaultDate, busy, pending, error, onSubmit, 
     notes: event?.notes ?? "",
   }));
   const [validation, setValidation] = useState("");
+
+  // Clima da data na cidade escolhida. Espera a pessoa parar de digitar; o resultado só vale para a combinação
+  // de cidade, data e horário que o gerou
+  const cityName = form.city.cityName.trim();
+  const weatherKey = form.date && cityName ? `${form.date}|${form.time}|${cityName}|${form.city.cityCoordinates}` : "";
+  const [weatherResult, setWeatherResult] = useState<{ key: string; weather: DayWeather | null } | null>(null);
+  const weather = weatherKey && weatherResult?.key === weatherKey ? weatherResult.weather : null;
+
+  useEffect(() => {
+    if (!weatherKey) return;
+    const [date, time, name, coordinates] = weatherKey.split("|");
+    const controller = new AbortController();
+    const timer = window.setTimeout(() => {
+      weatherService.day({ date, time, cityName: name, cityCoordinates: coordinates }, controller.signal)
+        .then((found) => setWeatherResult({ key: weatherKey, weather: found }))
+        .catch(() => undefined);
+    }, WEATHER_DEBOUNCE_MS);
+    return () => {
+      window.clearTimeout(timer);
+      controller.abort();
+    };
+  }, [weatherKey]);
   // Evento passado pode ser editado sem trocar a data; datas novas só a partir de hoje
   const minDate = editing && event!.date < todayIso() ? undefined : todayIso();
 
@@ -143,7 +169,17 @@ export function EventForm({ event, defaultDate, busy, pending, error, onSubmit, 
             disabled={busy}
             inputClassName={fieldClass}
           />
-          <p className="mt-1.5 text-[11px] text-stone-400">Vai viajar? Escolha o destino: a Stella usa a previsão do tempo de lá.</p>
+          {weather ? (
+            <p role="status" className="mt-2 flex items-center gap-1.5 text-xs text-stone-600">
+              <WeatherIcon condition={weather.condition} size={14} className="shrink-0 text-stone-500" />
+              <span>
+                <span className="font-medium text-stone-800">{weather.place}</span> · {weather.summary}
+                {weather.historical && <span className="text-stone-400"> (ainda sem previsão para a data)</span>}
+              </span>
+            </p>
+          ) : (
+            <p className="mt-1.5 text-[11px] text-stone-400">Vai viajar? Escolha o destino: a Stella usa a previsão do tempo de lá.</p>
+          )}
         </div>
 
         <div className="grid gap-4 sm:grid-cols-2">

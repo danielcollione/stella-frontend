@@ -139,7 +139,35 @@ body {
   to { opacity: 1; transform: translateY(0); }
 }
 
+/* Chat: resposta nova da Stella, frase a frase; cada frase (e marcador de lista) clareia ao entrar */
+.stella-revealing .stella-chunk,
+.stella-revealing :is(li, h3) {
+  animation: stella-chunk-in 600ms ease-out both;
+}
+
+@keyframes stella-chunk-in {
+  from { opacity: 0; }
+  35% { opacity: 0.35; }
+  to { opacity: 1; }
+}
+
+/* Chat: balão recém-enviado e "Stella pensando" entram de mansinho */
+.stella-message-in {
+  animation: stella-message-in 420ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@keyframes stella-message-in {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
 @media (prefers-reduced-motion: reduce) {
+  .stella-revealing .stella-chunk,
+  .stella-revealing :is(li, h3),
+  .stella-message-in {
+    animation: none !important;
+  }
+
   .stella-select-menu {
     animation: none !important;
   }

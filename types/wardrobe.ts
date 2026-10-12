@@ -1,4 +1,4 @@
-export type ClothingCategory = 'TOP' | 'BOTTOM' | 'FOOTWEAR' | 'OUTERWEAR' | 'ACCESSORY' | 'ONE_PIECE';
+export type ClothingCategory = 'TOP' | 'BOTTOM' | 'FOOTWEAR' | 'OUTERWEAR' | 'ACCESSORY' | 'ONE_PIECE' | 'SWIMWEAR';
 
 export type ClothingStatus = 'AVAILABLE' | 'LAUNDRY' | 'ARCHIVED';
 
@@ -10,6 +10,7 @@ export interface ClothingItem {
   imageUrl: string; // foto original (URL pré-assinada do R2, temporária)
   thumbnailUrl?: string | null; // miniatura leve para listas; ausente em peças antigas ainda sem miniatura
   name: string | null;
+  brand: string | null; // informada pela pessoa; a IA não preenche
   category: ClothingCategory;
   color: string | null;
   style: string | null;
@@ -21,11 +22,14 @@ export interface ClothingItem {
   metadataJson: string | null;
   createdAt: string | null;
   updatedAt: string | null;
+  // Só na resposta do cadastro: a foto foi salva sem a análise da Stella e a pessoa preenche os dados
+  analysisSkipped?: boolean | null;
 }
 
 // Espelha o UpdateClothingItemRequestDto: a foto não é editável
 export interface UpdateClothingItemRequest {
   name: string | null;
+  brand: string | null;
   category: ClothingCategory;
   color: string | null;
   style: string | null;

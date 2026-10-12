@@ -1,5 +1,5 @@
 import { api } from "@/services/api";
-import type { CalendarEvent, EventRequest } from "@/types/events";
+import type { CalendarEvent, EventQuota, EventRequest } from "@/types/events";
 
 const path = (id: string) => `/events/${encodeURIComponent(id)}`;
 
@@ -12,6 +12,11 @@ export const eventService = {
 
   async get(id: string, signal?: AbortSignal): Promise<CalendarEvent> {
     const { data } = await api.get<CalendarEvent>(path(id), { signal });
+    return data;
+  },
+
+  async quota(signal?: AbortSignal): Promise<EventQuota> {
+    const { data } = await api.get<EventQuota>("/events/quota", { signal });
     return data;
   },
 
