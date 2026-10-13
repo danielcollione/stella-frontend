@@ -1,0 +1,255 @@
+"use client";
+
+import { useEffect, useState } from "react";
+import type { ReactNode } from "react";
+import { AlertCircle, Menu } from "lucide-react";
+import { useAppShell } from "@/components/layout/AppShell";
+import { PageContent } from "@/components/layout/PageContent";
+import { parseIsoDate } from "@/services/events/eventCatalog";
+import { adminService } from "@/services/admin/adminService";
+import type { AdminOverview } from "@/types/admin";
+
+const PERIODS = [7, 30, 90] as const;
+
+const PLAN_NAMES: Record<string, string> = { FREE: "Provador", ATELIER: "Atelier", COUTURE: "Couture" };
+
+const KIND_NAMES: Record<string, string> = {
+  "chat.message": "Mensagem no chat",
+  "chat.photo": "Mensagem com foto",
+  "event.look": "Look de evento",
+  "wardrobe.analyze": "Análise de peça",
+  "wardrobe.duplicate": "Checagem de peça repetida",
+  "chat.palette_memory": "Memória de paleta",
+  "chat.taste_profile": "Perfil de gosto",
+  "outfit.look": "Look (motor antigo)",
+};
+
+const brl = (value: number) => value.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+const usd = (value: number, digits = 2) => `US$ ${value.toLocaleString("pt-BR", { minimumFractionDigits: digits, maximumFractionDigits: digits })}`;
+const shortDay = (iso: string) => parseIsoDate(iso).toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" });
+
+export default function AdminPage() {
+  const { openMobileMenu, user } = useAppShell();
+  const [days, setDays] = useState<number>(30);
+  const [loaded, setLoaded] = useState<{ days: number; data: AdminOverview } | null>(null);
+  const [failed, setFailed] = useState(false);
+
+  useEffect(() => {
+    if (!user?.admin) return;
+    const controller = new AbortController();
+    adminService.overview(days, controller.signal)
+      .then((data) => {
+        setLoaded({ days, data });
+        setFailed(false);
+      })
+      .catch(() => {
+        if (!controller.signal.aborted) setFailed(true);
+      });
+    return () => controller.abort();
+  }, [days, user?.admin]);
+
+  const data = loaded?.data ?? null;
+  const loading = loaded?.days !== days && !failed;
+
+  return (
+    <div className="min-h-full bg-[#FAF8F5] text-stone-900">
+      <main className="mx-auto w-full max-w-6xl px-4 pb-16 pt-6 sm:px-8 lg:px-10">
+        <PageContent stagger>
+          <header className="mb-7 flex flex-wrap items-end justify-between gap-4">
+            <div className="flex items-center gap-2">
+              <button type="button" onClick={openMobileMenu} aria-label="Abrir menu" title="Abrir menu" className="-ml-2 rounded-lg p-2 text-stone-500 hover:bg-stone-100 md:hidden">
+                <Menu size={20} />
+              </button>
+              <div>
+                <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-stone-400">Uso interno</p>
+                <h1 className="font-serif text-3xl italic tracking-tight text-stone-900 sm:text-4xl">Painel</h1>
+              </div>
+            </div>
+            {user?.admin && (
+              <div role="radiogroup" aria-label="Período" className="mb-1 inline-flex rounded-full border border-stone-200 bg-white p-1 shadow-2xs">
+                {PERIODS.map((period) => (
+                  <button
+                    key={period}
+                    type="button"
+                    role="radio"
+                    aria-checked={days === period}
+                    onClick={() => setDays(period)}
+                    className={`rounded-full px-3.5 py-1.5 text-xs font-medium transition-colors ${days === period ? "bg-stone-900 text-white" : "text-stone-500 hover:text-stone-900"}`}
+                  >
+                    {period} dias
+                  </button>
+                ))}
+              </div>
+            )}
+          </header>
+
+          {!user?.admin ? (
+            <Notice title="Página não encontrada" text="Este endereço não existe ou não está disponível para a sua conta." />
+          ) : failed ? (
+            <Notice title="Não conseguimos carregar o painel" text="Verifique sua conexão e recarregue a página." />
+          ) : !data ? (
+            <p role="status" className="py-16 text-center text-sm text-stone-500">Carregando...</p>
+          ) : (
+            <div className={`space-y-6 transition-opacity ${loading ? "opacity-50" : ""}`}>
+              <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+                <Stat label="Usuários" value={String(data.users.total)} detail={`${data.users.newInPeriod} novos em ${data.days} dias`} />
+                <Stat label="Assinantes" value={String(subscribers(data))} detail={data.users.trialing > 0 ? `${data.users.trialing} em teste grátis` : "nenhum em teste grátis"} />
+                <Stat label="Receita mensal estimada" value={brl(monthlyRevenue(data))} detail="assinantes × preço mensal" />
+                <Stat label={`Custo de IA em ${data.days} dias`} value={brl(data.ai.totalUsd * data.usdToBrl)} detail={`${usd(data.ai.totalUsd)} · ${data.ai.calls} chamadas`} />
+              </div>
+
+              <div className="grid gap-6 lg:grid-cols-2">
+                <Card title="Novos usuários por dia">
+                  <Bars points={data.usage.map((day) => ({ day: day.day, value: data.users.newPerDay.find((entry) => entry.day === day.day)?.count ?? 0 }))} format={(value) => String(value)} />
+                </Card>
+                <Card title="Custo de IA por dia" hint="Estimativa a partir dos tokens registrados">
+                  <Bars points={data.usage.map((day) => ({ day: day.day, value: day.aiCostUsd }))} format={(value) => usd(value)} />
+                </Card>
+                <Card title="Mensagens por dia">
+                  <Bars points={data.usage.map((day) => ({ day: day.day, value: day.messages }))} format={(value) => String(value)} />
+                </Card>
+                <Card title="Peças cadastradas e looks de evento por dia">
+                  <Bars points={data.usage.map((day) => ({ day: day.day, value: day.items + day.eventLooks }))} format={(value) => String(value)} />
+                  <p className="mt-3 text-xs text-stone-400">
+                    No período: {sum(data.usage, "items")} peças · {sum(data.usage, "eventLooks")} looks de evento · {sum(data.usage, "photos")} mensagens com foto
+                  </p>
+                </Card>
+              </div>
+
+              <Card title="Planos" hint={`Custo médio de IA por usuário em ${data.days} dias, comparado com o preço mensal`}>
+                <Table
+                  head={["Plano", "Usuários", "Preço mensal", "IA por usuário", "Sobra por usuário"]}
+                  rows={data.plans.map((plan) => [
+                    PLAN_NAMES[plan.plan] ?? plan.plan,
+                    String(plan.users),
+                    plan.monthlyPriceBrl > 0 ? brl(plan.monthlyPriceBrl) : "—",
+                    brl(plan.averageAiCostBrl),
+                    plan.monthlyPriceBrl > 0 ? <Margin key="margin" value={plan.monthlyPriceBrl - plan.averageAiCostBrl} /> : "—",
+                  ])}
+                />
+                <p className="mt-3 text-xs text-stone-400">A sobra não desconta a taxa do Stripe, impostos nem os custos fixos. Câmbio usado: R$ {data.usdToBrl.toFixed(2)}.</p>
+              </Card>
+
+              <div className="grid gap-6 lg:grid-cols-2">
+                <Card title="Custo de IA por tipo de chamada">
+                  <Table
+                    head={["Tipo", "Chamadas", "Média", "Total"]}
+                    rows={data.ai.byKind.map((kind) => [
+                      <span key="kind">{KIND_NAMES[kind.kind] ?? kind.kind}<span className="block text-[11px] text-stone-400">{kind.model}</span></span>,
+                      String(kind.calls),
+                      usd(kind.averageUsd, 4),
+                      usd(kind.totalUsd),
+                    ])}
+                    empty="Nenhuma chamada de IA no período."
+                  />
+                </Card>
+                <Card title="Quem mais gastou" hint="Os 10 usuários de maior custo de IA no período">
+                  <Table
+                    head={["Usuário", "Plano", "Chamadas", "Custo"]}
+                    rows={data.topUsers.map((entry) => [
+                      <span key="email" className="break-all">{entry.email}</span>,
+                      PLAN_NAMES[entry.plan] ?? entry.plan,
+                      String(entry.calls),
+                      brl(entry.aiCostUsd * data.usdToBrl),
+                    ])}
+                    empty="Nenhum uso de IA no período."
+                  />
+                </Card>
+              </div>
+            </div>
+          )}
+        </PageContent>
+      </main>
+    </div>
+  );
+}
+
+function subscribers(data: AdminOverview): number {
+  return data.plans.filter((plan) => plan.monthlyPriceBrl > 0).reduce((total, plan) => total + plan.users, 0);
+}
+
+function monthlyRevenue(data: AdminOverview): number {
+  return data.plans.reduce((total, plan) => total + plan.users * plan.monthlyPriceBrl, 0);
+}
+
+function sum(usage: AdminOverview["usage"], field: "items" | "eventLooks" | "photos"): number {
+  return usage.reduce((total, day) => total + day[field], 0);
+}
+
+function Notice({ title, text }: { title: string; text: string }) {
+  return (
+    <div role="alert" className="flex flex-col items-center rounded-3xl border border-dashed border-stone-200 bg-white/60 px-6 py-14 text-center">
+      <AlertCircle size={22} strokeWidth={1.5} className="text-stone-400" />
+      <p className="mt-3 text-sm font-medium text-stone-800">{title}</p>
+      <p className="mt-1 text-sm text-stone-500">{text}</p>
+    </div>
+  );
+}
+
+function Stat({ label, value, detail }: { label: string; value: string; detail: string }) {
+  return (
+    <div className="rounded-2xl border border-stone-200/80 bg-white px-5 py-4 shadow-[0_1px_2px_rgba(28,25,23,0.03)]">
+      <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-stone-400">{label}</p>
+      <p className="mt-2 font-serif text-3xl italic leading-none tracking-tight text-stone-900">{value}</p>
+      <p className="mt-2 text-xs text-stone-500">{detail}</p>
+    </div>
+  );
+}
+
+function Card({ title, hint, children }: { title: string; hint?: string; children: ReactNode }) {
+  return (
+    <section className="rounded-3xl border border-stone-200/80 bg-white px-5 py-5 shadow-[0_1px_2px_rgba(28,25,23,0.03)] sm:px-6">
+      <h2 className="font-serif text-xl italic tracking-tight text-stone-900">{title}</h2>
+      {hint && <p className="mt-0.5 text-xs text-stone-400">{hint}</p>}
+      <div className="mt-4">{children}</div>
+    </section>
+  );
+}
+
+// Gráfico de barras simples: uma barra por dia, altura proporcional ao maior valor do período
+function Bars({ points, format }: { points: { day: string; value: number }[]; format: (value: number) => string }) {
+  const max = Math.max(...points.map((point) => point.value), 0);
+  if (max === 0) return <p className="py-8 text-center text-sm text-stone-400">Sem movimento no período.</p>;
+  return (
+    <div>
+      <div className="flex h-32 items-end gap-px" role="img" aria-label={`Maior valor: ${format(max)}`}>
+        {points.map((point) => (
+          <div key={point.day} title={`${shortDay(point.day)}: ${format(point.value)}`} className="flex h-full flex-1 items-end">
+            <div className="w-full rounded-t-sm bg-stone-800/85 transition-colors hover:bg-stone-900" style={{ height: point.value > 0 ? `${Math.max(3, (point.value / max) * 100)}%` : "0" }} />
+          </div>
+        ))}
+      </div>
+      <div className="mt-2 flex justify-between text-[11px] tabular-nums text-stone-400">
+        <span>{shortDay(points[0].day)}</span>
+        <span>pico: {format(max)}</span>
+        <span>{shortDay(points[points.length - 1].day)}</span>
+      </div>
+    </div>
+  );
+}
+
+function Table({ head, rows, empty }: { head: string[]; rows: ReactNode[][]; empty?: string }) {
+  if (rows.length === 0) return <p className="py-6 text-center text-sm text-stone-400">{empty ?? "Sem dados."}</p>;
+  return (
+    <div className="overflow-x-auto">
+      <table className="w-full text-left text-sm">
+        <thead>
+          <tr className="border-b border-stone-200/80 text-[11px] font-semibold uppercase tracking-[0.1em] text-stone-400">
+            {head.map((title, index) => <th key={title} className={`py-2 font-semibold ${index === 0 ? "pr-3" : "px-3 text-right"}`}>{title}</th>)}
+          </tr>
+        </thead>
+        <tbody>
+          {rows.map((row, rowIndex) => (
+            <tr key={rowIndex} className="border-b border-stone-100 last:border-0">
+              {row.map((cell, index) => <td key={index} className={`py-2.5 align-top ${index === 0 ? "pr-3 text-stone-800" : "px-3 text-right tabular-nums text-stone-600"}`}>{cell}</td>)}
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
+function Margin({ value }: { value: number }) {
+  return <span className={value >= 0 ? "text-emerald-700" : "text-red-700"}>{brl(value)}</span>;
+}

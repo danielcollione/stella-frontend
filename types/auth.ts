@@ -17,6 +17,7 @@ export interface UserResponseDto {
   subscriptionStatus: 'INACTIVE' | 'ACTIVE' | 'TRIALING' | 'PAST_DUE' | 'CANCELED';
   stripeCustomerId?: string | null;
   currentPeriodEnd?: string | null;
+  admin?: boolean; // enxerga o painel interno
 }
 
 export interface UpdateProfileRequestDto {
