@@ -48,8 +48,12 @@ function LoginForm() {
   const searchParams = useSearchParams();
 
   // Estados de Controle de Fluxo
-  const [mode, setMode] = useState<"LOGIN" | "REGISTER">("LOGIN");
+  const [mode, setMode] = useState<"LOGIN" | "REGISTER" | "RESET">("LOGIN");
   const [registerStep, setRegisterStep] = useState<1 | 2>(1);
+  // "Esqueci minha senha": 1 = pedir o código, 2 = digitar o código e a nova senha
+  const [resetStep, setResetStep] = useState<1 | 2>(1);
+  const [resetCode, setResetCode] = useState("");
+  const [notice, setNotice] = useState("");
 
   // Estados dos Campos
   const [name, setName] = useState("");
@@ -118,6 +122,77 @@ function LoginForm() {
     }
   }
 
+  function handleStartReset() {
+    if (isSubmitting) return;
+    setEmail(email.trim());
+    setPassword("");
+    setConfirmPassword("");
+    setShowPassword(false);
+    setResetCode("");
+    setResetStep(1);
+    setMode("RESET");
+    setError("");
+    setNotice("");
+  }
+
+  function backToLogin() {
+    if (isSubmitting) return;
+    setMode("LOGIN");
+    setPassword("");
+    setConfirmPassword("");
+    setShowPassword(false);
+    setError("");
+    setNotice("");
+  }
+
+  // Pede (ou pede de novo) o código de 6 números por e-mail
+  async function handleSendResetCode(event?: React.FormEvent) {
+    event?.preventDefault();
+    if (isSubmitting) return;
+    const trimmedEmail = email.trim();
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmedEmail)) {
+      setError("Informe o e-mail da sua conta.");
+      return;
+    }
+    setError("");
+    setNotice("");
+    setIsSubmitting(true);
+    try {
+      await authService.sendPasswordResetCode(trimmedEmail);
+      setEmail(trimmedEmail);
+      setResetCode("");
+      if (resetStep === 2) setNotice("Se já passou um minuto desde o último envio, um novo código está a caminho.");
+      setResetStep(2);
+    } catch (failure) {
+      setError(failure instanceof Error ? failure.message : "Não foi possível enviar o código agora.");
+    } finally {
+      setIsSubmitting(false);
+    }
+  }
+
+  async function handleResetPassword(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (isSubmitting) return;
+    if (resetCode.length !== 6) {
+      setError("O código tem 6 números.");
+      return;
+    }
+    if (!isPasswordValid) {
+      setError("A senha não atende aos requisitos mínimos de segurança.");
+      return;
+    }
+    setError("");
+    setNotice("");
+    setIsSubmitting(true);
+    try {
+      const user = await authService.resetPassword(email, resetCode, password);
+      handleAuthSuccess(user);
+    } catch (failure) {
+      setError(failure instanceof Error ? failure.message : "Não foi possível criar a nova senha.");
+      setIsSubmitting(false);
+    }
+  }
+
   // Handler do Passo 1 de Registro
   function handleNextRegisterStep(e: React.FormEvent) {
     e.preventDefault();
@@ -175,6 +250,28 @@ function LoginForm() {
     }
   }
 
+  // Checklist de validação da senha (cadastro e nova senha)
+  const passwordChecklist = (
+    <div className="p-3 bg-stone-100/80 rounded-xl space-y-1.5 text-xs text-stone-600 border border-stone-200/60">
+      <div className="flex items-center gap-2">
+        {hasMinLength ? <Check size={14} className="text-emerald-600" /> : <X size={14} className="text-stone-400" />}
+        <span>Pelo menos 8 caracteres</span>
+      </div>
+      <div className="flex items-center gap-2">
+        {hasUppercase ? <Check size={14} className="text-emerald-600" /> : <X size={14} className="text-stone-400" />}
+        <span>Pelo menos uma letra maiúscula</span>
+      </div>
+      <div className="flex items-center gap-2">
+        {hasNumber ? <Check size={14} className="text-emerald-600" /> : <X size={14} className="text-stone-400" />}
+        <span>Pelo menos um número</span>
+      </div>
+      <div className="flex items-center gap-2">
+        {passwordsMatch ? <Check size={14} className="text-emerald-600" /> : <X size={14} className="text-stone-400" />}
+        <span>As senhas correspondem</span>
+      </div>
+    </div>
+  );
+
   return (
     <div className="min-h-screen flex bg-[#FAF8F5] text-stone-900 font-sans">
       {/* 1. SEÇÃO ESQUERDA - PAINEL DE AUTENTICAÇÃO */}
@@ -191,13 +288,17 @@ function LoginForm() {
         </div>
 
         {/* Corpo do Formulário */}
-        <PageContent contentKey={`${mode}-${mode === "REGISTER" ? registerStep : 0}`} className="my-auto py-8" stagger>
+        <PageContent contentKey={`${mode}-${mode === "REGISTER" ? registerStep : mode === "RESET" ? resetStep : 0}`} className="my-auto py-8" stagger>
           <h1 className="text-3xl sm:text-4xl font-serif text-stone-900 tracking-tight">
-            {mode === "LOGIN" ? "Boas-vindas!" : "Criar sua conta"}
+            {mode === "LOGIN" ? "Boas-vindas!" : mode === "RESET" ? "Criar nova senha" : "Criar sua conta"}
           </h1>
           <p className="mt-2 text-sm text-stone-500 font-light">
             {mode === "LOGIN"
               ? "Entre para acessar sua estilista pessoal e guarda-roupa."
+              : mode === "RESET"
+              ? resetStep === 1
+                ? "Informe o e-mail da sua conta e enviaremos um código para você criar uma nova senha."
+                : `Se existe uma conta com ${email}, enviamos um código de 6 números. Ele vale por 15 minutos.`
               : registerStep === 1
               ? "Informe seus dados básicos para dar o primeiro passo."
               : "Defina uma senha segura para proteger sua conta."}
@@ -212,6 +313,12 @@ function LoginForm() {
           {error && (
             <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-xl text-xs text-red-700 break-words">
               {error}
+            </div>
+          )}
+
+          {notice && !error && (
+            <div role="status" className="mt-4 p-3 bg-stone-100/80 border border-stone-200/60 rounded-xl text-xs text-stone-600">
+              {notice}
             </div>
           )}
 
@@ -268,6 +375,138 @@ function LoginForm() {
               >
                 {isSubmitting ? <LoaderCircle size={18} className="animate-spin" /> : <LogIn size={18} />}
                 {isSubmitting ? "Entrando..." : "Fazer Login"}
+              </button>
+
+              <div className="text-center">
+                <button
+                  type="button"
+                  onClick={handleStartReset}
+                  className="text-xs text-stone-500 underline decoration-stone-300 underline-offset-4 hover:text-stone-900 hover:decoration-stone-600 transition-colors"
+                >
+                  Esqueci minha senha
+                </button>
+              </div>
+            </form>
+          )}
+
+          {/* ESQUECI MINHA SENHA - PASSO 1 (E-MAIL) */}
+          {mode === "RESET" && resetStep === 1 && (
+            <form onSubmit={handleSendResetCode} className="mt-8 space-y-4">
+              <div>
+                <label htmlFor="reset-email" className="block text-xs font-semibold uppercase tracking-wider text-stone-600 mb-1.5">
+                  E-mail
+                </label>
+                <input
+                  id="reset-email"
+                  type="email"
+                  autoComplete="email"
+                  required
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  disabled={isSubmitting}
+                  placeholder="seu@email.com"
+                  className="w-full rounded-2xl border border-stone-200/90 bg-white px-4 py-3.5 text-sm outline-none focus:border-stone-400 focus:ring-1 focus:ring-stone-400/20 transition-all disabled:opacity-60"
+                />
+              </div>
+
+              <button
+                type="submit"
+                disabled={isSubmitting}
+                className="w-full mt-2 flex items-center justify-center gap-2 rounded-2xl bg-stone-900 px-4 py-3.5 text-sm font-medium text-white hover:bg-stone-800 active:scale-[0.99] transition-all disabled:opacity-60 shadow-sm cursor-pointer"
+              >
+                {isSubmitting && <LoaderCircle size={18} className="animate-spin" />}
+                {isSubmitting ? "Enviando..." : "Enviar código"}
+              </button>
+            </form>
+          )}
+
+          {/* ESQUECI MINHA SENHA - PASSO 2 (CÓDIGO E NOVA SENHA) */}
+          {mode === "RESET" && resetStep === 2 && (
+            <form onSubmit={handleResetPassword} className="mt-8 space-y-4">
+              <div>
+                <label htmlFor="reset-code" className="block text-xs font-semibold uppercase tracking-wider text-stone-600 mb-1.5">
+                  Código recebido por e-mail
+                </label>
+                <input
+                  id="reset-code"
+                  value={resetCode}
+                  onChange={(e) => {
+                    setResetCode(e.target.value.replace(/\D/g, "").slice(0, 6));
+                    setError("");
+                  }}
+                  inputMode="numeric"
+                  autoComplete="one-time-code"
+                  autoFocus
+                  disabled={isSubmitting}
+                  placeholder="000000"
+                  className="w-full rounded-2xl border border-stone-200/90 bg-white px-4 py-3.5 text-center font-serif text-2xl tracking-[0.4em] outline-none placeholder:text-stone-300 focus:border-stone-400 focus:ring-1 focus:ring-stone-400/20 transition-all disabled:opacity-60"
+                />
+                <p className="mt-2 text-xs text-stone-500">
+                  Não encontrou? Confira a pasta de Spam ou Lixo eletrônico, ou{" "}
+                  <button
+                    type="button"
+                    onClick={() => void handleSendResetCode()}
+                    disabled={isSubmitting}
+                    className="font-medium text-stone-800 underline decoration-stone-300 underline-offset-4 hover:decoration-stone-600 disabled:opacity-50"
+                  >
+                    peça um novo código
+                  </button>.
+                </p>
+              </div>
+
+              <div>
+                <label htmlFor="reset-pass" className="block text-xs font-semibold uppercase tracking-wider text-stone-600 mb-1.5">
+                  Nova senha
+                </label>
+                <div className="relative">
+                  <input
+                    id="reset-pass"
+                    type={showPassword ? "text" : "password"}
+                    autoComplete="new-password"
+                    required
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    disabled={isSubmitting}
+                    placeholder="••••••••"
+                    className="w-full rounded-2xl border border-stone-200/90 bg-white pl-4 pr-12 py-3.5 text-sm outline-none focus:border-stone-400 focus:ring-1 focus:ring-stone-400/20 transition-all"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    aria-label={showPassword ? "Ocultar senha" : "Mostrar senha"}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 p-1 text-stone-400 hover:text-stone-800"
+                  >
+                    {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                  </button>
+                </div>
+              </div>
+
+              <div>
+                <label htmlFor="reset-confirm" className="block text-xs font-semibold uppercase tracking-wider text-stone-600 mb-1.5">
+                  Confirmar nova senha
+                </label>
+                <input
+                  id="reset-confirm"
+                  type={showPassword ? "text" : "password"}
+                  autoComplete="new-password"
+                  required
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  disabled={isSubmitting}
+                  placeholder="••••••••"
+                  className="w-full rounded-2xl border border-stone-200/90 bg-white px-4 py-3.5 text-sm outline-none focus:border-stone-400 focus:ring-1 focus:ring-stone-400/20 transition-all"
+                />
+              </div>
+
+              {passwordChecklist}
+
+              <button
+                type="submit"
+                disabled={isSubmitting || resetCode.length !== 6 || !isPasswordValid}
+                className="w-full flex items-center justify-center gap-2 rounded-2xl bg-stone-900 px-4 py-3.5 text-sm font-medium text-white hover:bg-stone-800 disabled:opacity-40 disabled:cursor-not-allowed transition-all shadow-sm cursor-pointer"
+              >
+                {isSubmitting && <LoaderCircle size={18} className="animate-spin" />}
+                {isSubmitting ? "Salvando..." : "Salvar nova senha e entrar"}
               </button>
             </form>
           )}
@@ -378,25 +617,7 @@ function LoginForm() {
                 />
               </div>
 
-              {/* Checklist de Validação da Senha */}
-              <div className="p-3 bg-stone-100/80 rounded-xl space-y-1.5 text-xs text-stone-600 border border-stone-200/60">
-                <div className="flex items-center gap-2">
-                  {hasMinLength ? <Check size={14} className="text-emerald-600" /> : <X size={14} className="text-stone-400" />}
-                  <span>Pelo menos 8 caracteres</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  {hasUppercase ? <Check size={14} className="text-emerald-600" /> : <X size={14} className="text-stone-400" />}
-                  <span>Pelo menos uma letra maiúscula</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  {hasNumber ? <Check size={14} className="text-emerald-600" /> : <X size={14} className="text-stone-400" />}
-                  <span>Pelo menos um número</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  {passwordsMatch ? <Check size={14} className="text-emerald-600" /> : <X size={14} className="text-stone-400" />}
-                  <span>As senhas correspondem</span>
-                </div>
-              </div>
+              {passwordChecklist}
 
               <div className="flex gap-2 pt-2">
                 <button
@@ -419,17 +640,17 @@ function LoginForm() {
           )}
 
           {/* DIVISOR OU */}
-          <div className="relative my-6 text-center">
+          {mode !== "RESET" && <div className="relative my-6 text-center">
             <div className="absolute inset-0 flex items-center">
               <div className="w-full border-t border-stone-200/80"></div>
             </div>
             <span className="relative bg-[#FAF8F5] px-3 text-[11px] uppercase tracking-wider text-stone-400 font-semibold">
               ou
             </span>
-          </div>
+          </div>}
 
           {/* BOTÃO GOOGLE */}
-          <button
+          {mode !== "RESET" && <button
             type="button"
             onClick={handleGoogleAuth}
             disabled={isSubmitting}
@@ -437,7 +658,7 @@ function LoginForm() {
           >
             <GoogleIcon />
             <span>Continuar com Google</span>
-          </button>
+          </button>}
 
           {/* ALTERNÂNCIA DE MODOS (CRIAR CONTA vs FAZER LOGIN) */}
           <div className="mt-8 text-center">
@@ -452,17 +673,10 @@ function LoginForm() {
             ) : (
               <button
                 type="button"
-                onClick={() => {
-                  if (isSubmitting) return;
-                  setMode("LOGIN");
-                  setPassword("");
-                  setConfirmPassword("");
-                  setShowPassword(false);
-                  setError("");
-                }}
+                onClick={backToLogin}
                 className="w-full py-3 rounded-2xl border border-stone-900/10 hover:border-stone-900/30 text-stone-900 text-sm font-medium transition-all"
               >
-                Já tenho uma conta (Fazer Login)
+                {mode === "RESET" ? "Voltar para o login" : "Já tenho uma conta (Fazer Login)"}
               </button>
             )}
           </div>

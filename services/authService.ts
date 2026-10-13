@@ -52,6 +52,24 @@ export const authService = {
     }, 'Erro ao criar conta. Tente novamente.');
   },
 
+  // "Esqueci minha senha": o servidor responde igual exista a conta ou não
+  async sendPasswordResetCode(email: string): Promise<void> {
+    try {
+      await api.post('/auth/password-reset/code', { email: email.trim() });
+    } catch (error: unknown) {
+      throw authError(error, 'Nao foi possivel enviar o codigo agora. Tente novamente.');
+    }
+  },
+
+  // Troca a senha com o código recebido por e-mail e já entra na conta
+  resetPassword(email: string, code: string, newPassword: string): Promise<UserResponseDto> {
+    if (new TextEncoder().encode(newPassword).length > 72) {
+      return Promise.reject(new Error('A senha deve ter no maximo 72 bytes.'));
+    }
+    return authenticate('/auth/password-reset', { email: email.trim(), code: code.trim(), newPassword },
+      'Nao foi possivel criar a nova senha. Tente novamente.');
+  },
+
   async loginWithGoogle(idToken?: string): Promise<UserResponseDto> {
     const payload = idToken ? { idToken } : { code: await requestGoogleAuthorizationCode() };
     return authenticate('/auth/google', payload,

@@ -67,7 +67,7 @@ export function VerifyEmailDialog({ email, onClose, onVerified }: { email: strin
           className="w-full max-w-64 rounded-lg border border-stone-200/90 bg-white px-4 py-3 text-center font-serif text-2xl tracking-[0.4em] text-stone-900 shadow-[0_1px_2px_rgba(28,25,23,0.03)] outline-none transition-[border-color,box-shadow] placeholder:text-stone-300 hover:border-stone-300 focus:border-stone-400 focus:ring-2 focus:ring-stone-200 disabled:bg-stone-100"
         />
         <p className="mt-3 text-xs text-stone-500">
-          Não encontrou? Veja a caixa de spam ou{" "}
+          Não encontrou? Confira a pasta de Spam ou Lixo eletrônico, ou{" "}
           <button type="button" onClick={() => void sendAgain()} disabled={busy} className="font-medium text-stone-800 underline decoration-stone-300 underline-offset-4 hover:decoration-stone-600 disabled:opacity-50">
             {pending === "send" ? "enviando..." : "peça um novo código"}
           </button>.
