@@ -240,8 +240,26 @@ export function AppShell({ children }: { children: ReactNode }) {
             </div>
           )}
         </AnimatePresence>
-        <div className="stella-scroll-area flex-1 min-w-0 h-full overflow-y-auto overscroll-contain">
-          {user ? children : <main className="h-full flex flex-col items-center justify-center gap-4 px-6 text-stone-600" role={error ? "alert" : "status"}>{error || "Carregando..."}{error && <button type="button" onClick={() => window.location.reload()} className="text-sm underline">Tentar novamente</button>}</main>}
+        {/* Só rola na vertical: um item mais largo que a tela (faixa de previsão, tabela, carrossel) não pode
+            deixar a página inteira arrastar para os lados. Os carrosséis rolam dentro de si mesmos */}
+        <div className="stella-scroll-area flex-1 min-w-0 h-full overflow-y-auto overflow-x-hidden overscroll-contain">
+          {user ? children : (
+            // Enquanto a conta carrega, a mesma imagem da tela de abertura (logo e nome), para a passagem do
+            // ícone até o app ser contínua
+            <main className="h-full flex flex-col items-center justify-center gap-4 px-6 text-stone-600" role={error ? "alert" : "status"} aria-label={error ? undefined : "Carregando a Stella"}>
+              {error ? (
+                <>
+                  {error}
+                  <button type="button" onClick={() => window.location.reload()} className="text-sm underline">Tentar novamente</button>
+                </>
+              ) : (
+                <motion.div animate={{ opacity: [0.55, 1, 0.55] }} transition={{ duration: 2.2, repeat: Infinity, ease: "easeInOut" }} className="flex flex-col items-center">
+                  <StellaMark size={96} decorative />
+                  <span className="-mt-1 font-serif text-2xl font-semibold italic tracking-tight text-stone-900">stella</span>
+                </motion.div>
+              )}
+            </main>
+          )}
         </div>
       </div>
     </AppShellContext.Provider>

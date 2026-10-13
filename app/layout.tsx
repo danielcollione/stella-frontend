@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono, Nunito } from "next/font/google";
 import { MotionProvider } from "@/components/layout/MotionProvider";
 import { ViewportVars } from "@/components/layout/ViewportVars";
+import { SPLASH_SCREENS } from "@/utils/splashScreens";
 import { SITE_DESCRIPTION, SITE_KEYWORDS, SITE_NAME, SITE_TITLE, SITE_URL } from "@/utils/site";
 import "@/app/globals.css";
 
@@ -49,7 +50,7 @@ export const metadata: Metadata = {
   verification: { google: process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION },
   formatDetection: { telephone: false },
   // Instalada na tela inicial do iPhone, a Stella abre em tela cheia com este nome
-  appleWebApp: { capable: true, title: SITE_NAME, statusBarStyle: "default" },
+  appleWebApp: { capable: true, title: SITE_NAME, statusBarStyle: "default", startupImage: SPLASH_SCREENS },
 };
 
 export const viewport: Viewport = {

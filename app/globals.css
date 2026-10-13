@@ -260,3 +260,12 @@ a,
 [role="button"] {
   -webkit-tap-highlight-color: transparent;
 }
+
+/* Dentro do app (classe posta pelo AppShell), o documento em si não rola nem "estica" nas bordas: quem rola
+   é só a área de conteúdo. Sem isso, no iPhone a tela inteira podia ser arrastada. */
+html.stella-app,
+html.stella-app body {
+  overflow: hidden;
+  overscroll-behavior: none;
+}
+

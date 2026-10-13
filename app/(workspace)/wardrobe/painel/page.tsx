@@ -262,9 +262,9 @@ function Panel({ title, hint, className = "", children }: { title?: string; hint
 
 function Metric({ label, value, note, children }: { label: string; value: string; note: string; children?: ReactNode }) {
   return (
-    <div className="rounded-2xl border border-stone-200/80 bg-white p-4 shadow-[0_1px_2px_rgba(28,25,23,0.03)] sm:p-5">
+    <div className="min-w-0 rounded-2xl border border-stone-200/80 bg-white p-4 shadow-[0_1px_2px_rgba(28,25,23,0.03)] sm:p-5">
       <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-stone-400">{label}</p>
-      <p className="mt-2 font-serif text-3xl tabular-nums tracking-tight text-stone-900 sm:text-4xl">{value}</p>
+      <p className="mt-2 truncate font-serif text-3xl tabular-nums tracking-tight text-stone-900 sm:text-4xl">{value}</p>
       {children}
       <p className="mt-2 text-xs leading-snug text-stone-500">{note}</p>
     </div>
