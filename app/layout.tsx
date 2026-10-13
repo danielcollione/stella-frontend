@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono, Nunito } from "next/font/google";
 import { MotionProvider } from "@/components/layout/MotionProvider";
+import { SiteAnalytics } from "@/components/layout/SiteAnalytics";
 import { ViewportVars } from "@/components/layout/ViewportVars";
 import { SPLASH_SCREENS } from "@/utils/splashScreens";
 import { SITE_DESCRIPTION, SITE_KEYWORDS, SITE_NAME, SITE_TITLE, SITE_URL } from "@/utils/site";
@@ -68,7 +69,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       suppressHydrationWarning
       className={`${geistSans.variable} ${geistMono.variable} ${nunito.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col"><ViewportVars /><MotionProvider>{children}</MotionProvider></body>
+      <body className="min-h-full flex flex-col"><ViewportVars /><MotionProvider>{children}</MotionProvider><SiteAnalytics /></body>
     </html>
   );
 }

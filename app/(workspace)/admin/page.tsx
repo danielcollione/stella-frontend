@@ -98,6 +98,10 @@ export default function AdminPage() {
                 <Stat label={`Custo de IA em ${data.days} dias`} value={brl(data.ai.totalUsd * data.usdToBrl)} detail={`${usd(data.ai.totalUsd)} · ${data.ai.calls} chamadas`} />
               </div>
 
+              <Card title="Funil" hint={`Visitas à página inicial e, das contas criadas em ${data.days} dias, quantas chegaram a cada passo`}>
+                <Funnel funnel={data.funnel} />
+              </Card>
+
               <div className="grid gap-6 lg:grid-cols-2">
                 <Card title="Novos usuários por dia">
                   <Bars points={data.usage.map((day) => ({ day: day.day, value: data.users.newPerDay.find((entry) => entry.day === day.day)?.count ?? 0 }))} format={(value) => String(value)} />
@@ -252,4 +256,41 @@ function Table({ head, rows, empty }: { head: string[]; rows: ReactNode[][]; emp
 
 function Margin({ value }: { value: number }) {
   return <span className={value >= 0 ? "text-emerald-700" : "text-red-700"}>{brl(value)}</span>;
+}
+
+const FUNNEL_STEPS: { key: keyof AdminOverview["funnel"]; label: string }[] = [
+  { key: "visits", label: "Visitas à página inicial" },
+  { key: "signups", label: "Contas criadas" },
+  { key: "onboarded", label: "Concluíram os primeiros passos" },
+  { key: "chatted", label: "Mandaram a primeira mensagem" },
+  { key: "addedItem", label: "Cadastraram a primeira peça" },
+  { key: "plannedEvent", label: "Criaram um evento" },
+  { key: "subscribed", label: "Assinaram ou estão em teste" },
+];
+
+// Cada linha mostra o total do passo, a barra proporcional ao maior passo e quanto do passo anterior chegou até ali
+function Funnel({ funnel }: { funnel: AdminOverview["funnel"] }) {
+  const largest = Math.max(1, ...FUNNEL_STEPS.map((step) => funnel[step.key]));
+  return (
+    <ol className="space-y-3">
+      {FUNNEL_STEPS.map((step, index) => {
+        const value = funnel[step.key];
+        const previous = index > 0 ? funnel[FUNNEL_STEPS[index - 1].key] : 0;
+        return (
+          <li key={step.key}>
+            <div className="flex items-baseline justify-between gap-3 text-sm">
+              <span className="text-stone-700">{step.label}</span>
+              <span className="shrink-0 tabular-nums text-stone-900">
+                {value}
+                {index > 0 && previous > 0 && <span className="ml-2 text-xs text-stone-400">{Math.round((value / previous) * 100)}% do passo anterior</span>}
+              </span>
+            </div>
+            <div aria-hidden="true" className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-stone-100">
+              <div className="h-full rounded-full bg-stone-800" style={{ width: `${value > 0 ? Math.max(1.5, (value / largest) * 100) : 0}%` }} />
+            </div>
+          </li>
+        );
+      })}
+    </ol>
+  );
 }

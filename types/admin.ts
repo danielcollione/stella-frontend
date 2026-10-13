@@ -9,6 +9,8 @@ export interface AdminOverview {
     byPlan: { plan: string; users: number }[];
     newPerDay: { day: string; count: number }[];
   };
+  // Visitas à página inicial e, das contas criadas no período, quantas chegaram a cada passo
+  funnel: { visits: number; signups: number; onboarded: number; chatted: number; addedItem: number; plannedEvent: number; subscribed: number };
   usage: { day: string; messages: number; photos: number; items: number; eventLooks: number; aiCostUsd: number }[];
   ai: {
     totalUsd: number;
