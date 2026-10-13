@@ -12,6 +12,7 @@ import {
 import { useAppShell } from "@/components/layout/AppShell";
 import { PageContent } from "@/components/layout/PageContent";
 import { InstallAppRow } from "@/components/features/account/InstallAppRow";
+import { DeleteAccountDialog } from "@/components/features/account/DeleteAccountDialog";
 import { VerifyEmailDialog } from "@/components/features/account/VerifyEmailDialog";
 import { CopyMessageButton } from "@/components/ui/CopyMessageButton";
 import { Select } from "@/components/ui/Select";
@@ -74,6 +75,7 @@ export default function ProfilePage() {
   const router = useRouter();
   const { user, setUser, openMobileMenu } = useAppShell();
   const [verifyingEmail, setVerifyingEmail] = useState(false);
+  const [deletingAccount, setDeletingAccount] = useState(false);
   const searchParams = useSearchParams();
   // ?view=plan: retorno do portal do Stripe abre direto na seção do plano
   const [view, setView] = useState<ProfileView>(() => searchParams.get("view") === "plan" ? "plan" : "overview");
@@ -108,8 +110,8 @@ export default function ProfilePage() {
       setError("Informe seu nome, sua cidade e selecione pelo menos um estilo de vida.");
       return;
     }
-    if (profile.age !== undefined && (profile.age < 13 || profile.age > 100)) {
-      setError("Informe uma idade entre 13 e 100 anos.");
+    if (profile.age !== undefined && (profile.age < 18 || profile.age > 100)) {
+      setError("Informe uma idade entre 18 e 100 anos.");
       return;
     }
     setSaving(true);
@@ -234,9 +236,15 @@ export default function ProfilePage() {
 <InstallAppRow />
                 <button type="button" onClick={() => { setSaving(true); void authService.logout(); }} disabled={saving} className="flex items-center gap-3 w-full rounded-lg border border-stone-200/70 bg-white px-4 py-4 text-left text-sm text-red-700 hover:bg-red-50 transition-colors disabled:opacity-50"><LogOut size={18} /><span className="flex-1">Sair</span>{saving ? <LoaderCircle size={17} className="animate-spin" /> : <ChevronRight size={17} className="text-red-400" />}</button>
               </nav>
+              <p className="mt-6 text-center">
+                <button type="button" onClick={() => setDeletingAccount(true)} className="text-xs text-stone-400 underline decoration-stone-300 underline-offset-4 transition-colors hover:text-red-700 hover:decoration-red-300">
+                  Excluir minha conta
+                </button>
+              </p>
             </>
           )}
 
+          {deletingAccount && <DeleteAccountDialog hasPassword={user.authProvider === "LOCAL"} onClose={() => setDeletingAccount(false)} />}
           {verifyingEmail && <VerifyEmailDialog email={user.email} onClose={() => setVerifyingEmail(false)} onVerified={setUser} />}
 
           {view === "plan" && <PlanStatusPanel />}

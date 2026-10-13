@@ -30,7 +30,8 @@ type Step = 1 | 2 | 3 | 4 | 5;
 const TOTAL_STEPS = 5;
 
 // Mesmos limites do back-end (UpdateProfileRequestDto)
-const MIN_AGE = 13;
+// A Stella é para maiores de 18 anos (termos de uso)
+const MIN_AGE = 18;
 const MAX_AGE = 100;
 const DEFAULT_AGE = 25;
 

@@ -151,8 +151,14 @@ export default function TermsPage() {
 
       <LegalSection title="11. Encerramento da conta">
         <p>
-          Você pode pedir a exclusão da sua conta e dos seus dados a qualquer momento, enviando um e-mail para o <SupportLink />.
-          Se houver assinatura ativa, cancele-a antes na área de assinatura do perfil.
+          Você pode excluir a sua conta e os seus dados a qualquer momento, no fim da tela de perfil (“Excluir minha
+          conta”), ou pedindo por e-mail ao <SupportLink />. A exclusão é definitiva: o guarda-roupa, as fotos, as conversas
+          e os eventos são apagados e não podem ser recuperados.
+        </p>
+        <p>
+          Se houver assinatura ativa, ela é encerrada no momento da exclusão, sem reembolso do período já pago, ressalvado
+          o direito de arrependimento descrito no item 6. Se preferir usar o plano até o fim do período pago,
+          cancele a assinatura na área de assinatura do perfil e exclua a conta depois.
         </p>
       </LegalSection>
 

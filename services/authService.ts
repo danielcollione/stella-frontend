@@ -134,6 +134,17 @@ export const authService = {
     }
   },
 
+  // Exclui a conta e todos os dados; em seguida encerra a sessão e volta para a página inicial
+  async deleteAccount(password?: string): Promise<void> {
+    try {
+      await api.post('/auth/me/deletion', { password: password ?? '' });
+    } catch (error: unknown) {
+      throw authError(error, 'Nao foi possivel excluir a conta agora. Tente novamente.');
+    }
+    clearSession();
+    if (typeof window !== 'undefined') window.location.replace('/');
+  },
+
   getToken(): string | null {
     return getSessionToken();
   },

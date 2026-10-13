@@ -62,7 +62,10 @@ export default function PrivacyPage() {
             registros técnicos das chamadas à inteligência artificial (data, tipo de pedido e volume de texto processado).
           </li>
         </ul>
-        <p>Não usamos ferramentas de rastreamento de navegação nem de publicidade.</p>
+        <p>
+          Não usamos ferramentas de publicidade nem rastreamos você entre sites. Medimos apenas as visitas às páginas, de
+          forma agregada e anônima, sem cookies (veja o item 5).
+        </p>
       </LegalSection>
 
       <LegalSection title="3. Para que usamos">
@@ -101,12 +104,21 @@ export default function PrivacyPage() {
         <ul>
           <li><strong>OpenAI:</strong> inteligência artificial, como explicado acima.</li>
           <li><strong>Cloudflare:</strong> armazenamento das fotos.</li>
-          <li><strong>Railway e Vercel:</strong> hospedagem do sistema, do banco de dados e do site.</li>
+          <li>
+            <strong>Railway e Vercel:</strong> hospedagem do sistema, do banco de dados e do site. A Vercel também conta as
+            visitas às páginas, de forma agregada e anônima, sem cookies e sem identificar você.
+          </li>
+          <li>
+            <strong>Brevo:</strong> envio dos e-mails da conta (código de confirmação e de nova senha). Recebe o seu nome e o
+            seu e-mail.
+          </li>
+          <li><strong>GitHub:</strong> execução da rotina diária de cópia de segurança do banco de dados, guardada na Cloudflare.</li>
           <li><strong>Stripe:</strong> pagamentos. Recebe os dados de cobrança que você informa diretamente a ela.</li>
           <li><strong>Google:</strong> login, se você escolher entrar com a sua conta Google.</li>
           <li>
-            <strong>Open-Meteo e Photon:</strong> previsão do tempo e busca de cidades. Recebem apenas a localização da cidade
-            ou o texto digitado na busca, sem identificar você.
+            <strong>Open-Meteo, Nominatim (OpenStreetMap) e Photon:</strong> previsão do tempo, busca de cidades e
+            identificação da cidade quando você usa a localização do aparelho. Recebem apenas a localização ou o texto
+            digitado na busca, sem identificar você.
           </li>
           <li>
             <strong>Lojas parceiras e mapas:</strong> só quando você clica em “Buscar online” ou “Ver lojas perto”. O site
@@ -136,10 +148,18 @@ export default function PrivacyPage() {
       <LegalSection title="7. Por quanto tempo guardamos">
         <ul>
           <li>Guardamos os seus dados enquanto a sua conta existir.</li>
-          <li>Você pode apagar peças, conversas e eventos pelo próprio app a qualquer momento.</li>
           <li>
-            Quando você pede a exclusão da conta, apagamos os seus dados, exceto o que a lei nos obriga a manter (por exemplo,
-            registros de cobrança).
+            Você pode apagar peças, conversas e eventos pelo próprio app a qualquer momento. Ao apagar uma conversa, as fotos
+            enviadas nela também são apagadas.
+          </li>
+          <li>
+            Você pode excluir a sua conta a qualquer momento, no fim da tela de perfil (“Excluir minha conta”). Na hora,
+            apagamos o seu guarda-roupa, as suas fotos, conversas e eventos e encerramos a assinatura, se houver. Fica apenas
+            o que a lei nos obriga a manter (por exemplo, os registros de cobrança, guardados pela Stripe).
+          </li>
+          <li>
+            Mantemos cópias de segurança do banco de dados por até 30 dias. Dados apagados podem permanecer nessas cópias
+            até elas serem eliminadas, e não são usados para nenhuma outra finalidade.
           </li>
         </ul>
       </LegalSection>
@@ -149,7 +169,7 @@ export default function PrivacyPage() {
         <ul>
           <li>saber se guardamos dados seus e receber uma cópia deles;</li>
           <li>corrigir dados incompletos ou desatualizados (a maior parte você mesmo altera no perfil);</li>
-          <li>pedir a exclusão dos seus dados e da sua conta;</li>
+          <li>excluir os seus dados e a sua conta (pelo próprio perfil ou por e-mail);</li>
           <li>pedir a portabilidade dos dados ou informações sobre com quem foram compartilhados;</li>
           <li>retirar um consentimento que tenha dado.</li>
         </ul>
