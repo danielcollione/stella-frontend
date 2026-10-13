@@ -3,6 +3,7 @@
 import { createContext, useCallback, useContext, useEffect, useId, useRef, useState } from "react";
 import type { ReactNode } from "react";
 import { X } from "lucide-react";
+import { lockPageScroll } from "@/utils/scrollLock";
 
 // Popovers (ex: Select) precisam ser renderizados DENTRO do <dialog>: fora dele ficam atrás da top layer e inertes
 const ModalPortalContext = createContext<HTMLElement | null>(null);
@@ -42,9 +43,12 @@ export function Modal({ open, onClose, title, description, children, dismissible
     if (!dialog) return;
     if (open && !dialog.open) dialog.showModal();
     if (!open && dialog.open) dialog.close();
+    // Enquanto a janela está aberta, a página de trás não rola
+    const unlock = open ? lockPageScroll() : undefined;
     // Ao navegar, a rota é preservada oculta (não desmontada): um <dialog> modal esquecido aberto
     // deixaria a página seguinte inteira inerte. Fecha na limpeza; reabre sozinho se a rota voltar.
     return () => {
+      unlock?.();
       if (dialog.open) dialog.close();
     };
   }, [open]);
@@ -64,10 +68,12 @@ export function Modal({ open, onClose, title, description, children, dismissible
       }}
       // O <dialog> é só o contêiner (sem transform/overflow, para não recortar nem reposicionar os popovers);
       // visual, animação e rolagem ficam no painel interno
-      className="m-auto w-[calc(100%-2rem)] max-w-3xl overflow-visible border-0 bg-transparent p-0 text-stone-900 outline-none backdrop:bg-stone-900/35 backdrop:backdrop-blur-[2px] max-sm:mb-0 max-sm:w-full max-sm:max-w-none"
+      // No celular o <dialog> ocupa exatamente a área visível da tela (acima do teclado, quando ele está
+      // aberto) e a folha fica presa à base dela: nada arrasta para os lados nem escapa para baixo do teclado
+      className="m-auto w-[calc(100%-2rem)] max-w-3xl overflow-visible border-0 bg-transparent p-0 text-stone-900 outline-none backdrop:bg-stone-900/35 backdrop:backdrop-blur-[2px] max-sm:fixed max-sm:inset-x-0 max-sm:top-[var(--stella-vv-top,0px)] max-sm:m-0 max-sm:h-[var(--stella-vvh,100dvh)] max-sm:max-h-none max-sm:w-full max-sm:max-w-none max-sm:items-end max-sm:overflow-hidden max-sm:open:flex"
     >
       <ModalPortalContext.Provider value={portalContainer}>
-      <div className="flex max-h-[calc(100dvh-2rem)] flex-col overflow-hidden rounded-3xl border border-stone-200/80 bg-[#FAF8F5] shadow-[0_24px_64px_rgba(28,25,23,0.18),0_4px_16px_rgba(28,25,23,0.06)] transition-[opacity,translate] duration-200 ease-out starting:translate-y-3 starting:opacity-0 motion-reduce:transition-none max-sm:max-h-[92dvh] max-sm:rounded-b-none">
+      <div className="flex max-h-[calc(100dvh-2rem)] w-full flex-col overflow-hidden rounded-3xl border border-stone-200/80 bg-[#FAF8F5] shadow-[0_24px_64px_rgba(28,25,23,0.18),0_4px_16px_rgba(28,25,23,0.06)] transition-[opacity,translate] duration-200 ease-out starting:translate-y-3 starting:opacity-0 motion-reduce:transition-none max-sm:max-h-[94%] max-sm:rounded-b-none max-sm:pb-[env(safe-area-inset-bottom)]">
         <header className="flex items-start justify-between gap-4 border-b border-stone-200/70 px-6 pb-4 pt-5 sm:px-7">
           <div className="min-w-0">
             <h2 id={titleId} className="font-serif text-2xl italic tracking-tight text-stone-900">{title}</h2>
@@ -84,7 +90,7 @@ export function Modal({ open, onClose, title, description, children, dismissible
             <X size={18} />
           </button>
         </header>
-        <div className="min-h-0 flex-1 overflow-y-auto">{children}</div>
+        <div className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden overscroll-contain">{children}</div>
       </div>
       </ModalPortalContext.Provider>
     </dialog>

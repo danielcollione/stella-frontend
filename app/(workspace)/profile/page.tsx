@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 import { useAppShell } from "@/components/layout/AppShell";
 import { PageContent } from "@/components/layout/PageContent";
+import { InstallAppRow } from "@/components/features/account/InstallAppRow";
 import { VerifyEmailDialog } from "@/components/features/account/VerifyEmailDialog";
 import { CopyMessageButton } from "@/components/ui/CopyMessageButton";
 import { Select } from "@/components/ui/Select";
@@ -230,6 +231,7 @@ export default function ProfilePage() {
                   <div className="relative z-10"><CopyMessageButton text={SUPPORT_EMAIL} label="Copiar e-mail do suporte" align="right" /></div>
                   <ChevronRight size={17} className="shrink-0 text-stone-400" />
                 </div>
+<InstallAppRow />
                 <button type="button" onClick={() => { setSaving(true); void authService.logout(); }} disabled={saving} className="flex items-center gap-3 w-full rounded-lg border border-stone-200/70 bg-white px-4 py-4 text-left text-sm text-red-700 hover:bg-red-50 transition-colors disabled:opacity-50"><LogOut size={18} /><span className="flex-1">Sair</span>{saving ? <LoaderCircle size={17} className="animate-spin" /> : <ChevronRight size={17} className="text-red-400" />}</button>
               </nav>
             </>

@@ -210,3 +210,53 @@ body {
   }
 }
 
+
+/* ===== Comportamento de aplicativo no celular ===== */
+
+/* Nenhuma página rola para os lados: um item mais largo que a tela não pode "soltar" o layout.
+   (clip, e não hidden, para não quebrar as seções presas da landing) */
+html,
+body {
+  overflow-x: clip;
+}
+
+/* O iPhone amplia a tela ao tocar num campo com texto menor que 16px, e não desfaz o zoom depois.
+   Só no iOS (a regra @supports abaixo só é verdadeira nele), os campos passam a ter 16px. A camada que
+   desenha o texto do chat por baixo do campo (.stella-input-mirror) precisa do mesmo tamanho. */
+@supports (-webkit-touch-callout: none) {
+  input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),
+  textarea,
+  select,
+  [contenteditable="true"],
+  .stella-input-mirror {
+    font-size: 16px !important;
+  }
+}
+
+/* Campos de data e hora do iPhone têm uma largura mínima própria e estouravam a linha do formulário */
+input[type="date"],
+input[type="time"] {
+  min-width: 0;
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+input[type="date"]::-webkit-date-and-time-value,
+input[type="time"]::-webkit-date-and-time-value {
+  text-align: left;
+}
+
+/* Com uma janela aberta, a página de trás e a área de conteúdo do app não rolam (utils/scrollLock.ts) */
+html.stella-scroll-locked,
+html.stella-scroll-locked body,
+html.stella-scroll-locked .stella-scroll-area {
+  overflow: hidden !important;
+  overscroll-behavior: none;
+}
+
+/* Toque sem o realce azul do Android/iOS e sem selecionar texto ao tocar em botões */
+button,
+a,
+[role="button"] {
+  -webkit-tap-highlight-color: transparent;
+}

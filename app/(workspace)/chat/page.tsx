@@ -20,6 +20,7 @@ import { useAppShell } from "@/components/layout/AppShell";
 import { playSendSound, playReceiveSound } from "@/utils/sound";
 import { chatService } from "@/services/chat/chatService";
 import { ChatMessageContent } from "@/components/features/ChatMessageContent";
+import { ThinkingStatus } from "@/components/features/ThinkingStatus";
 import { TodayWeather } from "@/components/features/weather/TodayWeather";
 import { ChatShoppingSuggestions } from "@/components/features/shopping/ShoppingLinks";
 import { shoppingSuggestionsIn } from "@/services/shopping/shoppingLinks";
@@ -567,14 +568,7 @@ export default function ChatPage() {
             ))
           )}
 
-          {isLoading && (
-            <div className="flex items-center gap-3 text-stone-500 text-xs py-2 stella-message-in [animation-delay:250ms]">
-              <StellaMark size={28} decorative className="animate-pulse" />
-              <span className="animate-pulse">
-                A Stella está a analisar o seu estilo...
-              </span>
-            </div>
-          )}
+          {isLoading && <ThinkingStatus />}
 
           <div ref={messagesEndRef} />
         </main>

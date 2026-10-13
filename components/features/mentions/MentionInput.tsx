@@ -226,7 +226,7 @@ export function MentionInput({ value, onChange, mentions, onMentionsChange, plac
       <div
         ref={mirrorRef}
         aria-hidden="true"
-        className="pointer-events-none absolute inset-0 overflow-hidden whitespace-pre-wrap break-words px-4 pt-2 pb-3 text-sm leading-relaxed font-light text-stone-900"
+        className="stella-input-mirror pointer-events-none absolute inset-0 overflow-hidden whitespace-pre-wrap break-words px-4 pt-2 pb-3 text-sm leading-relaxed font-light text-stone-900"
       >
         {splitByMentions(value, mentions).map((part, index) => part.mention
           ? <span key={index} className="rounded-[4px] bg-[#EDE3D6] text-stone-950 [box-shadow:0_0_0_2px_#EDE3D6]">{part.text}</span>

@@ -44,6 +44,8 @@ function SidebarContent({ expanded, mobile, toggle, closeMenu }: {
   const router = useRouter();
   const pathname = usePathname();
   const [error, setError] = useState("");
+  // Conversa aguardando o segundo toque para ser excluída (só no menu do celular)
+  const [confirmingDelete, setConfirmingDelete] = useState<string | null>(null);
   // Cadastro por e-mail e senha que ainda não confirmou o código: lembrete discreto ao lado do nome
   const emailPending = user?.emailVerified === false;
   const initials = user?.name.trim().split(/\s+/).filter(Boolean).slice(0, 2)
@@ -125,7 +127,28 @@ function SidebarContent({ expanded, mobile, toggle, closeMenu }: {
                       <MessageSquare className="w-3.5 h-3.5 shrink-0 text-stone-500" />
                       <span className="truncate">{thread.title || "Conversa com Stella"}</span>
                     </Link>
-                    {!mobile && <button type="button" onClick={() => void deleteThread(thread.id)} aria-label={`Excluir ${thread.title || "conversa"}`} title="Excluir conversa" className="opacity-0 group-hover:opacity-100 focus-visible:opacity-100 p-1 text-stone-400 hover:text-red-600 transition-opacity"><Trash2 className="w-3 h-3" /></button>}
+                    {mobile ? (
+                      // No toque não existe "passar o mouse": o botão fica sempre visível e pede um segundo toque
+                      // para confirmar, já que a exclusão não tem volta
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (confirmingDelete === thread.id) {
+                            setConfirmingDelete(null);
+                            void deleteThread(thread.id);
+                          } else {
+                            setConfirmingDelete(thread.id);
+                          }
+                        }}
+                        onBlur={() => setConfirmingDelete((current) => (current === thread.id ? null : current))}
+                        aria-label={confirmingDelete === thread.id ? `Confirmar exclusão de ${thread.title || "conversa"}` : `Excluir ${thread.title || "conversa"}`}
+                        className={`-mr-1.5 ml-1 flex shrink-0 items-center gap-1 rounded-full px-2 py-1.5 transition-colors ${confirmingDelete === thread.id ? "bg-red-600 text-[11px] font-medium text-white" : "text-stone-400 active:bg-stone-200/70"}`}
+                      >
+                        {confirmingDelete === thread.id ? "Excluir?" : <Trash2 className="h-3.5 w-3.5" />}
+                      </button>
+                    ) : (
+                      <button type="button" onClick={() => void deleteThread(thread.id)} aria-label={`Excluir ${thread.title || "conversa"}`} title="Excluir conversa" className="opacity-0 group-hover:opacity-100 focus-visible:opacity-100 p-1 text-stone-400 hover:text-red-600 transition-opacity"><Trash2 className="w-3 h-3" /></button>
+                    )}
                   </motion.div>
                 ))}
                 {error && <p role="alert" className="px-2 py-2 text-xs text-red-700">{error}</p>}
@@ -165,6 +188,12 @@ export function AppShell({ children }: { children: ReactNode }) {
     if (!authService.getToken()) router.replace("/login");
   }, [router, pathname]);
 
+  // Marca a página como "aplicativo" (tela fixa, sem rolagem do documento): ver ViewportVars
+  useEffect(() => {
+    document.documentElement.classList.add("stella-app");
+    return () => document.documentElement.classList.remove("stella-app");
+  }, []);
+
   useEffect(() => {
     if (!authService.getToken()) {
       router.replace("/login");
@@ -195,7 +224,9 @@ export function AppShell({ children }: { children: ReactNode }) {
 
   return (
     <AppShellContext.Provider value={{ user, setUser, threads, setThreads, threadsReady, activeThreadId, setActiveThreadId, openMobileMenu: () => setMobileMenuOpen(true) }}>
-      <div className="flex h-dvh bg-[#FAF8F5] text-stone-900 overflow-hidden font-sans">
+      {/* A altura acompanha a área visível: com o teclado aberto no celular, o app encolhe e o campo de
+          mensagem fica logo acima dele. As margens seguras cobrem o recorte e a barra de início do iPhone */}
+      <div className="flex h-[var(--stella-vvh,100dvh)] bg-[#FAF8F5] text-stone-900 overflow-hidden font-sans pb-[env(safe-area-inset-bottom)] pl-[env(safe-area-inset-left)] pr-[env(safe-area-inset-right)]">
         <motion.aside initial={false} animate={{ width: expanded ? 256 : 68 }} transition={{ type: "spring", stiffness: 320, damping: 32, mass: 0.8 }} className="hidden md:flex shrink-0 flex-col justify-between bg-white/80 backdrop-blur-md border-r border-stone-200/80 py-5 px-3 z-20 overflow-hidden">
           <SidebarContent expanded={expanded} toggle={() => setExpanded(!expanded)} closeMenu={() => setMobileMenuOpen(false)} />
         </motion.aside>
@@ -209,7 +240,7 @@ export function AppShell({ children }: { children: ReactNode }) {
             </div>
           )}
         </AnimatePresence>
-        <div className="flex-1 min-w-0 h-full overflow-y-auto">
+        <div className="stella-scroll-area flex-1 min-w-0 h-full overflow-y-auto overscroll-contain">
           {user ? children : <main className="h-full flex flex-col items-center justify-center gap-4 px-6 text-stone-600" role={error ? "alert" : "status"}>{error || "Carregando..."}{error && <button type="button" onClick={() => window.location.reload()} className="text-sm underline">Tentar novamente</button>}</main>}
         </div>
       </div>
