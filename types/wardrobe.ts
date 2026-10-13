@@ -34,6 +34,7 @@ export interface UpdateClothingItemRequest {
   color: string | null;
   style: string | null;
   formality: ClothingFormality | null;
+  purchasePrice: number | null; // quanto a pessoa pagou (opcional)
   status: ClothingStatus;
 }
 
@@ -50,4 +51,23 @@ export interface WardrobePage {
   allCount: number; // todas as peças (estado "guarda-roupa vazio")
   activeCount: number; // não arquivadas (cabeçalho)
   categoryCounts: Partial<Record<ClothingCategory, number>>; // por categoria, dentro da situação, sem a busca
+}
+
+// Espelha o WardrobeStatsDto: os painéis do guarda-roupa (peças arquivadas ficam de fora)
+export interface WardrobeStats {
+  totalItems: number;
+  wornItems: number; // usadas ao menos uma vez
+  looksLogged: number; // looks registrados no diário de uso
+  wardrobeValue: number; // soma das peças com preço informado
+  pricedItems: number;
+  newItemsDays: number;
+  newItemsCount: number;
+  newItems: ClothingItem[];
+  categories: { category: ClothingCategory; count: number }[];
+  colors: { label: string; count: number }[];
+  brands: { label: string; count: number }[];
+  mostWorn: ClothingItem[];
+  leastWorn: ClothingItem[];
+  pairs: { first: ClothingItem; second: ClothingItem; timesTogether: number }[];
+  longestOwned: ClothingItem[];
 }

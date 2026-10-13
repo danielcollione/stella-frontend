@@ -80,7 +80,10 @@ export function MentionInput({ value, onChange, mentions, onMentionsChange, plac
     const match = MENTION_PATTERN.exec(nextValue.slice(0, caret));
     if (!match) return null;
     const text = match[1];
-    return { start: caret - text.length - 1, end: caret, text };
+    const start = caret - text.length - 1;
+    // Este "@" já é de uma peça marcada: o que vem depois é texto comum da mensagem, não uma nova busca
+    if (mentions.some((item) => nextValue.startsWith(mentionToken(item), start))) return null;
+    return { start, end: caret, text };
   }
 
   function syncQuery(nextValue: string, caret: number | null) {

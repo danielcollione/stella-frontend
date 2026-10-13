@@ -3,10 +3,12 @@
 import { useEffect, useState } from "react";
 import ReactMarkdown from "react-markdown";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
-import { Check, ChevronLeft, ChevronRight, CloudSun, LoaderCircle, ShoppingBag, Shirt, Sparkles } from "lucide-react";
+import { Check, ChevronLeft, ChevronRight, CloudSun, LoaderCircle, Pencil, ShoppingBag, Shirt, Sparkles, X } from "lucide-react";
 import { displayName } from "@/services/wardrobe/wardrobeCatalog";
 import { ImageViewer } from "@/components/ui/ImageViewer";
 import { PartnerLinkNote, ShoppingLinks } from "@/components/features/shopping/ShoppingLinks";
+import { WardrobeItemPicker } from "@/components/features/wardrobe/WardrobeItemPicker";
+import { MAX_EVENT_ITEMS } from "@/types/events";
 import type { EventLook } from "@/types/events";
 import type { ClothingItem } from "@/types/wardrobe";
 
@@ -17,14 +19,23 @@ interface EventLookViewProps {
   choosing: boolean;
   onIndexChange: (index: number) => void;
   onChoose: (look: EventLook) => void;
+  // Edição das peças do look (eventos que ainda não passaram): ao salvar, a Stella opina sobre a nova combinação
+  editable?: boolean;
+  busy?: boolean;
+  onEditItems?: (look: EventLook, items: ClothingItem[]) => void;
 }
 
-export function EventLookView({ looks, index, chosenLookId, choosing, onIndexChange, onChoose }: EventLookViewProps) {
+export function EventLookView({ looks, index, chosenLookId, choosing, onIndexChange, onChoose, editable, busy, onEditItems }: EventLookViewProps) {
   const reducedMotion = useReducedMotion();
   const look = looks[index];
   const total = looks.length;
   const number = total - index; // numeração cronológica: o primeiro look gerado é o 1
   const chosen = look.id === chosenLookId;
+  // O rascunho vale só para o look em que foi aberto: trocar de look descarta a edição
+  const [draft, setDraft] = useState<{ lookId: string; items: ClothingItem[] } | null>(null);
+  const editing = draft?.lookId === look.id ? draft.items : null;
+  const canEdit = Boolean(editable && onEditItems);
+  const changed = editing !== null && editing.map((item) => item.id).join() !== look.items.map((item) => item.id).join();
 
   return (
     <div>
@@ -76,12 +87,43 @@ export function EventLookView({ looks, index, chosenLookId, choosing, onIndexCha
             </div>
           )}
 
-          {look.items.length > 0 && (
+          {(look.items.length > 0 || canEdit) && (
             <div className="mt-5">
-              <p className="mb-2.5 text-xs font-medium text-stone-500">Do seu guarda-roupa</p>
-              <ul className="-mx-6 flex snap-x gap-3 overflow-x-auto px-6 pb-1 scrollbar-none sm:mx-0 sm:grid sm:grid-cols-4 sm:overflow-visible sm:px-0">
-                {look.items.map((item) => <LookItem key={item.id} item={item} />)}
-              </ul>
+              <div className="mb-2.5 flex min-h-6 items-center justify-between gap-3">
+                <p className="text-xs font-medium text-stone-500">Do seu guarda-roupa</p>
+                {canEdit && editing === null && (
+                  <button type="button" onClick={() => setDraft({ lookId: look.id, items: look.items })} disabled={busy} className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium text-stone-500 transition-colors hover:bg-stone-200/60 hover:text-stone-900 disabled:opacity-50">
+                    <Pencil size={12} /> {look.items.length > 0 ? "Editar peças" : "Adicionar peças"}
+                  </button>
+                )}
+              </div>
+              {/* A barra de edição fica acima das peças: busca e botões sempre à vista, sem rolar a tela */}
+              <AnimatePresence initial={false}>
+                {editing && (
+                  <LookEditBar
+                    key="edit-bar"
+                    items={editing}
+                    canSave={changed && !busy}
+                    onChange={(items) => setDraft({ lookId: look.id, items })}
+                    onCancel={() => setDraft(null)}
+                    onSave={() => {
+                      setDraft(null);
+                      onEditItems?.(look, editing);
+                    }}
+                  />
+                )}
+              </AnimatePresence>
+              {(editing ?? look.items).length > 0 && (
+                <ul className="-mx-6 flex snap-x gap-3 overflow-x-auto px-6 pb-1 scrollbar-none sm:mx-0 sm:grid sm:grid-cols-4 sm:overflow-visible sm:px-0">
+                  {(editing ?? look.items).map((item) => (
+                    <LookItem
+                      key={item.id}
+                      item={item}
+                      onRemove={editing ? () => setDraft({ lookId: look.id, items: editing.filter((kept) => kept.id !== item.id) }) : undefined}
+                    />
+                  ))}
+                </ul>
+              )}
             </div>
           )}
 
@@ -135,13 +177,64 @@ export function EventLookView({ looks, index, chosenLookId, choosing, onIndexCha
   );
 }
 
-function LookItem({ item }: { item: ClothingItem }) {
+function LookEditBar({ items, canSave, onChange, onCancel, onSave }: {
+  items: ClothingItem[];
+  canSave: boolean;
+  onChange: (items: ClothingItem[]) => void;
+  onCancel: () => void;
+  onSave: () => void;
+}) {
+  const reducedMotion = useReducedMotion();
+  // Enquanto a barra abre ou fecha, o conteúdo é recortado; depois, a lista de sugestões pode sair dos limites dela
+  const [settled, setSettled] = useState(false);
+
+  return (
+    <motion.div
+      initial={{ height: 0, opacity: 0 }}
+      animate={{ height: "auto", opacity: 1 }}
+      exit={{ height: 0, opacity: 0 }}
+      transition={{ duration: reducedMotion ? 0 : 0.32, ease: [0.22, 1, 0.36, 1] }}
+      onAnimationStart={() => setSettled(false)}
+      onAnimationComplete={() => setSettled(true)}
+      style={{ overflow: settled ? "visible" : "hidden" }}
+      className="relative z-20"
+    >
+      <motion.div
+        initial={{ y: reducedMotion ? 0 : -8 }}
+        animate={{ y: 0 }}
+        exit={{ y: reducedMotion ? 0 : -8 }}
+        transition={{ duration: reducedMotion ? 0 : 0.32, ease: [0.22, 1, 0.36, 1] }}
+        className="mb-3 rounded-2xl bg-[#FAF8F5] p-3"
+      >
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+          <div className="min-w-0 flex-1">
+            <WardrobeItemPicker value={items} onChange={onChange} max={MAX_EVENT_ITEMS} placeholder="Adicionar peça do guarda-roupa" hideSelected />
+          </div>
+          <div className="flex shrink-0 items-center justify-end gap-1.5">
+            <button type="button" onClick={onCancel} className="rounded-full px-3.5 py-2.5 text-xs font-medium text-stone-600 transition-colors hover:bg-stone-200/60 hover:text-stone-900">Cancelar</button>
+            <button type="button" onClick={onSave} disabled={!canSave} className="inline-flex items-center gap-1.5 rounded-full bg-stone-900 px-4 py-2.5 text-xs font-medium text-white transition-colors hover:bg-stone-800 disabled:cursor-not-allowed disabled:opacity-40">
+              <Sparkles size={12} /> Salvar e ouvir a Stella
+            </button>
+          </div>
+        </div>
+        <p className="mt-2 px-1 text-[11px] text-stone-400">Toque no × para tirar uma peça. Ao salvar, a Stella comenta as suas escolhas (usa 1 mensagem do seu plano).</p>
+      </motion.div>
+    </motion.div>
+  );
+}
+
+function LookItem({ item, onRemove }: { item: ClothingItem; onRemove?: () => void }) {
   const [failed, setFailed] = useState<string | null>(null);
   const [viewerOpen, setViewerOpen] = useState(false);
   const name = displayName(item);
   const src = item.thumbnailUrl ?? item.imageUrl;
   return (
-    <li className="w-28 shrink-0 snap-start sm:w-auto">
+    <li className="relative w-28 shrink-0 snap-start sm:w-auto">
+      {onRemove && (
+        <button type="button" onClick={onRemove} aria-label={`Tirar ${name} do look`} title="Tirar do look" className="stella-message-in absolute right-1.5 top-1.5 z-10 rounded-full bg-white/95 p-1 text-stone-600 shadow-sm transition-colors hover:bg-white hover:text-red-700">
+          <X size={13} />
+        </button>
+      )}
       {/* Miniatura no look; tocar abre a foto original */}
       <button type="button" onClick={() => setViewerOpen(true)} aria-label={`Ampliar ${name}`} className="block aspect-[4/5] w-full overflow-hidden rounded-2xl border border-stone-200/80 bg-stone-100 outline-none focus-visible:ring-2 focus-visible:ring-stone-300">
         {failed === src ? (
@@ -170,7 +263,7 @@ const GENERATING_STEPS = [
 ];
 
 // Enquanto a Stella monta o look (alguns segundos): peças "se revelando" e frases que mudam
-export function GeneratingLook() {
+export function GeneratingLook({ caption = "A Stella está montando o seu look." }: { caption?: string }) {
   const reducedMotion = useReducedMotion();
   const [step, setStep] = useState(0);
 
@@ -199,7 +292,7 @@ export function GeneratingLook() {
           </motion.span>
         </AnimatePresence>
       </p>
-      <p className="mt-1 text-xs text-stone-400">A Stella está montando o seu look.</p>
+      <p className="mt-1 text-xs text-stone-400">{caption}</p>
     </div>
   );
 }

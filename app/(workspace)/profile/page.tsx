@@ -1,5 +1,6 @@
 "use client";
 
+import { SUPPORT_EMAIL } from "@/components/legal/LegalPage";
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -9,6 +10,7 @@ import {
 } from "lucide-react";
 import { useAppShell } from "@/components/layout/AppShell";
 import { PageContent } from "@/components/layout/PageContent";
+import { CopyMessageButton } from "@/components/ui/CopyMessageButton";
 import { Select } from "@/components/ui/Select";
 import { PlanStatusPanel } from "@/components/features/billing/PlanStatusPanel";
 import { CityAutocomplete } from "@/components/features/CityAutocomplete";
@@ -198,7 +200,17 @@ export default function ProfilePage() {
                   const Icon = row.icon;
                   return <button key={row.target} type="button" onClick={() => openView(row.target)} className="flex items-center gap-3 w-full rounded-lg border border-stone-200/70 bg-white px-4 py-4 text-left text-sm hover:bg-stone-50 transition-colors"><Icon size={18} className="text-stone-600" /><span className="flex-1">{row.label}</span><ChevronRight size={17} className="text-stone-400" /></button>;
                 })}
-                <button type="button" disabled title="Suporte em breve" className="flex items-center gap-3 w-full rounded-lg border border-stone-200/70 bg-white px-4 py-4 text-left text-sm text-stone-400 cursor-not-allowed"><Headphones size={18} /><span className="flex-1">Falar com Suporte</span><ChevronRight size={17} /></button>
+                {/* mailto: abre o aplicativo de e-mail padrão do aparelho. O endereço fica à vista, com "copiar",
+                    para quem não tem um aplicativo de e-mail configurado */}
+                <div className="relative flex items-center gap-3 rounded-lg border border-stone-200/70 bg-white px-4 py-3 text-sm transition-colors hover:bg-stone-50">
+                  <Headphones size={18} className="shrink-0 text-stone-600" />
+                  <a href={`mailto:${SUPPORT_EMAIL}?subject=${encodeURIComponent("Suporte Stella")}`} className="min-w-0 flex-1 text-left outline-none after:absolute after:inset-0 after:rounded-lg focus-visible:after:ring-2 focus-visible:after:ring-stone-300">
+                    <span className="block">Falar com Suporte</span>
+                    <span className="block truncate text-xs text-stone-500">{SUPPORT_EMAIL}</span>
+                  </a>
+                  <div className="relative z-10"><CopyMessageButton text={SUPPORT_EMAIL} label="Copiar e-mail do suporte" align="right" /></div>
+                  <ChevronRight size={17} className="shrink-0 text-stone-400" />
+                </div>
                 <button type="button" onClick={() => { setSaving(true); void authService.logout(); }} disabled={saving} className="flex items-center gap-3 w-full rounded-lg border border-stone-200/70 bg-white px-4 py-4 text-left text-sm text-red-700 hover:bg-red-50 transition-colors disabled:opacity-50"><LogOut size={18} /><span className="flex-1">Sair</span>{saving ? <LoaderCircle size={17} className="animate-spin" /> : <ChevronRight size={17} className="text-red-400" />}</button>
               </nav>
             </>

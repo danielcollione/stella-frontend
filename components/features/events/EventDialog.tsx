@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Clock, LoaderCircle, MapPin, Pencil, RefreshCw, Shirt, Sparkles, Trash2 } from "lucide-react";
 import { Modal } from "@/components/ui/Modal";
 import { PlanLimitNotice } from "@/components/features/billing/PlanLimitNotice";
@@ -11,7 +11,10 @@ import { planLimitFrom } from "@/services/billing/billingService";
 import { eventService } from "@/services/events/eventService";
 import { dressCodeLabel, formatLongDate, formatTime, occasionOf, relativeDay, shortCity, todayIso } from "@/services/events/eventCatalog";
 import { apiErrorMessage } from "@/services/wardrobe/wardrobeService";
+import { WardrobeItemPicker } from "@/components/features/wardrobe/WardrobeItemPicker";
+import { MAX_EVENT_ITEMS } from "@/types/events";
 import type { CalendarEvent, EventLook } from "@/types/events";
+import type { ClothingItem } from "@/types/wardrobe";
 
 export type EventDialogTarget = { kind: "create"; date: string } | { kind: "open"; event: CalendarEvent };
 
@@ -23,11 +26,14 @@ interface EventDialogProps {
 }
 
 type Problem = { message: string; planLimit: boolean } | null;
+type Pending = "save" | "generate" | "review" | "choose" | "delete" | null;
 
 export function EventDialog({ target, onClose, onChanged, onDeleted }: EventDialogProps) {
   const [event, setEvent] = useState<CalendarEvent | null>(target.kind === "open" ? target.event : null);
   const [editing, setEditing] = useState(target.kind === "create");
-  const [pending, setPending] = useState<"save" | "generate" | "choose" | "delete" | null>(null);
+  const [pending, setPending] = useState<Pending>(null);
+  // Gravação em andamento das peças já decididas: montar o look espera por ela
+  const requiredSave = useRef<Promise<unknown>>(Promise.resolve());
   const [formError, setFormError] = useState("");
   const [problem, setProblem] = useState<Problem>(null);
   const [lookIndex, setLookIndex] = useState(0);
@@ -60,6 +66,7 @@ export function EventDialog({ target, onClose, onChanged, onDeleted }: EventDial
     setProblem(null);
     setPending("generate");
     try {
+      await requiredSave.current;
       const updated = await eventService.generateLook(current.id);
       setEvent(updated);
       setLookIndex(0);
@@ -99,6 +106,39 @@ export function EventDialog({ target, onClose, onChanged, onDeleted }: EventDial
       onChanged(updated);
     } catch (error) {
       failure(error, "Não foi possível escolher este look agora.");
+    } finally {
+      setPending(null);
+    }
+  }
+
+  // Peças que a pessoa já decidiu usar: grava a cada mudança, sem bloquear a tela
+  function changeRequired(items: ClothingItem[]) {
+    if (!event) return;
+    const previous = event;
+    setProblem(null);
+    setEvent({ ...event, requiredItems: items });
+    requiredSave.current = eventService.setRequiredItems(event.id, items.map((item) => item.id))
+      .then((updated) => {
+        setEvent((current) => (current ? { ...current, requiredItems: updated.requiredItems } : current));
+        onChanged(updated);
+      })
+      .catch((error) => {
+        setEvent((current) => (current ? { ...current, requiredItems: previous.requiredItems } : current));
+        failure(error, "Não foi possível guardar as peças escolhidas.");
+      });
+  }
+
+  // A pessoa trocou as peças do look: a Stella opina sobre a nova combinação
+  async function editLook(look: EventLook, items: ClothingItem[]) {
+    if (!event) return;
+    setProblem(null);
+    setPending("review");
+    try {
+      const updated = await eventService.editLook(event.id, look.id, items.map((item) => item.id));
+      setEvent(updated);
+      onChanged(updated);
+    } catch (error) {
+      failure(error, "A Stella não conseguiu avaliar o look agora. Tente novamente em instantes.");
     } finally {
       setPending(null);
     }
@@ -146,6 +186,8 @@ export function EventDialog({ target, onClose, onChanged, onDeleted }: EventDial
           onLookIndexChange={setLookIndex}
           onGenerate={() => void generate(event)}
           onChoose={(look) => void choose(look)}
+          onRequiredChange={changeRequired}
+          onEditLook={(look, items) => void editLook(look, items)}
           onEdit={() => { setProblem(null); setEditing(true); }}
           onAskDelete={setConfirmingDelete}
           onDelete={() => void remove()}
@@ -160,16 +202,18 @@ function describeWhen(event: CalendarEvent): string {
   return [formatLongDate(event.date), time, relativeDay(event.date)].filter(Boolean).join(" · ");
 }
 
-function EventDetail({ event, detailFailed, pending, problem, lookIndex, confirmingDelete, onLookIndexChange, onGenerate, onChoose, onEdit, onAskDelete, onDelete }: {
+function EventDetail({ event, detailFailed, pending, problem, lookIndex, confirmingDelete, onLookIndexChange, onGenerate, onChoose, onRequiredChange, onEditLook, onEdit, onAskDelete, onDelete }: {
   event: CalendarEvent;
   detailFailed: boolean;
-  pending: "save" | "generate" | "choose" | "delete" | null;
+  pending: Pending;
   problem: Problem;
   lookIndex: number;
   confirmingDelete: boolean;
   onLookIndexChange: (index: number) => void;
   onGenerate: () => void;
   onChoose: (look: EventLook) => void;
+  onRequiredChange: (items: ClothingItem[]) => void;
+  onEditLook: (look: EventLook, items: ClothingItem[]) => void;
   onEdit: () => void;
   onAskDelete: (value: boolean) => void;
   onDelete: () => void;
@@ -199,6 +243,8 @@ function EventDetail({ event, detailFailed, pending, problem, lookIndex, confirm
         <div className="mt-6 rounded-3xl border border-stone-200/80 bg-white p-5 shadow-[0_1px_2px_rgba(28,25,23,0.03)] sm:p-6">
           {pending === "generate" ? (
             <GeneratingLook />
+          ) : pending === "review" ? (
+            <GeneratingLook caption="A Stella está avaliando as suas escolhas." />
           ) : loadingLooks ? (
             <div role="status" aria-label="Carregando looks" className="space-y-4">
               <div className="h-7 w-2/3 animate-pulse rounded-lg bg-stone-100" />
@@ -212,6 +258,9 @@ function EventDetail({ event, detailFailed, pending, problem, lookIndex, confirm
               choosing={pending === "choose"}
               onIndexChange={onLookIndexChange}
               onChoose={onChoose}
+              editable={!past}
+              busy={busy}
+              onEditItems={onEditLook}
             />
           ) : past ? (
             <p className="py-6 text-center text-sm text-stone-400">Este evento já passou e não teve um look planejado.</p>
@@ -220,6 +269,18 @@ function EventDetail({ event, detailFailed, pending, problem, lookIndex, confirm
               <span className="flex h-12 w-12 items-center justify-center rounded-full bg-stone-100 text-stone-700"><Sparkles size={20} strokeWidth={1.5} /></span>
               <p className="mt-4 font-serif text-xl italic text-stone-900">Que tal planejar o look?</p>
               <p className="mt-1 max-w-sm text-sm text-stone-500">A Stella combina peças do seu guarda-roupa com a ocasião e sugere o que faltar.</p>
+              <div className="mt-5 w-full max-w-md text-left">
+                <label htmlFor="event-detail-required-items" className="mb-1.5 block text-xs font-medium text-stone-500">Já sabe alguma peça que vai usar? <span className="text-stone-400">(opcional)</span></label>
+                <WardrobeItemPicker
+                  id="event-detail-required-items"
+                  value={event.requiredItems ?? []}
+                  onChange={onRequiredChange}
+                  max={MAX_EVENT_ITEMS}
+                  disabled={busy}
+                  placeholder="Buscar pelo nome da peça"
+                />
+                <p className="mt-1.5 text-[11px] text-stone-400">A Stella monta o look em torno delas e só completa o que faltar.</p>
+              </div>
               <button type="button" onClick={onGenerate} disabled={busy} className="mt-5 inline-flex items-center gap-2 rounded-full bg-stone-900 px-5 py-2.5 text-sm font-medium text-white transition-colors hover:bg-stone-800 disabled:opacity-60">
                 <Sparkles size={14} /> Montar meu look
               </button>
@@ -237,7 +298,7 @@ function EventDetail({ event, detailFailed, pending, problem, lookIndex, confirm
         </div>
       </div>
 
-      <footer className="sticky bottom-0 flex flex-wrap items-center gap-2 border-t border-stone-200/70 bg-[#FAF8F5]/95 px-6 py-4 backdrop-blur-sm sm:px-7">
+      <footer className="sticky bottom-0 z-40 flex flex-wrap items-center gap-2 border-t border-stone-200/70 bg-[#FAF8F5]/95 px-6 py-4 backdrop-blur-sm sm:px-7">
         {confirmingDelete ? (
           <div className="flex items-center gap-2">
             <span className="text-sm text-stone-600">Excluir este evento?</span>

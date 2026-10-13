@@ -31,6 +31,7 @@ export interface CalendarEvent {
   cityCoordinates: string | null;
   dressCode: DressCode | null;
   notes: string | null;
+  requiredItems: ClothingItem[]; // peças que a pessoa já decidiu usar: a Stella monta o look em torno delas
   chosenLookId: string | null;
   lookCount: number;
   featuredLook: EventLook | null;
@@ -54,4 +55,8 @@ export interface EventRequest {
   cityCoordinates: string | null;
   dressCode: DressCode | null;
   notes: string | null;
+  requiredItemIds: string[];
 }
+
+// Limite de peças do guarda-roupa num look e nas peças já decididas (igual ao back-end)
+export const MAX_EVENT_ITEMS = 8;

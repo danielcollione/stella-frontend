@@ -11,7 +11,10 @@ import { WeatherIcon } from "@/components/features/weather/WeatherIcon";
 import { weatherService } from "@/services/weather/weatherService";
 import type { DayWeather } from "@/services/weather/weatherService";
 import { DRESS_CODES, OCCASIONS, todayIso } from "@/services/events/eventCatalog";
+import { WardrobeItemPicker } from "@/components/features/wardrobe/WardrobeItemPicker";
+import { MAX_EVENT_ITEMS } from "@/types/events";
 import type { CalendarEvent, DressCode, EventOccasion, EventRequest } from "@/types/events";
+import type { ClothingItem } from "@/types/wardrobe";
 
 const fieldClass = "w-full rounded-lg border border-stone-200/90 bg-white px-3.5 py-3 text-sm text-stone-900 shadow-[0_1px_2px_rgba(28,25,23,0.03)] outline-none transition-[border-color,box-shadow] placeholder:text-stone-400 hover:border-stone-300 focus:border-stone-400 focus:ring-2 focus:ring-stone-200 disabled:bg-stone-100";
 const labelClass = "mb-1.5 block text-xs font-medium text-stone-500";
@@ -32,6 +35,7 @@ interface FormState {
   city: CityValue;
   dressCode: DressCodeOption;
   notes: string;
+  requiredItems: ClothingItem[];
 }
 
 export type EventFormSubmit = (request: EventRequest, options: { generateLook: boolean }) => void;
@@ -61,6 +65,7 @@ export function EventForm({ event, defaultDate, busy, pending, error, onSubmit, 
       : { cityName: user?.cityName ?? "", cityCoordinates: user?.cityCoordinates ?? "" },
     dressCode: event?.dressCode ?? "AUTO",
     notes: event?.notes ?? "",
+    requiredItems: event?.requiredItems ?? [],
   }));
   const [validation, setValidation] = useState("");
 
@@ -108,6 +113,7 @@ export function EventForm({ event, defaultDate, busy, pending, error, onSubmit, 
       cityCoordinates: form.city.cityName.trim() ? form.city.cityCoordinates || null : null,
       dressCode: form.dressCode === "AUTO" ? null : form.dressCode,
       notes: form.notes.trim() || null,
+      requiredItemIds: form.requiredItems.map((item) => item.id),
     }, { generateLook });
   }
 
@@ -191,6 +197,19 @@ export function EventForm({ event, defaultDate, busy, pending, error, onSubmit, 
             <label htmlFor="event-dress-code" className={labelClass}>Dress code</label>
             <Select id="event-dress-code" value={form.dressCode} onValueChange={(value) => update("dressCode", value)} options={DRESS_CODE_OPTIONS} disabled={busy} />
           </div>
+        </div>
+
+        <div>
+          <label htmlFor="event-required-items" className={labelClass}>Peças que você já vai usar <span className="text-stone-400">(opcional)</span></label>
+          <WardrobeItemPicker
+            id="event-required-items"
+            value={form.requiredItems}
+            onChange={(items) => update("requiredItems", items)}
+            max={MAX_EVENT_ITEMS}
+            disabled={busy}
+            placeholder="Buscar pelo nome da peça"
+          />
+          <p className="mt-1.5 text-[11px] text-stone-400">A Stella monta o look em torno delas e só completa o que faltar.</p>
         </div>
 
         <div>

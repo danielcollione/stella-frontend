@@ -1,6 +1,6 @@
 import axios from "axios";
 import { api } from "@/services/api";
-import type { ClothingCategory, ClothingItem, ClothingStatus, UpdateClothingItemRequest, WardrobePage, WardrobeScope } from "@/types/wardrobe";
+import type { ClothingCategory, ClothingItem, ClothingStatus, UpdateClothingItemRequest, WardrobePage, WardrobeScope, WardrobeStats } from "@/types/wardrobe";
 
 interface ListItemsOptions {
   status?: ClothingStatus;
@@ -79,6 +79,18 @@ export const wardrobeService = {
 
   async updateItem(id: string, request: UpdateClothingItemRequest): Promise<ClothingItem> {
     const response = await api.put<ClothingItem>(`/wardrobe/items/${encodeURIComponent(id)}`, request);
+    return response.data;
+  },
+
+  // Números dos painéis do guarda-roupa
+  async stats(signal?: AbortSignal): Promise<WardrobeStats> {
+    const response = await api.get<WardrobeStats>("/wardrobe/items/stats", { signal });
+    return response.data;
+  },
+
+  // Zera o diário de uso; devolve os painéis já atualizados
+  async resetWearDiary(): Promise<WardrobeStats> {
+    const response = await api.delete<WardrobeStats>("/wardrobe/items/stats/wears");
     return response.data;
   },
 

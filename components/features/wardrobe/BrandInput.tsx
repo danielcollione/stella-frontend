@@ -36,8 +36,7 @@ export function BrandInput({ id, value, onChange, disabled, inputClassName }: Br
     if (!term) return [];
     const starts = CATALOG.filter((brand) => brand.key.startsWith(term));
     const contains = CATALOG.filter((brand) => !brand.key.startsWith(term) && brand.key.includes(term));
-    const found = [...starts, ...contains].slice(0, MAX_SUGGESTIONS);
-    return found.length === 1 && found[0].key === term ? [] : found;
+    return [...starts, ...contains].slice(0, MAX_SUGGESTIONS);
   }, [value]);
 
   const visible = open && results.length > 0;

@@ -473,7 +473,9 @@ function LoginForm() {
 
         {/* Rodapé / Termos */}
         <p className="text-[11px] text-stone-400 text-center font-light">
-          Ao continuar, você concorda com os Nossos Termos de Serviço e Política de Privacidade LGPD.
+          Ao continuar, você concorda com os nossos{" "}
+          <Link href="/termos" target="_blank" className="underline underline-offset-2 hover:text-stone-600">Termos de uso</Link> e com a{" "}
+          <Link href="/privacidade" target="_blank" className="underline underline-offset-2 hover:text-stone-600">Política de Privacidade</Link>.
         </p>
       </div>
 
@@ -491,7 +493,7 @@ function LoginForm() {
           <div className="absolute inset-0 bg-gradient-to-t from-stone-900/80 via-stone-900/20 to-transparent flex flex-col justify-end p-10 text-white">
             <span className="font-serif italic text-3xl tracking-tight">stella.ai</span>
             <p className="text-sm text-stone-200 mt-2 font-light max-w-md leading-relaxed">
-              Sua estilista pessoal com inteligência artificial e privacidade Nível 2 por criptografia.
+              Sua estilista pessoal com inteligência artificial.
             </p>
           </div>
         </div>

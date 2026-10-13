@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
-import { AlertCircle, ImagePlus, LoaderCircle, Menu, MessageCircle, Plus, Search, SearchX, Shirt, X } from "lucide-react";
+import { AlertCircle, ArrowRight, ImagePlus, LoaderCircle, Menu, MessageCircle, Plus, Search, SearchX, Shirt, X } from "lucide-react";
 import { useAppShell } from "@/components/layout/AppShell";
 import { PageContent } from "@/components/layout/PageContent";
 import { Select } from "@/components/ui/Select";
@@ -19,7 +19,8 @@ import {
   isCategory, isStatusFilter,
 } from "@/services/wardrobe/wardrobeCatalog";
 import type { StatusFilter } from "@/services/wardrobe/wardrobeCatalog";
-import type { ClothingCategory } from "@/types/wardrobe";
+import { wardrobeService } from "@/services/wardrobe/wardrobeService";
+import type { ClothingCategory, WardrobeStats } from "@/types/wardrobe";
 
 type CategoryFilter = "ALL" | ClothingCategory;
 
@@ -85,6 +86,16 @@ export default function WardrobePage() {
         .map((value) => ({ value, label: CATEGORY_LABELS[value].plural, count: counts[value] ?? 0 })),
     ];
   }, [meta, category]);
+
+  // Resumo dos painéis no topo; recarrega quando uma peça entra, sai ou é editada (o preço muda o valor)
+  const [summary, setSummary] = useState<WardrobeStats | null>(null);
+  const [summaryVersion, setSummaryVersion] = useState(0);
+  useEffect(() => {
+    const controller = new AbortController();
+    wardrobeService.stats(controller.signal).then(setSummary).catch(() => undefined);
+    return () => controller.abort();
+  }, [summaryVersion]);
+  const refreshSummary = () => setSummaryVersion((current) => current + 1);
 
   const visibleItems = items;
   const hasAnyItem = (meta?.allCount ?? 0) > 0;
@@ -184,6 +195,8 @@ export default function WardrobePage() {
             )}
           </header>
 
+          {status === "ready" && hasAnyItem && summary && summary.totalItems > 0 && <WardrobeSummary stats={summary} />}
+
           {status === "ready" && hasAnyItem && (
             <div className="mb-3 flex items-center gap-2 px-5 sm:px-0">
               <div className="w-44 shrink-0">
@@ -235,10 +248,41 @@ export default function WardrobePage() {
           key={dialog.key}
           target={dialog.target}
           onClose={() => setDialog(null)}
-          onSaved={upsertItem}
-          onDeleted={removeItem}
+          onSaved={(item) => { upsertItem(item); refreshSummary(); }}
+          onDeleted={(id) => { removeItem(id); refreshSummary(); }}
         />
       )}
+    </div>
+  );
+}
+
+// Os números principais dos painéis, à vista no guarda-roupa: a faixa inteira leva à página completa
+function WardrobeSummary({ stats }: { stats: WardrobeStats }) {
+  const usage = Math.round((stats.wornItems / stats.totalItems) * 100);
+  const figures = [
+    { value: String(stats.totalItems), label: stats.totalItems === 1 ? "peça" : "peças" },
+    ...(stats.pricedItems > 0
+      ? [{ value: stats.wardrobeValue.toLocaleString("pt-BR", { style: "currency", currency: "BRL", maximumFractionDigits: 0 }), label: "em peças" }]
+      : []),
+    { value: `${usage}%`, label: "em uso" },
+  ];
+
+  return (
+    <div className="mb-5 px-5 sm:px-0">
+      <Link href="/wardrobe/painel" className="stella-message-in group flex items-center justify-between gap-4 rounded-2xl border border-stone-200/80 bg-white px-4 py-3 shadow-[0_1px_2px_rgba(28,25,23,0.03)] transition-colors hover:border-stone-300 sm:px-5">
+        <div className="flex min-w-0 items-baseline gap-x-5 gap-y-1 sm:gap-x-8">
+          {figures.map((figure) => (
+            <div key={figure.label} className="flex min-w-0 items-baseline gap-1.5">
+              <span className="font-serif text-xl tabular-nums tracking-tight text-stone-900 sm:text-2xl">{figure.value}</span>
+              <span className="truncate text-[11px] text-stone-500 sm:text-xs">{figure.label}</span>
+            </div>
+          ))}
+        </div>
+        <span className="inline-flex shrink-0 items-center gap-1.5 text-xs font-medium text-stone-600 transition-colors group-hover:text-stone-900">
+          <span className="hidden sm:inline">Ver painéis</span>
+          <ArrowRight size={15} className="transition-transform group-hover:translate-x-0.5" />
+        </span>
+      </Link>
     </div>
   );
 }

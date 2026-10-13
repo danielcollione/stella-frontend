@@ -138,6 +138,13 @@ export default function PlansPage() {
             <ShieldCheck size={14} />
             Pagamento seguro pelo Stripe. No teste grátis, a primeira cobrança acontece só ao fim do período de teste.
           </p>
+          <p className="mt-2 text-center text-xs text-stone-400">
+            Ao assinar, você concorda com os{" "}
+            <Link href="/termos" target="_blank" className="underline underline-offset-2 hover:text-stone-600">Termos de uso</Link>
+            {" "}e com a{" "}
+            <Link href="/privacidade" target="_blank" className="underline underline-offset-2 hover:text-stone-600">Política de Privacidade</Link>.
+            Você pode cancelar quando quiser; períodos já pagos não são reembolsados.
+          </p>
         </PageContent>
       </main>
     </div>

@@ -34,6 +34,11 @@ export default function Home() {
         </section>
         </PageContent>
       </main>
+
+      <footer className="mt-16 flex justify-center gap-6 px-4 text-xs text-stone-500">
+        <Link href="/termos" className="hover:text-stone-900">Termos de uso</Link>
+        <Link href="/privacidade" className="hover:text-stone-900">Privacidade</Link>
+      </footer>
     </div>
   );
 }

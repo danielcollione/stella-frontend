@@ -29,7 +29,13 @@ async function copyText(text: string) {
   }
 }
 
-export function CopyMessageButton({ text }: { text: string }) {
+interface CopyMessageButtonProps {
+  text: string;
+  label?: string; // o que está sendo copiado, para o leitor de tela e a dica do botão
+  align?: "left" | "right"; // para que lado o aviso "Copiado!" se abre
+}
+
+export function CopyMessageButton({ text, label = "Copiar mensagem", align = "left" }: CopyMessageButtonProps) {
   const [status, setStatus] = useState<"copied" | "error" | null>(null);
   const timeout = useRef<ReturnType<typeof setTimeout> | null>(null);
   const copying = useRef(false);
@@ -65,8 +71,8 @@ export function CopyMessageButton({ text }: { text: string }) {
         type="button"
         onClick={() => void handleCopy()}
         disabled={!text}
-        aria-label="Copiar mensagem da Stella"
-        title="Copiar mensagem"
+        aria-label={label}
+        title={label}
         className={`p-1.5 hover:text-stone-700 hover:bg-stone-200/50 rounded-md transition-colors disabled:opacity-40 disabled:cursor-not-allowed ${status === "copied" ? "text-stone-900" : "text-stone-400"}`}
       >
         {status === "copied" ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
@@ -81,7 +87,7 @@ export function CopyMessageButton({ text }: { text: string }) {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0 }}
             transition={{ duration: reducedMotion ? 0 : 0.15 }}
-            className="pointer-events-none absolute bottom-full left-0 z-20 mb-2 whitespace-nowrap rounded-lg border border-stone-200/80 bg-white px-3 py-1.5 text-xs font-medium text-stone-700 shadow-sm"
+            className={`pointer-events-none absolute bottom-full z-20 mb-2 ${align === "right" ? "right-0" : "left-0"} whitespace-nowrap rounded-lg border border-stone-200/80 bg-white px-3 py-1.5 text-xs font-medium text-stone-700 shadow-sm`}
           >
             {status === "copied" ? "Copiado!" : "Nao foi possivel copiar"}
           </motion.span>

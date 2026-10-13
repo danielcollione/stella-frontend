@@ -23,6 +23,7 @@ interface FormState {
   color: string;
   style: string;
   formality: FormalityOption;
+  price: string; // já formatado ("2.000,00"); vazio = não informado
   status: ClothingStatus;
 }
 
@@ -45,8 +46,31 @@ function toFormState(item: ClothingItem): FormState {
     color: item.color ?? "",
     style: item.style ?? "",
     formality: item.formality ?? "NONE",
+    price: item.purchasePrice == null ? "" : formatPrice(item.purchasePrice),
     status: item.status,
   };
+}
+
+const MAX_PRICE_DIGITS = 10; // até R$ 99.999.999,99, o limite do back-end
+
+const formatPrice = (value: number) => value.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+// A pessoa digita só números e os dois últimos são sempre os centavos: "200000" vira "2.000,00"
+function maskPrice(text: string): string {
+  const digits = text.replace(/\D/g, "").replace(/^0+/, "").slice(0, MAX_PRICE_DIGITS);
+  return digits ? formatPrice(Number(digits) / 100) : "";
+}
+
+function parsePrice(masked: string): number | null {
+  const digits = masked.replace(/\D/g, "");
+  return digits ? Number(digits) / 100 : null;
+}
+
+function usageSummary(item: ClothingItem): string | null {
+  const times = item.timesWorn ?? 0;
+  if (times === 0) return null;
+  const last = item.lastWornAt ? new Date(item.lastWornAt).toLocaleDateString("pt-BR", { day: "numeric", month: "short" }) : null;
+  return `Usada ${times} ${times === 1 ? "vez" : "vezes"}${last ? ` · último uso em ${last}` : ""}`;
 }
 
 function toRequest(form: FormState): UpdateClothingItemRequest {
@@ -58,6 +82,7 @@ function toRequest(form: FormState): UpdateClothingItemRequest {
     color: text(form.color),
     style: text(form.style),
     formality: form.formality === "NONE" ? null : form.formality,
+    purchasePrice: parsePrice(form.price),
     status: form.status,
   };
 }
@@ -90,6 +115,7 @@ export function ClothingItemForm({ item, isNew, pager, onBusyChange, onSaved, on
   const [viewerOpen, setViewerOpen] = useState(false);
   const dirty = JSON.stringify(form) !== JSON.stringify(initial);
   const busy = pending !== null;
+  const usage = usageSummary(item);
 
   function update<Key extends keyof FormState>(key: Key, value: FormState[Key]) {
     setForm((current) => ({ ...current, [key]: value }));
@@ -164,6 +190,7 @@ export function ClothingItemForm({ item, isNew, pager, onBusyChange, onSaved, on
             <Lock aria-hidden="true" size={11} />
             A foto não pode ser alterada
           </figcaption>
+          {usage && <p className="mt-1.5 text-center text-[11px] text-stone-500 sm:text-left">{usage}</p>}
         </figure>
 
         <fieldset disabled={busy} className="min-w-0 space-y-4">
@@ -194,9 +221,18 @@ export function ClothingItemForm({ item, isNew, pager, onBusyChange, onSaved, on
             </div>
           </div>
 
-          <div>
-            <label htmlFor={`${fieldId}-brand`} className={labelClass}>Marca <span className="font-normal text-stone-400">(opcional)</span></label>
-            <BrandInput id={`${fieldId}-brand`} value={form.brand} onChange={(value) => update("brand", value)} disabled={busy} inputClassName={fieldClass} />
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div>
+              <label htmlFor={`${fieldId}-brand`} className={labelClass}>Marca <span className="font-normal text-stone-400">(opcional)</span></label>
+              <BrandInput id={`${fieldId}-brand`} value={form.brand} onChange={(value) => update("brand", value)} disabled={busy} inputClassName={fieldClass} />
+            </div>
+            <div>
+              <label htmlFor={`${fieldId}-price`} className={labelClass}>Quanto custou <span className="font-normal text-stone-400">(opcional)</span></label>
+              <div className="relative">
+                <span aria-hidden="true" className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-sm text-stone-400">R$</span>
+                <input id={`${fieldId}-price`} value={form.price} onChange={(event) => update("price", maskPrice(event.target.value))} inputMode="numeric" placeholder="0,00" className={`${fieldClass} pl-10 tabular-nums`} autoComplete="off" />
+              </div>
+            </div>
           </div>
 
           <div role="radiogroup" aria-labelledby={`${fieldId}-status-label`}>

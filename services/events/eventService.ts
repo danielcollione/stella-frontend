@@ -44,4 +44,16 @@ export const eventService = {
     const { data } = await api.put<CalendarEvent>(`${path(id)}/looks/${encodeURIComponent(lookId)}/choose`);
     return data;
   },
+
+  // Troca as peças que a pessoa já decidiu usar no evento
+  async setRequiredItems(id: string, itemIds: string[]): Promise<CalendarEvent> {
+    const { data } = await api.put<CalendarEvent>(`${path(id)}/required-items`, { itemIds });
+    return data;
+  },
+
+  // A pessoa trocou as peças do look: a Stella opina e reescreve os textos (conta como 1 mensagem do plano)
+  async editLook(id: string, lookId: string, itemIds: string[]): Promise<CalendarEvent> {
+    const { data } = await api.put<CalendarEvent>(`${path(id)}/looks/${encodeURIComponent(lookId)}/items`, { itemIds });
+    return data;
+  },
 };
