@@ -11,7 +11,7 @@ import { planLimitFrom } from "@/services/billing/billingService";
 import { eventService } from "@/services/events/eventService";
 import { dressCodeLabel, formatLongDate, formatTime, occasionOf, relativeDay, shortCity, todayIso } from "@/services/events/eventCatalog";
 import { apiErrorMessage } from "@/services/wardrobe/wardrobeService";
-import { WardrobeItemPicker } from "@/components/features/wardrobe/WardrobeItemPicker";
+import { WardrobeItemsField } from "@/components/features/wardrobe/WardrobeItemsField";
 import { MAX_EVENT_ITEMS } from "@/types/events";
 import type { CalendarEvent, EventLook } from "@/types/events";
 import type { ClothingItem } from "@/types/wardrobe";
@@ -270,14 +270,15 @@ function EventDetail({ event, detailFailed, pending, problem, lookIndex, confirm
               <p className="mt-4 font-serif text-xl italic text-stone-900">Que tal planejar o look?</p>
               <p className="mt-1 max-w-sm text-sm text-stone-500">A Stella combina peças do seu guarda-roupa com a ocasião e sugere o que faltar.</p>
               <div className="mt-5 w-full max-w-md text-left">
-                <label htmlFor="event-detail-required-items" className="mb-1.5 block text-xs font-medium text-stone-500">Já sabe alguma peça que vai usar? <span className="text-stone-400">(opcional)</span></label>
-                <WardrobeItemPicker
+                <span className="mb-1.5 block text-xs font-medium text-stone-500">Já sabe alguma peça que vai usar? <span className="text-stone-400">(opcional)</span></span>
+                <WardrobeItemsField
                   id="event-detail-required-items"
                   value={event.requiredItems ?? []}
                   onChange={onRequiredChange}
                   max={MAX_EVENT_ITEMS}
                   disabled={busy}
-                  placeholder="Buscar pelo nome da peça"
+                  dialogTitle="Peças que você já vai usar"
+                  dialogDescription="Toque nas peças que já estão decididas. A Stella monta o look em torno delas."
                 />
                 <p className="mt-1.5 text-[11px] text-stone-400">A Stella monta o look em torno delas e só completa o que faltar.</p>
               </div>

@@ -11,7 +11,7 @@ import { WeatherIcon } from "@/components/features/weather/WeatherIcon";
 import { weatherService } from "@/services/weather/weatherService";
 import type { DayWeather } from "@/services/weather/weatherService";
 import { DRESS_CODES, OCCASIONS, todayIso } from "@/services/events/eventCatalog";
-import { WardrobeItemPicker } from "@/components/features/wardrobe/WardrobeItemPicker";
+import { WardrobeItemsField } from "@/components/features/wardrobe/WardrobeItemsField";
 import { MAX_EVENT_ITEMS } from "@/types/events";
 import type { CalendarEvent, DressCode, EventOccasion, EventRequest } from "@/types/events";
 import type { ClothingItem } from "@/types/wardrobe";
@@ -200,14 +200,15 @@ export function EventForm({ event, defaultDate, busy, pending, error, onSubmit, 
         </div>
 
         <div>
-          <label htmlFor="event-required-items" className={labelClass}>Peças que você já vai usar <span className="text-stone-400">(opcional)</span></label>
-          <WardrobeItemPicker
+          <span className={labelClass}>Peças que você já vai usar <span className="text-stone-400">(opcional)</span></span>
+          <WardrobeItemsField
             id="event-required-items"
             value={form.requiredItems}
             onChange={(items) => update("requiredItems", items)}
             max={MAX_EVENT_ITEMS}
             disabled={busy}
-            placeholder="Buscar pelo nome da peça"
+            dialogTitle="Peças que você já vai usar"
+            dialogDescription="Toque nas peças que já estão decididas. A Stella monta o look em torno delas."
           />
           <p className="mt-1.5 text-[11px] text-stone-400">A Stella monta o look em torno delas e só completa o que faltar.</p>
         </div>
