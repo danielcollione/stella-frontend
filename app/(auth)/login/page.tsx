@@ -2,7 +2,7 @@
 
 import { Suspense, useEffect, useState } from "react";
 import Link from "next/link";
-import Image from "next/image";
+import { StellaMark } from "@/components/ui/StellaMark";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
   ArrowLeft,
@@ -17,7 +17,6 @@ import {
 import { authService } from "@/services/authService";
 import type { UserResponseDto } from "@/types/auth";
 import { prepareGoogleAuth } from "@/utils/google";
-import { Logo } from "@/components/ui/Logo";
 import { PageContent } from "@/components/layout/PageContent";
 
 // Ícone SVG Oficial do Google
@@ -189,7 +188,6 @@ function LoginForm() {
           >
             <ArrowLeft size={16} /> Voltar para o início
           </Link>
-          <Logo size="sm" showText={false} />
         </div>
 
         {/* Corpo do Formulário */}
@@ -482,16 +480,20 @@ function LoginForm() {
       {/* 2. SEÇÃO DIREITA - PAINEL EDITORIAL VISUAL (MODA / STELLA) */}
       <div className="hidden md:flex md:w-1/2 p-6 justify-center items-center">
         <div className="relative w-full h-full max-h-[92vh] rounded-3xl overflow-hidden shadow-xl border border-stone-200/40 group">
-          <Image
-            src="/logo.jpg"
-            alt="Stella Fashion Styling"
-            fill
-            className="object-cover object-center scale-105 group-hover:scale-100 transition-transform duration-700 ease-out"
-            priority
+          {/* Ilustração da Stella na pose do logo; arquivo estático já no tamanho de uso */}
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src="/landing/login-stella.webp"
+            alt="Stella, de perfil, com chapéu de aba larga"
+            draggable={false}
+            className="absolute inset-0 h-full w-full object-cover object-top scale-105 group-hover:scale-100 transition-transform duration-700 ease-out"
           />
           {/* Overlay Elegante com Gradiente Escuro na Base */}
           <div className="absolute inset-0 bg-gradient-to-t from-stone-900/80 via-stone-900/20 to-transparent flex flex-col justify-end p-10 text-white">
-            <span className="font-serif italic text-3xl tracking-tight">stella.ai</span>
+            <span className="flex items-center gap-2.5 font-serif italic text-3xl tracking-tight">
+              <StellaMark size={40} decorative className="invert" />
+              stella.ai
+            </span>
             <p className="text-sm text-stone-200 mt-2 font-light max-w-md leading-relaxed">
               Sua estilista pessoal com inteligência artificial.
             </p>

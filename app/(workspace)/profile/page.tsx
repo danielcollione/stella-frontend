@@ -5,11 +5,13 @@ import { useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
+  BadgeCheck,
   ArrowLeft, ChevronRight, CreditCard, Eye, EyeOff, Headphones,
   KeyRound, LoaderCircle, LogOut, MapPin, Menu, Save, UserRound,
 } from "lucide-react";
 import { useAppShell } from "@/components/layout/AppShell";
 import { PageContent } from "@/components/layout/PageContent";
+import { VerifyEmailDialog } from "@/components/features/account/VerifyEmailDialog";
 import { CopyMessageButton } from "@/components/ui/CopyMessageButton";
 import { Select } from "@/components/ui/Select";
 import { PlanStatusPanel } from "@/components/features/billing/PlanStatusPanel";
@@ -70,6 +72,7 @@ function profileValues(user: UserResponseDto): UpdateProfileRequestDto {
 export default function ProfilePage() {
   const router = useRouter();
   const { user, setUser, openMobileMenu } = useAppShell();
+  const [verifyingEmail, setVerifyingEmail] = useState(false);
   const searchParams = useSearchParams();
   // ?view=plan: retorno do portal do Stripe abre direto na seção do plano
   const [view, setView] = useState<ProfileView>(() => searchParams.get("view") === "plan" ? "plan" : "overview");
@@ -194,8 +197,24 @@ export default function ProfilePage() {
                   <p className="text-xs text-stone-500 mt-1">Localizacao</p>
                 </button>
               </div>
+              {user.emailVerified === true && (
+                <p className="mb-5 flex items-center gap-1.5 px-1 text-xs text-stone-500">
+                  <BadgeCheck aria-hidden="true" size={14} className="shrink-0 text-emerald-600" />
+                  <span className="truncate">E-mail confirmado: {user.email}</span>
+                </p>
+              )}
               <p className="text-xs font-medium text-stone-500 px-1 mb-3">Minha conta</p>
               <nav aria-label="Opcoes da conta" className="space-y-2">
+                {user.emailVerified === false && (
+                  <button type="button" onClick={() => setVerifyingEmail(true)} className="flex items-center gap-3 w-full rounded-lg border border-amber-200 bg-amber-50/60 px-4 py-3 text-left text-sm hover:bg-amber-50 transition-colors">
+                    <span aria-hidden="true" className="flex h-[18px] w-[18px] shrink-0 items-center justify-center rounded-full bg-amber-500 text-[11px] font-bold leading-none text-white">!</span>
+                    <span className="min-w-0 flex-1">
+                      <span className="block">Confirmar e-mail</span>
+                      <span className="block truncate text-xs text-stone-500">Proteja a sua conta: confirme que {user.email} é seu.</span>
+                    </span>
+                    <ChevronRight size={17} className="shrink-0 text-stone-400" />
+                  </button>
+                )}
                 {rows.map((row) => {
                   const Icon = row.icon;
                   return <button key={row.target} type="button" onClick={() => openView(row.target)} className="flex items-center gap-3 w-full rounded-lg border border-stone-200/70 bg-white px-4 py-4 text-left text-sm hover:bg-stone-50 transition-colors"><Icon size={18} className="text-stone-600" /><span className="flex-1">{row.label}</span><ChevronRight size={17} className="text-stone-400" /></button>;
@@ -215,6 +234,8 @@ export default function ProfilePage() {
               </nav>
             </>
           )}
+
+          {verifyingEmail && <VerifyEmailDialog email={user.email} onClose={() => setVerifyingEmail(false)} onVerified={setUser} />}
 
           {view === "plan" && <PlanStatusPanel />}
 

@@ -44,6 +44,8 @@ function SidebarContent({ expanded, mobile, toggle, closeMenu }: {
   const router = useRouter();
   const pathname = usePathname();
   const [error, setError] = useState("");
+  // Cadastro por e-mail e senha que ainda não confirmou o código: lembrete discreto ao lado do nome
+  const emailPending = user?.emailVerified === false;
   const initials = user?.name.trim().split(/\s+/).filter(Boolean).slice(0, 2)
     .map((part) => part[0]).join("").toUpperCase() || "U";
 
@@ -134,8 +136,13 @@ function SidebarContent({ expanded, mobile, toggle, closeMenu }: {
       </div>
       <div className={`flex shrink-0 items-center w-full justify-between border-t ${mobile ? "border-stone-200 mt-4 pt-4" : "border-stone-200/60 mt-3 pt-3"}`}>
         <Link href="/profile" onClick={closeMenu} title={user?.name || "Meu perfil"} aria-label="Abrir meu perfil" aria-current={pathname === "/profile" ? "page" : undefined} className="flex items-center gap-2.5 min-w-0 flex-1 rounded-lg hover:bg-stone-100 transition-colors p-1">
-          <div className="w-8 h-8 rounded-full bg-stone-200 border border-stone-300 flex items-center justify-center text-xs font-semibold text-stone-700 shrink-0">{initials}</div>
+          <div className="relative w-8 h-8 rounded-full bg-stone-200 border border-stone-300 flex items-center justify-center text-xs font-semibold text-stone-700 shrink-0">
+            {initials}
+            {/* Menu recolhido: o lembrete de confirmar o e-mail fica no canto do avatar */}
+            {emailPending && !expanded && <span aria-hidden="true" className="absolute -right-1 -top-1 flex h-3.5 w-3.5 items-center justify-center rounded-full bg-amber-500 text-[9px] font-bold leading-none text-white ring-2 ring-white">!</span>}
+          </div>
           <MenuLabel visible={expanded} className="text-xs font-medium text-stone-800 truncate">{user?.name || "Meu perfil"}</MenuLabel>
+          {emailPending && expanded && <span role="img" aria-label="E-mail ainda não confirmado" title="Confirme o seu e-mail no perfil" className="flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-amber-500 text-[10px] font-bold leading-none text-white">!</span>}
         </Link>
         <button type="button" onClick={() => void authService.logout()} aria-label="Sair da conta" title="Sair da conta" className="p-2 text-stone-400 hover:text-red-600 hover:bg-red-50 rounded-xl transition-all shrink-0"><LogOut className="w-4 h-4" /></button>
       </div>

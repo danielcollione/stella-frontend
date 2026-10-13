@@ -1,44 +1,85 @@
-"use client";
+import { Closing } from "@/components/landing/sections";
+import { Faq } from "@/components/landing/Faq";
+import { FAQ_QUESTIONS } from "@/components/landing/faqData";
+import { Features } from "@/components/landing/Features";
+import { Hero, TrustRow } from "@/components/landing/Hero";
+import { LandingNav } from "@/components/landing/LandingNav";
+import { Pricing } from "@/components/landing/Pricing";
+import { NumbersReveal, PhotoFilm, PlannerSpotlight } from "@/components/landing/Showcase";
+import { Skills } from "@/components/landing/Skills";
+import { SITE_DESCRIPTION, SITE_NAME, SITE_URL } from "@/utils/site";
 
-import Link from 'next/link';
-import { Navbar } from '@/components/layout/Navbar';
-import { PhoneMockup } from '@/components/features/PhoneMockup';
-import { PageContent } from '@/components/layout/PageContent';
+// Dados estruturados (schema.org): dizem aos buscadores o que é o site, o produto e as perguntas frequentes
+const STRUCTURED_DATA = {
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "Organization",
+      "@id": `${SITE_URL}/#organization`,
+      name: SITE_NAME,
+      url: SITE_URL,
+      logo: `${SITE_URL}/icon.png`,
+    },
+    {
+      "@type": "WebSite",
+      "@id": `${SITE_URL}/#website`,
+      url: SITE_URL,
+      name: SITE_NAME,
+      description: SITE_DESCRIPTION,
+      inLanguage: "pt-BR",
+      publisher: { "@id": `${SITE_URL}/#organization` },
+    },
+    {
+      "@type": "SoftwareApplication",
+      "@id": `${SITE_URL}/#app`,
+      name: SITE_NAME,
+      url: SITE_URL,
+      description: SITE_DESCRIPTION,
+      applicationCategory: "LifestyleApplication",
+      operatingSystem: "Web",
+      inLanguage: "pt-BR",
+      image: `${SITE_URL}/opengraph-image.jpg`,
+      offers: { "@type": "Offer", price: "0", priceCurrency: "BRL", description: "Plano gratuito, sem cartão" },
+      featureList: [
+        "Guarda-roupa virtual por foto",
+        "Looks do dia com a previsão do tempo",
+        "Planejador de looks para eventos",
+        "Coloração pessoal",
+        "Painéis de uso do guarda-roupa",
+        "Sugestões de compra com critério",
+      ],
+      publisher: { "@id": `${SITE_URL}/#organization` },
+    },
+    {
+      "@type": "FAQPage",
+      "@id": `${SITE_URL}/#faq`,
+      mainEntity: FAQ_QUESTIONS.map((item) => ({
+        "@type": "Question",
+        name: item.question,
+        acceptedAnswer: { "@type": "Answer", text: item.answer },
+      })),
+    },
+  ],
+};
 
 export default function Home() {
   return (
-    <div className="min-h-screen font-sans selection:bg-stone-200 pb-20 overflow-x-hidden">
-      <Navbar />
-
+    // overflow-x-clip (e não hidden): "hidden" criaria uma área de rolagem e quebraria as seções presas (sticky)
+    <div className="min-h-screen overflow-x-clip font-sans selection:bg-stone-300/60">
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(STRUCTURED_DATA).replace(/</g, "\\u003c") }} />
+      <LandingNav />
       <main>
-        <PageContent stagger fadeOnly>
-        {/* Hero Section */}
-        <section className="max-w-4xl mx-auto text-center px-4 pt-16 pb-12">
-          <h1 className="text-4xl sm:text-6xl font-serif tracking-tight text-stone-900 leading-[1.15]">
-            A sua personal stylist com IA, <br />
-            <span className="italic font-light">sempre no seu bolso.</span>
-          </h1>
-          <p className="mt-6 text-base sm:text-lg text-stone-600 max-w-xl mx-auto font-light leading-relaxed">
-            Tire uma foto das suas roupas. A Stella organiza o seu guarda-roupa virtual e cria combinações elegantes para qualquer ocasião.
-          </p>
-          <div className="mt-8 flex justify-center">
-            <Link href="/login" className="bg-stone-900 text-stone-50 px-8 py-3.5 rounded-full text-sm font-medium shadow-md hover:shadow-lg hover:scale-[1.02] transition-all">
-              Experimentar a Stella
-            </Link>
-          </div>
-        </section>
-
-        {/* Mockup Section */}
-        <section className="flex justify-center px-4">
-          <PhoneMockup />
-        </section>
-        </PageContent>
+        <Hero />
+        <TrustRow />
+        <Skills />
+        <PlannerSpotlight />
+        <NumbersReveal />
+        <PhotoFilm />
+        <Features />
+        <Pricing />
+        <Faq />
+        <Closing />
       </main>
-
-      <footer className="mt-16 flex justify-center gap-6 px-4 text-xs text-stone-500">
-        <Link href="/termos" className="hover:text-stone-900">Termos de uso</Link>
-        <Link href="/privacidade" className="hover:text-stone-900">Privacidade</Link>
-      </footer>
     </div>
   );
 }

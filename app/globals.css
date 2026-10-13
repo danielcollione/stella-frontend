@@ -188,3 +188,25 @@ body {
     animation-delay: 0s !important;
   }
 }
+/* Landing: faixa de perguntas que corre devagar da direita para a esquerda, sem parar. A lista é duplicada,
+   então andar metade da largura (mais metade do espaço entre as cópias) fecha a volta sem salto. */
+.stella-marquee {
+  animation: stella-marquee var(--stella-marquee-duration, 70s) linear infinite;
+  will-change: transform;
+}
+
+.stella-marquee:hover {
+  animation-play-state: paused;
+}
+
+@keyframes stella-marquee {
+  from { transform: translateX(0); }
+  to { transform: translateX(calc(-50% - 0.5rem)); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .stella-marquee {
+    animation: none;
+  }
+}
+

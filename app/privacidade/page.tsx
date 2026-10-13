@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { LegalPage, LegalSection, SupportLink } from "@/components/legal/LegalPage";
 
 export const metadata: Metadata = {
+  alternates: { canonical: "/privacidade" },
   title: "Política de privacidade · Stella",
   description: "Quais dados a Stella guarda, para que usa, com quem compartilha e como você controla os seus dados.",
 };

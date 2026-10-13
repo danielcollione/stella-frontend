@@ -3,6 +3,7 @@ import Link from "next/link";
 import { LegalPage, LegalSection, SupportLink } from "@/components/legal/LegalPage";
 
 export const metadata: Metadata = {
+  alternates: { canonical: "/termos" },
   title: "Termos de uso · Stella",
   description: "As regras de uso da Stella: planos, teste grátis, cobrança, cancelamento e responsabilidades.",
 };

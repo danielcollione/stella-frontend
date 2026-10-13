@@ -18,6 +18,7 @@ export interface UserResponseDto {
   stripeCustomerId?: string | null;
   currentPeriodEnd?: string | null;
   admin?: boolean; // enxerga o painel interno
+  emailVerified?: boolean; // false = cadastro por e-mail e senha que ainda não confirmou o código (o app mostra um aviso)
 }
 
 export interface UpdateProfileRequestDto {

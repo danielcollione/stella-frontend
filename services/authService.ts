@@ -98,6 +98,24 @@ export const authService = {
     }
   },
 
+  // Confirmação de e-mail (opcional): confere o código de 6 dígitos e devolve o perfil já confirmado
+  async verifyEmail(code: string): Promise<UserResponseDto> {
+    try {
+      const { data } = await api.post<UserResponseDto>('/auth/me/email-verification', { code: code.trim() });
+      return data;
+    } catch (error: unknown) {
+      throw authError(error, 'Nao foi possivel confirmar o codigo. Tente novamente.');
+    }
+  },
+
+  async sendVerificationCode(): Promise<void> {
+    try {
+      await api.post('/auth/me/email-verification/code');
+    } catch (error: unknown) {
+      throw authError(error, 'Nao foi possivel enviar o codigo agora. Tente novamente.');
+    }
+  },
+
   getToken(): string | null {
     return getSessionToken();
   },
