@@ -142,10 +142,17 @@ export default function OnboardingPage() {
           setIsLocating(false);
         }
       },
-      () => {
-        setError("Permissão de localização negada. Digite o nome da sua cidade.");
+      (failure) => {
+        // Cada falha tem um motivo diferente: só a primeira é recusa de permissão
+        setError(failure.code === failure.PERMISSION_DENIED
+          ? "Permissão de localização negada. Digite o nome da sua cidade."
+          : failure.code === failure.TIMEOUT
+            ? "A localização demorou demais para responder. Digite o nome da sua cidade."
+            : "Não foi possível obter a sua localização agora. Digite o nome da sua cidade.");
         setIsLocating(false);
-      }
+      },
+      // Precisão de cidade basta (mais rápido e gasta menos bateria); sem prazo, o botão podia ficar girando
+      { enableHighAccuracy: false, timeout: 10000, maximumAge: 10 * 60 * 1000 }
     );
   }
 
