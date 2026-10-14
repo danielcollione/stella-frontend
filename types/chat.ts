@@ -19,7 +19,7 @@ export interface ChatMessage {
   feedback?: 'LIKE' | 'DISLIKE' | 'NONE';
   feedbackReason?: FeedbackReason | null; // motivo opcional do "não gostei"
   wardrobeResult?: WardrobeSaveResult;
-  mentionedItems?: ClothingItem[]; // peças do guarda-roupa marcadas com "@"
+  mentionedItems?: ClothingItem[]; // do usuário: peças marcadas com "@"; da Stella: peças do guarda-roupa que ela indicou
   planLimit?: PlanLimitError; // resposta local quando o plano não permitiu a mensagem (HTTP 402)
   retry?: ChatRetry; // resposta local quando o envio falhou por rede ou servidor: guarda o que reenviar
 }

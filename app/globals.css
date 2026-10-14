@@ -161,10 +161,25 @@ body {
   to { opacity: 1; transform: translateY(0); }
 }
 
+/* Chat: enquanto a Stella pensa, um brilho atravessa a frase da esquerda para a direita */
+.stella-shimmer {
+  color: transparent;
+  background: linear-gradient(100deg, #78716c 40%, #1c1917 50%, #78716c 60%) 100% 0 / 250% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  animation: stella-shimmer 2.6s ease-in-out infinite;
+}
+
+@keyframes stella-shimmer {
+  from { background-position: 100% 0; }
+  to { background-position: 0 0; }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .stella-revealing .stella-chunk,
   .stella-revealing :is(li, h3),
-  .stella-message-in {
+  .stella-message-in,
+  .stella-shimmer {
     animation: none !important;
   }
 

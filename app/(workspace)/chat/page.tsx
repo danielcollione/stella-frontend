@@ -41,6 +41,7 @@ import { PlanLimitNotice } from "@/components/features/billing/PlanLimitNotice";
 import { planLimitFrom } from "@/services/billing/billingService";
 import { apiErrorMessage } from "@/services/wardrobe/wardrobeService";
 import { MentionedItems, MentionedText } from "@/components/features/mentions/MentionedContent";
+import { RecommendedItems } from "@/components/features/wardrobe/RecommendedItems";
 import type { ClothingItem } from "@/types/wardrobe";
 
 // Distância do fim da conversa em que ainda se considera que a pessoa "está lá embaixo"
@@ -505,7 +506,10 @@ export default function ChatPage() {
                         content={msg.content || ""}
                         isStella={true}
                         isNew={String(msg.id) === String(newestMessageId)}
-                        after={<ChatShoppingSuggestions suggestions={shoppingSuggestionsIn(msg.content || "")} />}
+                        after={<>
+                          <RecommendedItems items={msg.mentionedItems} />
+                          <ChatShoppingSuggestions suggestions={shoppingSuggestionsIn(msg.content || "")} />
+                        </>}
                       />
                     )}
 
