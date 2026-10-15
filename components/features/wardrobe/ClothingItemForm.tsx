@@ -294,7 +294,8 @@ export function ClothingItemForm({ item: initialItem, isNew, pager, onBusyChange
 
       {error && <p role="alert" className="mx-6 mb-4 rounded-lg border border-red-200 bg-red-50 px-3.5 py-2.5 text-sm text-red-700 sm:mx-7">{error}</p>}
 
-      <footer className="flex flex-wrap items-center justify-between gap-3 border-t border-stone-200/70 px-6 py-4 sm:px-7">
+      {/* Rodapé fixo na base da janela: excluir, trocar de peça e salvar sempre à mão, sem rolar até o fim */}
+      <footer className="sticky bottom-0 z-10 flex flex-wrap items-center justify-between gap-3 border-t border-stone-200/70 bg-[#FAF8F5]/95 px-6 py-3.5 backdrop-blur-md sm:px-7 sm:py-4">
         {confirmingDelete ? (
           <div className="flex items-center gap-2">
             <span className="text-sm text-stone-600">Excluir esta peça?</span>
