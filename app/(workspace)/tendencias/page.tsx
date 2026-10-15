@@ -3,8 +3,10 @@
 import { useEffect, useState } from "react";
 import type { ReactNode } from "react";
 import Link from "next/link";
-import { AlertCircle, Menu, Sparkles } from "lucide-react";
+import { useReducedMotion } from "framer-motion";
+import { AlertCircle, Menu } from "lucide-react";
 import { useAppShell } from "@/components/layout/AppShell";
+import { StellaMark } from "@/components/ui/StellaMark";
 import { PageContent } from "@/components/layout/PageContent";
 import { Rail } from "@/components/features/trends/Rail";
 import { SectionNav } from "@/components/features/trends/SectionNav";
@@ -77,7 +79,8 @@ export default function TrendsPage() {
 
           {data && !data.available && (
             <Notice
-              icon={<Sparkles size={22} strokeWidth={1.5} />}
+              icon={<StellaPreparing />}
+              bareIcon
               title="A Stella está preparando a estação"
               description="Ela está lendo o que a imprensa de moda e as passarelas brasileiras trouxeram. Volte em breve para ver as tendências e como elas conversam com o seu armário."
               action={<Link href="/wardrobe" className={buttonClass}>Ir para o guarda-roupa</Link>}
@@ -97,7 +100,7 @@ function Season({ data }: { data: Trends }) {
     <>
     <SectionNav sections={SECTIONS} />
     <div className="space-y-10">
-      <section id="estacao" aria-label="A estação" className="grid scroll-mt-20 gap-8 lg:grid-cols-[minmax(0,1.45fr)_minmax(0,1fr)] lg:gap-12">
+      <section id="estacao" aria-label="A estação" className="grid grid-cols-1 scroll-mt-20 gap-8 lg:grid-cols-[minmax(0,1.45fr)_minmax(0,1fr)] lg:gap-12">
         <div className="space-y-6">
           <p className="font-serif text-xl italic leading-snug text-stone-800 sm:text-2xl lg:text-[26px]">{data.summary}</p>
           <SeasonPalette palette={data.palette ?? []} />
@@ -153,10 +156,18 @@ function Season({ data }: { data: Trends }) {
   );
 }
 
-function Notice({ icon, title, description, action }: { icon: ReactNode; title: string; description: string; action: ReactNode }) {
+function Notice({ icon, bareIcon, title, description, action }: {
+  icon: ReactNode;
+  bareIcon?: boolean;
+  title: string;
+  description: string;
+  action: ReactNode;
+}) {
   return (
     <div className="mx-auto flex max-w-md flex-col items-center px-4 py-20 text-center">
-      <span className="mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-stone-100 text-stone-500">{icon}</span>
+      {bareIcon ? <span className="mb-4">{icon}</span> : (
+        <span className="mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-stone-100 text-stone-500">{icon}</span>
+      )}
       <h2 className="font-serif text-2xl italic text-stone-900">{title}</h2>
       <p className="mt-2 text-sm leading-relaxed text-stone-500">{description}</p>
       <div className="mt-6">{action}</div>
@@ -167,7 +178,7 @@ function Notice({ icon, title, description, action }: { icon: ReactNode; title: 
 function Skeleton() {
   return (
     <div role="status" aria-label="Carregando tendências" className="space-y-10">
-      <div className="grid gap-8 lg:grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)]">
+      <div className="grid grid-cols-1 gap-8 lg:grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)]">
         <div className="h-40 animate-pulse rounded-3xl bg-stone-200/50" />
         <div className="h-40 animate-pulse rounded-3xl bg-stone-200/50" />
       </div>
@@ -175,5 +186,16 @@ function Skeleton() {
         {[0, 1, 2, 3].map((index) => <div key={index} className="aspect-[3/4] w-44 animate-pulse rounded-2xl bg-stone-200/50" />)}
       </div>
     </div>
+  );
+}
+
+// A Stella trabalhando (o mesmo traço animado do chat) enquanto a estação é preparada; parada com "reduzir movimento"
+function StellaPreparing() {
+  const reducedMotion = useReducedMotion();
+  if (reducedMotion) return <StellaMark size={56} decorative />;
+  return (
+    // <img> simples para o Next não converter a animação em imagem parada
+    // eslint-disable-next-line @next/next/no-img-element
+    <img src="/stella-thinking.webp" alt="" aria-hidden="true" width={56} height={56} draggable={false} className="select-none" />
   );
 }

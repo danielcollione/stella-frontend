@@ -242,7 +242,7 @@ function Filters({ filters, onChange, advanced, disabled, canBuildLook, roundsLe
         </div>
 
         {advanced ? (
-          <div className="grid gap-5 sm:grid-cols-[auto_minmax(0,1fr)] sm:items-start sm:gap-x-10">
+          <div className="grid grid-cols-1 gap-5 sm:grid-cols-[auto_minmax(0,1fr)] sm:items-start sm:gap-x-10">
             <div>
               <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-stone-400">Nível de tendência</p>
               <div className="mt-2.5 inline-flex rounded-full border border-stone-200 bg-[#FAF8F5] p-1">
