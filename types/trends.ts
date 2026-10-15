@@ -19,6 +19,8 @@ export interface TrendInsightPiece extends TrendOwnedItem {
 export interface TrendInsight {
   pieces: TrendInsightPiece[];
   locked: boolean;
+  // Nenhuma peça entrou em tendência: vem a que mais conversa com a estação
+  closest: boolean;
 }
 
 export interface Trend {

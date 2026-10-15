@@ -23,7 +23,9 @@ export function SeasonWardrobe({ data }: { data: Trends }) {
     <section aria-labelledby="wardrobe-title" className="flex min-w-0 flex-col">
       <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-stone-400">Seu armário na estação</p>
       <h2 id="wardrobe-title" className="mt-1 font-serif text-xl italic leading-snug tracking-tight text-stone-900">
-        {insight && pieces.length > 0 ? "Peças suas que já estão em alta" : title(data)}
+        {insight && pieces.length > 0
+          ? insight.closest ? "Uma peça sua que conversa com a estação" : "Peças suas que já estão em alta"
+          : title(data)}
       </h2>
 
       {!insight || wardrobe.items === 0 ? (
@@ -57,13 +59,15 @@ export function SeasonWardrobe({ data }: { data: Trends }) {
       ) : (
         <>
           <p className="mt-1 text-[13px] leading-relaxed text-stone-500">
-            Encontrei algumas peças do seu armário que já conversam com as tendências.
+            {insight.closest
+              ? `Ela combina com ${lower(pieces[0].trend)}. Peça à Stella para montar um look com ela e o resto do seu armário.`
+              : "Encontrei algumas peças do seu armário que já conversam com as tendências."}
           </p>
           <div className="mt-4">
             <Rail label="Suas peças em alta">
               {pieces.map((piece) => (
                 <li key={piece.id} className="w-40 shrink-0 snap-start sm:w-44">
-                  <PieceThumb item={piece} caption={`Em alta: ${lower(piece.trend)}`} className="aspect-[3/4] w-full rounded-2xl border border-stone-200/70 bg-white" />
+                  <PieceThumb item={piece} caption={`${insight.closest ? "Combina com" : "Em alta"}: ${lower(piece.trend)}`} className="aspect-[3/4] w-full rounded-2xl border border-stone-200/70 bg-white" />
                   <p className="mt-2 truncate text-[13px] text-stone-800" title={piece.name}>{piece.name}</p>
                   <p className="truncate text-[10px] uppercase tracking-[0.12em] text-stone-400">{piece.trend}</p>
                 </li>
