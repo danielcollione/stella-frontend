@@ -34,6 +34,7 @@ import { WardrobeSaveResult } from "@/components/features/WardrobeSaveResult";
 import { useSaveToWardrobePreference } from "@/utils/wardrobePreference";
 import { compressImage } from "@/utils/imageCompression";
 import { takeChatDraft } from "@/utils/chatDraft";
+import { markGoodMoment } from "@/utils/goodMoment";
 import { MentionInput, MENTIONS_PER_CONVERSATION, mentionToken } from "@/components/features/mentions/MentionInput";
 import { StellaMark } from "@/components/ui/StellaMark";
 import { FeedbackReasonPicker } from "@/components/features/FeedbackReasonPicker";
@@ -346,6 +347,7 @@ export default function ChatPage() {
         ...prev,
         { ...responseMessage, id: String(msgId) },
       ]);
+      markGoodMoment();
     } catch (error) {
       console.error("Erro no envio:", error);
       playReceiveSound();

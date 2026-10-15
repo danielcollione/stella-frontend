@@ -2,7 +2,7 @@
 
 import { useId, useState } from "react";
 import type { FormEvent } from "react";
-import { ChevronLeft, ChevronRight, LoaderCircle, Lock, Maximize2, Trash2 } from "lucide-react";
+import { ChevronLeft, ChevronRight, LoaderCircle, Lock, Maximize2, RotateCcw, Trash2 } from "lucide-react";
 import { ImageViewer } from "@/components/ui/ImageViewer";
 import { Select } from "@/components/ui/Select";
 import { BrandInput } from "@/components/features/wardrobe/BrandInput";
@@ -103,9 +103,13 @@ interface ClothingItemFormProps {
   onSaved: (item: ClothingItem) => void;
   onDeleted: (id: string) => void;
   onClose: () => void;
+  // A foto mudou sem fechar o formulário ("Usar a foto original"): atualiza a peça na lista
+  onPhotoChanged?: (item: ClothingItem) => void;
 }
 
-export function ClothingItemForm({ item, isNew, pager, onBusyChange, onSaved, onDeleted, onClose }: ClothingItemFormProps) {
+export function ClothingItemForm({ item: initialItem, isNew, pager, onBusyChange, onSaved, onDeleted, onClose, onPhotoChanged }: ClothingItemFormProps) {
+  const [item, setItem] = useState(initialItem);
+  const [restoring, setRestoring] = useState(false);
   const fieldId = useId();
   const [initial, setInitial] = useState(() => toFormState(item));
   const [form, setForm] = useState(initial);
@@ -161,6 +165,20 @@ export function ClothingItemForm({ item, isNew, pager, onBusyChange, onSaved, on
     else pager.onStep(delta);
   }
 
+  async function restoreOriginalPhoto() {
+    setRestoring(true);
+    setError("");
+    try {
+      const updated = await wardrobeService.useOriginalPhoto(item.id);
+      setItem(updated);
+      onPhotoChanged?.(updated);
+    } catch (failure) {
+      setError(apiErrorMessage(failure, "Não foi possível voltar para a foto original. Tente novamente."));
+    } finally {
+      setRestoring(false);
+    }
+  }
+
   function handleDelete() {
     void run("delete", async () => {
       await wardrobeService.deleteItem(item.id);
@@ -186,10 +204,26 @@ export function ClothingItemForm({ item, isNew, pager, onBusyChange, onSaved, on
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src={item.imageUrl} alt={displayName(item)} className="max-h-[calc(100dvh-5rem)] max-w-full rounded-xl object-contain shadow-2xl" />
           </ImageViewer>
-          <figcaption className="mt-2 flex items-center justify-center gap-1.5 text-[11px] text-stone-400 sm:justify-start">
-            <Lock aria-hidden="true" size={11} />
-            A foto não pode ser alterada
-          </figcaption>
+          {/* Peça recém-cadastrada sem o fundo: dá para voltar para a foto original enquanto ela estiver guardada */}
+          {isNew && item.originalPhotoAvailable ? (
+            <figcaption className="mt-2 text-center text-[11px] leading-relaxed text-stone-500 sm:text-left">
+              <span className="block">A Stella tirou o fundo da foto.</span>
+              <button
+                type="button"
+                onClick={() => void restoreOriginalPhoto()}
+                disabled={restoring || busy}
+                className="stella-hit inline-flex items-center gap-1 text-stone-500 underline decoration-stone-300 underline-offset-4 transition-colors hover:text-stone-900 disabled:opacity-50"
+              >
+                <RotateCcw aria-hidden="true" size={11} />
+                {restoring ? "Voltando para a original..." : "Usar a foto original"}
+              </button>
+            </figcaption>
+          ) : (
+            <figcaption className="mt-2 flex items-center justify-center gap-1.5 text-[11px] text-stone-400 sm:justify-start">
+              <Lock aria-hidden="true" size={11} />
+              A foto não pode ser alterada
+            </figcaption>
+          )}
           {usage && <p className="mt-1.5 text-center text-[11px] text-stone-500 sm:text-left">{usage}</p>}
         </figure>
 

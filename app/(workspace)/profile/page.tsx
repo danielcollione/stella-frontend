@@ -7,8 +7,9 @@ import { useRouter, useSearchParams } from "next/navigation";
 import {
   BadgeCheck,
   ArrowLeft, ChevronRight, CreditCard, Eye, EyeOff, Headphones,
-  KeyRound, LoaderCircle, LogOut, MapPin, Menu, Save, UserRound,
+  KeyRound, LoaderCircle, LogOut, MapPin, Menu, Save, Star, UserRound,
 } from "lucide-react";
+import { useFeedback } from "@/components/features/feedback/FeedbackProvider";
 import { useAppShell } from "@/components/layout/AppShell";
 import { PageContent } from "@/components/layout/PageContent";
 import { InstallAppRow } from "@/components/features/account/InstallAppRow";
@@ -233,6 +234,7 @@ export default function ProfilePage() {
                   <div className="relative z-10"><CopyMessageButton text={SUPPORT_EMAIL} label="Copiar e-mail do suporte" align="right" /></div>
                   <ChevronRight size={17} className="shrink-0 text-stone-400" />
                 </div>
+                <RateStellaRow />
 <InstallAppRow />
                 <button type="button" onClick={() => { setSaving(true); void authService.logout(); }} disabled={saving} className="flex items-center gap-3 w-full rounded-lg border border-stone-200/70 bg-white px-4 py-4 text-left text-sm text-red-700 hover:bg-red-50 transition-colors disabled:opacity-50"><LogOut size={18} /><span className="flex-1">Sair</span>{saving ? <LoaderCircle size={17} className="animate-spin" /> : <ChevronRight size={17} className="text-red-400" />}</button>
               </nav>
@@ -296,5 +298,27 @@ export default function ProfilePage() {
         </PageContent>
       </main>
     </div>
+  );
+}
+
+// "Avaliar a Stella": abre o cartão de estrelas; quem já avaliou vê a própria nota e pode mudar quando quiser
+function RateStellaRow() {
+  const { status, open } = useFeedback();
+  const rating = status?.rating ?? 0;
+  return (
+    <button type="button" onClick={() => open("PROFILE")} className="flex items-center gap-3 w-full rounded-lg border border-stone-200/70 bg-white px-4 py-4 text-left text-sm hover:bg-stone-50 transition-colors">
+      <Star size={18} className="shrink-0 text-stone-600" />
+      <span className="flex-1">
+        <span className="block">Avaliar a Stella</span>
+        {rating > 0 && (
+          <span className="mt-0.5 flex gap-0.5" aria-label={`Sua nota: ${rating} de 5`}>
+            {[1, 2, 3, 4, 5].map((value) => (
+              <Star key={value} size={12} strokeWidth={1.5} className={value <= rating ? "fill-[#C9A27E] text-[#B8925F]" : "text-stone-300"} />
+            ))}
+          </span>
+        )}
+      </span>
+      <ChevronRight size={17} className="text-stone-400" />
+    </button>
   );
 }

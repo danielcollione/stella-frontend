@@ -2,7 +2,7 @@ import axios from 'axios';
 import { clearSession, getSessionToken } from '@/utils/session';
 
 // Rotas que exigem sessão: sem token (ou com 401/403) o usuário volta para o login
-const PROTECTED_PREFIXES = ['/chat/', '/wardrobe/', '/events', '/trends'];
+const PROTECTED_PREFIXES = ['/chat/', '/wardrobe/', '/events', '/trends', '/feedback'];
 
 function isProtected(url?: string) {
   return PROTECTED_PREFIXES.some((prefix) => url?.startsWith(prefix));

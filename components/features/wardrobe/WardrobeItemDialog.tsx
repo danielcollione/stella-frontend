@@ -1,9 +1,10 @@
 "use client";
 
+import { markGoodMoment } from "@/utils/goodMoment";
 import { useEffect, useRef, useState } from "react";
 import type { ChangeEvent, DragEvent } from "react";
 import Link from "next/link";
-import { AlertCircle, Check, ImagePlus, Sparkles } from "lucide-react";
+import { AlertCircle, Check, ImagePlus, Info, Sparkles } from "lucide-react";
 import { Modal } from "@/components/ui/Modal";
 import { ClothingItemForm } from "@/components/features/wardrobe/ClothingItemForm";
 import { displayName } from "@/services/wardrobe/wardrobeCatalog";
@@ -181,6 +182,7 @@ export function WardrobeItemDialog({ target, onClose, onSaved, onDeleted }: Ward
       const item = await wardrobeService.createItem(file, { allowDuplicate });
       onSaved(item);
       setView({ step: "form", item, isNew: true });
+      markGoodMoment();
     } catch (failure) {
       if (failure instanceof DuplicateClothingItemError) {
         setView({ step: "duplicate", file, previewUrl, existing: failure.existingItem, matchType: failure.matchType });
@@ -241,6 +243,10 @@ export function WardrobeItemDialog({ target, onClose, onSaved, onDeleted }: Ward
             },
           }}
           onBusyChange={setFormBusy}
+          onPhotoChanged={(updated) => {
+            onSaved(updated);
+            setView({ ...view, items: withSaved(view.items, updated) });
+          }}
           onSaved={(saved) => {
             onSaved(saved);
             if (view.index === view.items.length - 1) onClose();
@@ -269,7 +275,7 @@ export function WardrobeItemDialog({ target, onClose, onSaved, onDeleted }: Ward
           </div>
           <p role="status" className="mt-5 inline-flex items-center gap-2 text-sm text-stone-600">
             <Sparkles size={15} className="animate-pulse text-stone-800" />
-            A Stella está analisando a peça...
+            A Stella está analisando a peça e preparando a foto...
           </p>
           <p className="mt-1 text-xs text-stone-400">Isso leva alguns segundos.</p>
         </div>
@@ -304,6 +310,7 @@ export function WardrobeItemDialog({ target, onClose, onSaved, onDeleted }: Ward
           item={view.item}
           isNew={view.isNew}
           onBusyChange={setFormBusy}
+          onPhotoChanged={onSaved}
           onSaved={(item) => {
             onSaved(item);
             onClose();
@@ -382,9 +389,14 @@ function PhotoPicker({ error, planLimit, bulkMax, onSelect }: {
         </span>
         <span className="text-sm font-medium text-stone-800">{bulk ? "Escolha as fotos ou arraste aqui" : "Escolha uma foto ou arraste aqui"}</span>
         <span className="mt-1 text-xs text-stone-400">
-          {bulk ? `Até ${bulkMax} fotos por vez. Uma peça por foto funciona melhor.` : "Fotos da galeria ou da câmera. Uma peça por foto funciona melhor."}
+          {bulk ? `Até ${bulkMax} fotos por vez.` : "Fotos da galeria ou da câmera."}
         </span>
       </button>
+      {/* A Stella tira o fundo e guarda o que estiver em primeiro plano: várias peças na mesma foto viram uma só */}
+      <p className="mt-3 flex items-start gap-2 rounded-xl bg-[#F1E9DC]/60 px-3.5 py-2.5 text-xs leading-relaxed text-stone-600">
+        <Info aria-hidden="true" size={14} className="mt-px shrink-0 text-stone-500" />
+        <span><span className="font-medium text-stone-800">Recomendado: uma peça por foto.</span> Sozinha no enquadramento, a Stella reconhece melhor a peça e tira o fundo certinho.</span>
+      </p>
       <input
         ref={inputRef}
         type="file"

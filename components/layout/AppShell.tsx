@@ -7,6 +7,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
 import { CalendarHeart, ChartNoAxesColumn, Gem, LogOut, MessageSquare, PanelLeft, PanelLeftClose, Plus, Shirt, Trash2, TrendingUp, X } from "lucide-react";
 import { StellaMark } from "@/components/ui/StellaMark";
+import { FeedbackProvider } from "@/components/features/feedback/FeedbackProvider";
 import { authService } from "@/services/authService";
 import { chatService } from "@/services/chat/chatService";
 import type { UserResponseDto } from "@/types/auth";
@@ -228,6 +229,7 @@ export function AppShell({ children }: { children: ReactNode }) {
 
   return (
     <AppShellContext.Provider value={{ user, setUser, threads, setThreads, threadsReady, activeThreadId, setActiveThreadId, openMobileMenu: () => setMobileMenuOpen(true) }}>
+      <FeedbackProvider enabled={Boolean(user?.onboardingCompleted)}>
       {/* A altura acompanha a área visível: com o teclado aberto no celular, o app encolhe e o campo de
           mensagem fica logo acima dele. As margens seguras cobrem o recorte e a barra de início do iPhone */}
       <div className="flex h-[var(--stella-vvh,100dvh)] bg-[#FAF8F5] text-stone-900 overflow-hidden font-sans pb-[env(safe-area-inset-bottom)] pl-[env(safe-area-inset-left)] pr-[env(safe-area-inset-right)]">
@@ -266,6 +268,7 @@ export function AppShell({ children }: { children: ReactNode }) {
           )}
         </div>
       </div>
+      </FeedbackProvider>
     </AppShellContext.Provider>
   );
 }

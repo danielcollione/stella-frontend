@@ -8,6 +8,8 @@ import { PageContent } from "@/components/layout/PageContent";
 import { parseIsoDate } from "@/services/events/eventCatalog";
 import { adminService } from "@/services/admin/adminService";
 import type { AdminOverview, TrendAdmin } from "@/types/admin";
+import { feedbackService } from "@/services/feedback/feedbackService";
+import type { AppRatingAdmin } from "@/types/feedback";
 
 const PERIODS = [7, 30, 90] as const;
 
@@ -162,6 +164,7 @@ export default function AdminPage() {
                 </Card>
               </div>
 
+              <AppRatings />
               <TrendEngine />
             </div>
           )}
@@ -452,6 +455,71 @@ function TrendEngine() {
             ])}
             empty="Nenhuma execução ainda."
           />
+        </div>
+      )}
+    </Card>
+  );
+}
+
+const RATING_SOURCES: Record<string, string> = { INVITE: "convite", TRENDS: "Tendências", PROFILE: "perfil" };
+
+// Avaliações da Stella: média, quantas de cada nota e as mais recentes (com o comentário, quando houver)
+function AppRatings() {
+  const [data, setData] = useState<AppRatingAdmin | null>(null);
+  const [failed, setFailed] = useState(false);
+
+  useEffect(() => {
+    const controller = new AbortController();
+    feedbackService.admin(controller.signal).then(setData).catch(() => {
+      if (!controller.signal.aborted) setFailed(true);
+    });
+    return () => controller.abort();
+  }, []);
+
+  return (
+    <Card title="Avaliações da Stella" hint="Estrelas e comentários das clientes (convite, aba Tendências e perfil)">
+      {failed && !data ? (
+        <p className="py-6 text-center text-sm text-stone-400">Não conseguimos carregar as avaliações.</p>
+      ) : !data ? (
+        <p role="status" className="py-6 text-center text-sm text-stone-400">Carregando...</p>
+      ) : data.total === 0 ? (
+        <p className="rounded-2xl bg-stone-50 px-4 py-6 text-center text-sm text-stone-500">Nenhuma avaliação ainda.</p>
+      ) : (
+        <div className="space-y-5">
+          <div className="flex flex-wrap items-center gap-x-8 gap-y-4">
+            <p>
+              <span className="font-serif text-4xl italic text-stone-900">{data.average.toFixed(1).replace(".", ",")}</span>
+              <span className="ml-1.5 text-sm text-stone-500">de 5 · {data.total} {data.total === 1 ? "avaliação" : "avaliações"}</span>
+            </p>
+            <ul className="min-w-[220px] flex-1 space-y-1">
+              {[5, 4, 3, 2, 1].map((stars) => {
+                const count = data.counts[String(stars)] ?? 0;
+                return (
+                  <li key={stars} className="flex items-center gap-2 text-xs text-stone-500">
+                    <span className="w-6 tabular-nums">{stars}★</span>
+                    <span className="h-1.5 flex-1 overflow-hidden rounded-full bg-stone-100">
+                      <span className="block h-full rounded-full bg-[#C9A27E]" style={{ width: `${(count / data.total) * 100}%` }} />
+                    </span>
+                    <span className="w-6 text-right tabular-nums">{count}</span>
+                  </li>
+                );
+              })}
+            </ul>
+          </div>
+          <ul className="divide-y divide-stone-100">
+            {data.recent.map((entry) => (
+              <li key={`${entry.email}-${entry.updatedAt}`} className="py-3 text-sm">
+                <p className="flex flex-wrap items-center gap-x-2 text-xs text-stone-400">
+                  <span className="text-[#B8925F]">{"★".repeat(entry.rating)}<span className="text-stone-200">{"★".repeat(5 - entry.rating)}</span></span>
+                  <span>{dateTime(entry.updatedAt)}</span>
+                  <span>· {entry.name ?? entry.email ?? "—"}</span>
+                  {entry.plan && <span>· {entry.plan}</span>}
+                  <span>· {RATING_SOURCES[entry.source] ?? entry.source}</span>
+                </p>
+                {entry.comment ? <p className="mt-1 whitespace-pre-line text-stone-700">{entry.comment}</p> : <p className="mt-1 text-stone-400">Sem comentário</p>}
+              </li>
+            ))}
+          </ul>
         </div>
       )}
     </Card>

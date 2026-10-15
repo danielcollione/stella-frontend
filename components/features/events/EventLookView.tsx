@@ -1,5 +1,6 @@
 "use client";
 
+import { markGoodMoment } from "@/utils/goodMoment";
 import { useEffect, useState } from "react";
 import ReactMarkdown from "react-markdown";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
@@ -67,7 +68,7 @@ export function EventLookView({ looks, index, chosenLookId, choosing, onIndexCha
                 <Check size={13} /> Seu look escolhido
               </span>
             ) : (
-              <button type="button" onClick={() => onChoose(look)} disabled={choosing} className="inline-flex items-center gap-1.5 rounded-full border border-stone-300 bg-white px-3.5 py-1.5 text-xs font-medium text-stone-700 transition-colors hover:border-stone-500 hover:text-stone-900 disabled:opacity-60">
+              <button type="button" onClick={() => { onChoose(look); markGoodMoment(); }} disabled={choosing} className="inline-flex items-center gap-1.5 rounded-full border border-stone-300 bg-white px-3.5 py-1.5 text-xs font-medium text-stone-700 transition-colors hover:border-stone-500 hover:text-stone-900 disabled:opacity-60">
                 {choosing ? <LoaderCircle size={13} className="animate-spin" /> : <Check size={13} />}
                 Vou com este
               </button>

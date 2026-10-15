@@ -14,6 +14,7 @@ import type { PageSection } from "@/components/features/trends/SectionNav";
 import { LooksChatShortcut, SeasonLooks } from "@/components/features/trends/SeasonLooks";
 import { SeasonPalette } from "@/components/features/trends/SeasonPalette";
 import { SeasonShopping } from "@/components/features/trends/SeasonShopping";
+import { RatingButton } from "@/components/features/feedback/RatingButton";
 import { SeasonSplit } from "@/components/features/trends/SeasonSplit";
 import { SeasonWardrobe } from "@/components/features/trends/SeasonWardrobe";
 import { TrendCard } from "@/components/features/trends/TrendCard";
@@ -88,6 +89,7 @@ export default function TrendsPage() {
           )}
 
           {data?.available && <Season data={data} />}
+          {data?.available && <RatingButton />}
         </PageContent>
       </main>
     </div>

@@ -24,6 +24,8 @@ export interface ClothingItem {
   updatedAt: string | null;
   // Só na resposta do cadastro: a foto foi salva sem a análise da Stella e a pessoa preenche os dados
   analysisSkipped?: boolean | null;
+  // A Stella tirou o fundo e a foto original ainda está guardada (por pouco tempo): a revisão oferece voltar para ela
+  originalPhotoAvailable?: boolean | null;
 }
 
 // Espelha o UpdateClothingItemRequestDto: a foto não é editável

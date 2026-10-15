@@ -15,6 +15,7 @@ import { PartnerLinkNote, ShoppingLinks } from "@/components/features/shopping/S
 import { apiErrorMessage } from "@/services/wardrobe/wardrobeService";
 import { trendsService } from "@/services/trends/trendsService";
 import { saveChatDraft } from "@/utils/chatDraft";
+import { markGoodMoment } from "@/utils/goodMoment";
 import type { LookFilters, LookOccasion, LookSwapReason, LookTrendLevel, TrendLook, TrendLooks } from "@/types/trends";
 
 const OCCASIONS: { value: LookOccasion; label: string }[] = [
@@ -353,6 +354,7 @@ function LookCard({ look, swapsLeft, onChange }: { look: TrendLook; swapsLeft: n
     setError("");
     try {
       onChange(await trendsService.setWorn(look.id, !look.wornToday));
+      if (!look.wornToday) markGoodMoment();
     } catch (failure) {
       setError(apiErrorMessage(failure, "Não deu para registrar agora. Tente de novo."));
     } finally {

@@ -301,8 +301,11 @@ html.stella-app body {
  * Área de toque mínima de 44px (recomendação da Apple e do Google) sem mudar o tamanho visível do botão: uma camada
  * invisível, centrada no botão, recebe o toque. Para botões pequenos e discretos (textos, ícones, chips).
  */
-.stella-hit {
-  position: relative;
+/* Em @layer components: classes de posição do Tailwind (absolute, fixed) continuam valendo quando usadas junto */
+@layer components {
+  .stella-hit {
+    position: relative;
+  }
 }
 
 .stella-hit::before {

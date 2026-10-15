@@ -3,12 +3,13 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Lock, Shirt, Sparkles } from "lucide-react";
-import { LockBadge, PieceThumb } from "@/components/features/trends/TrendCard";
+import { BADGES, LockBadge, PieceThumb } from "@/components/features/trends/TrendCard";
 import { Rail } from "@/components/features/trends/Rail";
 import { saveChatDraft } from "@/utils/chatDraft";
 import type { Trends, TrendInsightPiece } from "@/types/trends";
 
-const lower = (name: string) => name.charAt(0).toLowerCase() + name.slice(1);
+// Legenda da foto em tela cheia: o selo da tendência, sem o nome dela
+const badgeLabel = (piece: TrendInsightPiece) => (piece.badge && BADGES[piece.badge] ? `Em alta · ${BADGES[piece.badge].label}` : undefined);
 
 /**
  * Seu armário na estação: um slide com as fotos das peças da pessoa que estão em alta e o atalho para a Stella montar
@@ -60,16 +61,21 @@ export function SeasonWardrobe({ data }: { data: Trends }) {
         <>
           <p className="mt-1 text-[13px] leading-relaxed text-stone-500">
             {insight.closest
-              ? `Ela combina com ${lower(pieces[0].trend)}. Peça à Stella para montar um look com ela e o resto do seu armário.`
+              ? "Ela conversa com as tendências desta estação. Peça à Stella para montar um look com ela e o resto do seu armário."
               : "Encontrei algumas peças do seu armário que já conversam com as tendências."}
           </p>
           <div className="mt-4">
             <Rail label="Suas peças em alta">
               {pieces.map((piece) => (
                 <li key={piece.id} className="w-40 shrink-0 snap-start sm:w-44">
-                  <PieceThumb item={piece} caption={`${insight.closest ? "Combina com" : "Em alta"}: ${lower(piece.trend)}`} className="aspect-[3/4] w-full rounded-2xl border border-stone-200/70 bg-white" />
+                  <PieceThumb item={piece} caption={badgeLabel(piece)} className="aspect-[3/4] w-full rounded-2xl border border-stone-200/70 bg-white" />
                   <p className="mt-2 truncate text-[13px] text-stone-800" title={piece.name}>{piece.name}</p>
-                  <p className="truncate text-[10px] uppercase tracking-[0.12em] text-stone-400">{piece.trend}</p>
+                  {piece.badge && (
+                    <p className="mt-0.5 flex items-center gap-1.5 text-[10px] uppercase tracking-[0.12em] text-stone-400">
+                      <span aria-hidden="true" className={`h-1.5 w-1.5 shrink-0 rounded-full ${BADGES[piece.badge]?.bar ?? "bg-stone-300"}`} />
+                      <span className="truncate">{BADGES[piece.badge]?.label}</span>
+                    </p>
+                  )}
                 </li>
               ))}
             </Rail>

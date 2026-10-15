@@ -15,6 +15,7 @@ import { planLimitFrom } from "@/services/billing/billingService";
 import { eventService } from "@/services/events/eventService";
 import { addDays, monthGrid, parseIsoDate, toIsoDate, todayIso } from "@/services/events/eventCatalog";
 import { Modal } from "@/components/ui/Modal";
+import { RatingButton } from "@/components/features/feedback/RatingButton";
 import type { CalendarEvent, EventQuota } from "@/types/events";
 
 const UPCOMING_DAYS = 60;
@@ -200,6 +201,7 @@ export default function EventsPage() {
             </div>
           )}
         </PageContent>
+        <RatingButton />
       </main>
 
       {quota?.max != null && (

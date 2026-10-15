@@ -77,6 +77,12 @@ export const wardrobeService = {
     }
   },
 
+  // Revisão do cadastro: troca a foto sem o fundo pela original (enquanto ela ainda estiver guardada)
+  async useOriginalPhoto(id: string): Promise<ClothingItem> {
+    const response = await api.post<ClothingItem>(`/wardrobe/items/${encodeURIComponent(id)}/original-photo`);
+    return response.data;
+  },
+
   async updateItem(id: string, request: UpdateClothingItemRequest): Promise<ClothingItem> {
     const response = await api.put<ClothingItem>(`/wardrobe/items/${encodeURIComponent(id)}`, request);
     return response.data;

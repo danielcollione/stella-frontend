@@ -10,9 +10,9 @@ export interface TrendOwnedItem {
   imageUrl: string | null;
 }
 
-// Peça em alta no insight, com a tendência em que entrou
+// Peça em alta, com o selo da tendência em que entrou (o nome da tendência não vem: soaria como descrição da peça)
 export interface TrendInsightPiece extends TrendOwnedItem {
-  trend: string;
+  badge: TrendBadge | "";
 }
 
 // "Seu armário na estação": as peças em alta. No plano gratuito (locked), só as miniaturas, para aparecer embaçadas
