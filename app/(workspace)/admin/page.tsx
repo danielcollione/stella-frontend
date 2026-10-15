@@ -1,13 +1,13 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import type { ReactNode } from "react";
-import { AlertCircle, Menu } from "lucide-react";
+import { AlertCircle, Menu, RefreshCw } from "lucide-react";
 import { useAppShell } from "@/components/layout/AppShell";
 import { PageContent } from "@/components/layout/PageContent";
 import { parseIsoDate } from "@/services/events/eventCatalog";
 import { adminService } from "@/services/admin/adminService";
-import type { AdminOverview } from "@/types/admin";
+import type { AdminOverview, TrendAdmin } from "@/types/admin";
 
 const PERIODS = [7, 30, 90] as const;
 
@@ -22,6 +22,7 @@ const KIND_NAMES: Record<string, string> = {
   "chat.palette_memory": "Memória de paleta",
   "chat.taste_profile": "Perfil de gosto",
   "outfit.look": "Look (motor antigo)",
+  "trends.synthesis": "Relatório de tendências",
 };
 
 const brl = (value: number) => value.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
@@ -160,6 +161,8 @@ export default function AdminPage() {
                   />
                 </Card>
               </div>
+
+              <TrendEngine />
             </div>
           )}
         </PageContent>
@@ -292,5 +295,165 @@ function Funnel({ funnel }: { funnel: AdminOverview["funnel"] }) {
         );
       })}
     </ol>
+  );
+}
+
+const AUDIENCE_NAMES: Record<string, string> = { FEMININE: "Feminino", MASCULINE: "Masculino" };
+const BADGE_NAMES: Record<string, string> = { INVESTMENT: "Investimento", SEASON: "Da estação", FLEETING: "Passageira", EMERGING: "Chegando" };
+const TREND_KIND_NAMES: Record<string, string> = { COLOR: "Cor", SILHOUETTE: "Modelagem", PIECE: "Peça", PRINT: "Estampa", FABRIC: "Tecido", STYLING: "Styling" };
+const DISMISS_NAMES: Record<string, string> = { NOT_MY_STYLE: "estilo", COLOR: "cor", BUDGET: "orçamento", ROUTINE: "rotina", SEM_MOTIVO: "sem motivo" };
+const dateTime = (iso: string | null) => (iso ? new Date(iso).toLocaleString("pt-BR", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" }) : "nunca");
+
+// Motor de tendências: o que foi coletado, os relatórios publicados (para conferir a qualidade) e o botão de rodar agora.
+// Enquanto uma execução está em andamento, a situação é recarregada a cada 5 segundos.
+function TrendEngine() {
+  const [data, setData] = useState<TrendAdmin | null>(null);
+  const [failed, setFailed] = useState(false);
+  const [starting, setStarting] = useState(false);
+
+  const load = useCallback((signal?: AbortSignal) => {
+    adminService.trends(signal)
+      .then((next) => {
+        setData(next);
+        setFailed(false);
+      })
+      .catch(() => {
+        if (!signal?.aborted) setFailed(true);
+      });
+  }, []);
+
+  useEffect(() => {
+    const controller = new AbortController();
+    load(controller.signal);
+    return () => controller.abort();
+  }, [load]);
+
+  useEffect(() => {
+    if (!data?.running) return;
+    const timer = window.setInterval(() => load(), 5000);
+    return () => window.clearInterval(timer);
+  }, [data?.running, load]);
+
+  const run = async () => {
+    setStarting(true);
+    try {
+      await adminService.runTrends();
+      load();
+    } catch {
+      setFailed(true);
+    } finally {
+      setStarting(false);
+    }
+  };
+
+  const running = data?.running || starting;
+
+  return (
+    <Card title="Motor de tendências" hint="Coleta semanal das fontes; relatório novo a cada estação e atualização mensal">
+      {failed && !data ? (
+        <p className="py-6 text-center text-sm text-stone-400">Não conseguimos carregar o motor de tendências.</p>
+      ) : !data ? (
+        <p role="status" className="py-6 text-center text-sm text-stone-400">Carregando...</p>
+      ) : (
+        <div className="space-y-5">
+          <div className="flex flex-wrap items-start justify-between gap-4">
+            <div className="text-sm text-stone-600">
+              <p>
+                Última coleta: <span className="text-stone-900">{dateTime(data.lastCollection)}</span> · {data.material.articles} matérias com texto ·{" "}
+                {data.material.headlines} manchetes · {data.material.searchTerms} buscas do Mercado Livre
+              </p>
+              {data.material.byOutlet.length > 0 && (
+                <p className="mt-1 text-xs text-stone-400">{data.material.byOutlet.map((outlet) => `${outlet.outlet} (${outlet.count})`).join(" · ")}</p>
+              )}
+              {data.lastRunSummary && <p className="mt-2 text-xs text-stone-500">Última execução manual: {data.lastRunSummary}</p>}
+            </div>
+            <button
+              type="button"
+              onClick={run}
+              disabled={running}
+              className="inline-flex items-center gap-2 rounded-full bg-stone-900 px-4 py-2 text-xs font-semibold text-white transition-colors hover:bg-stone-800 disabled:cursor-wait disabled:opacity-60"
+            >
+              <RefreshCw size={14} className={running ? "animate-spin" : ""} />
+              {running ? "Rodando (alguns minutos)..." : "Rodar agora"}
+            </button>
+          </div>
+
+          {data.reports.length === 0 ? (
+            <p className="rounded-2xl bg-stone-50 px-4 py-6 text-center text-sm text-stone-500">Nenhum relatório publicado ainda.</p>
+          ) : (
+            <div className="grid gap-5 lg:grid-cols-2">
+              {data.reports.map((report) => (
+                <div key={report.audience} className="rounded-2xl border border-stone-200/80 px-4 py-4">
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-stone-400">
+                    {AUDIENCE_NAMES[report.audience] ?? report.audience} · {report.seasonLabel}
+                  </p>
+                  <p className="mt-1 text-xs text-stone-400">
+                    {report.runType === "SEASONAL" ? "Estação nova" : "Atualização do mês"} · {dateTime(report.createdAt)} · {report.sourcesConsidered} fontes · {report.model}
+                  </p>
+                  <p className="mt-3 text-sm italic text-stone-700">{report.summary}</p>
+                  <ol className="mt-4 space-y-3">
+                    {report.trends.map((trend) => (
+                      <li key={trend.name} className="flex gap-3">
+                        <span
+                          aria-hidden="true"
+                          className="mt-1 h-4 w-4 shrink-0 rounded-full border border-stone-200"
+                          style={{ background: trend.colorHex ?? "transparent" }}
+                        />
+                        <div className="min-w-0 text-sm">
+                          <p className="text-stone-900">
+                            {trend.name}
+                            <span className="ml-2 rounded-full bg-stone-100 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-stone-500">{BADGE_NAMES[trend.badge] ?? trend.badge}</span>
+                          </p>
+                          <p className="text-stone-600">{trend.description}</p>
+                          <div className="mt-0.5 text-[11px] text-stone-400">
+                            {TREND_KIND_NAMES[trend.kind] ?? trend.kind} · {trend.gender === "UNISEX" ? "unissex" : AUDIENCE_NAMES[trend.gender]?.toLowerCase()} ·{" "}
+                            {trend.illustrationKeys.length > 0 ? trend.illustrationKeys.join(", ") : "sem ilustração"} · {trend.keywords.join(", ")} ·{" "}
+                            <details className="inline">
+                              <summary className="inline cursor-pointer underline underline-offset-2">{trend.sourceCount} fontes</summary>
+                              <span className="block break-all">
+                                {trend.sourceUrls.map((url) => (url.startsWith("http") ? <a key={url} href={url} target="_blank" rel="noreferrer" className="block hover:text-stone-700">{url}</a> : <span key={url} className="block">{url}</span>))}
+                              </span>
+                            </details>
+                          </div>
+                        </div>
+                      </li>
+                    ))}
+                  </ol>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {data.shopping && (
+            <div className="rounded-2xl border border-stone-200/80 px-4 py-4 text-sm text-stone-600">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-stone-400">Compras · últimos 30 dias</p>
+              <p className="mt-2">
+                <span className="font-serif text-2xl italic text-stone-900">{data.shopping.bought}</span> “Comprei”
+                <span className="text-stone-400"> ({data.shopping.boughtTotal} desde o início)</span> · {data.shopping.lists} listas ·{" "}
+                {data.shopping.suggestions} sugestões · {data.shopping.have} “Já tenho” · {data.shopping.dismissed} “Não é para mim”
+              </p>
+              {data.shopping.dismissReasons.length > 0 && (
+                <p className="mt-1 text-xs text-stone-400">
+                  Motivos: {data.shopping.dismissReasons.map((reason) => `${DISMISS_NAMES[reason.outlet] ?? reason.outlet} (${reason.count})`).join(" · ")}
+                </p>
+              )}
+            </div>
+          )}
+
+          <Table
+            head={["Execução", "Público", "Resultado", "Modelo"]}
+            rows={data.recentRuns.map((runRow) => [
+              <span key="when">{dateTime(runRow.createdAt)}<span className="block text-[11px] text-stone-400">{runRow.runType === "SEASONAL" ? "Estação nova" : "Atualização"} · {runRow.seasonLabel}</span></span>,
+              AUDIENCE_NAMES[runRow.audience] ?? runRow.audience,
+              runRow.status === "PUBLISHED"
+                ? <span key="status" className="text-emerald-700">Publicado ({runRow.trends})</span>
+                : <span key="status" className="text-red-700" title={runRow.error ?? ""}>Não publicado<span className="block max-w-xs text-[11px] text-stone-400">{runRow.error}</span></span>,
+              runRow.model ?? "—",
+            ])}
+            empty="Nenhuma execução ainda."
+          />
+        </div>
+      )}
+    </Card>
   );
 }

@@ -5,7 +5,7 @@ import type { Dispatch, ReactNode, SetStateAction } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
-import { CalendarHeart, ChartNoAxesColumn, Gem, LogOut, MessageSquare, PanelLeft, PanelLeftClose, Plus, Shirt, Trash2, X } from "lucide-react";
+import { CalendarHeart, ChartNoAxesColumn, Gem, LogOut, MessageSquare, PanelLeft, PanelLeftClose, Plus, Shirt, Trash2, TrendingUp, X } from "lucide-react";
 import { StellaMark } from "@/components/ui/StellaMark";
 import { authService } from "@/services/authService";
 import { chatService } from "@/services/chat/chatService";
@@ -105,6 +105,10 @@ function SidebarContent({ expanded, mobile, toggle, closeMenu }: {
         <Link href="/eventos" onClick={closeMenu} title="Planejador" aria-current={pathname === "/eventos" ? "page" : undefined} className={`${mobile ? "flex items-center gap-3 w-full px-4 py-2.5 text-stone-700 hover:bg-stone-200/60 rounded-xl font-medium text-sm transition-colors" : "flex items-center gap-3 text-stone-600 hover:text-stone-900 hover:bg-stone-100 text-sm font-medium transition-all w-full px-3.5 py-2.5 rounded-xl justify-start overflow-hidden active:scale-[0.98]"} ${pathname === "/eventos" ? (mobile ? "bg-stone-200/70 text-stone-900" : "bg-stone-100 text-stone-900") : ""}`}>
           <CalendarHeart className="w-5 h-5 shrink-0" />
           <MenuLabel visible={expanded}>Planejador</MenuLabel>
+        </Link>
+        <Link href="/tendencias" onClick={closeMenu} title="Tendências" aria-current={pathname === "/tendencias" ? "page" : undefined} className={`${mobile ? "flex items-center gap-3 w-full px-4 py-2.5 text-stone-700 hover:bg-stone-200/60 rounded-xl font-medium text-sm transition-colors" : "flex items-center gap-3 text-stone-600 hover:text-stone-900 hover:bg-stone-100 text-sm font-medium transition-all w-full px-3.5 py-2.5 rounded-xl justify-start overflow-hidden active:scale-[0.98]"} ${pathname === "/tendencias" ? (mobile ? "bg-stone-200/70 text-stone-900" : "bg-stone-100 text-stone-900") : ""}`}>
+          <TrendingUp className="w-5 h-5 shrink-0" />
+          <MenuLabel visible={expanded}>Tendências</MenuLabel>
         </Link>
         <Link href="/planos" onClick={closeMenu} title="Planos" aria-current={pathname === "/planos" ? "page" : undefined} className={`${mobile ? "flex items-center gap-3 w-full px-4 py-2.5 text-stone-700 hover:bg-stone-200/60 rounded-xl font-medium text-sm transition-colors" : "flex items-center gap-3 text-stone-600 hover:text-stone-900 hover:bg-stone-100 text-sm font-medium transition-all w-full px-3.5 py-2.5 rounded-xl justify-start overflow-hidden active:scale-[0.98]"} ${pathname === "/planos" ? (mobile ? "bg-stone-200/70 text-stone-900" : "bg-stone-100 text-stone-900") : ""}`}>
           <Gem className="w-5 h-5 shrink-0" />

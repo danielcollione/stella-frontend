@@ -4,7 +4,8 @@ import { MapPin, Search, ShoppingBag } from "lucide-react";
 import { useAppShell } from "@/components/layout/AppShell";
 import { amazonSearchUrl, nearbyStoresUrl } from "@/services/shopping/shoppingLinks";
 
-const LINK_CLASS = "inline-flex items-center gap-1.5 rounded-full border border-stone-200 bg-white px-3 py-1 text-xs font-medium text-stone-700 shadow-2xs transition-colors hover:border-stone-300 hover:text-stone-900";
+// No celular, um pouco maiores (≈36px) para o dedo; a área de toque chega a 44px pela camada invisível
+const LINK_CLASS = "stella-hit inline-flex items-center gap-1.5 rounded-full border border-stone-200 bg-white px-3.5 py-2 text-[13px] sm:px-3 sm:py-1 sm:text-xs font-medium text-stone-700 shadow-2xs transition-colors hover:border-stone-300 hover:text-stone-900";
 
 // Onde encontrar uma peça sugerida: busca online (link de parceiro) e lojas perto
 export function ShoppingLinks({ suggestion }: { suggestion: string }) {

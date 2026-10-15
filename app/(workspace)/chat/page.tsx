@@ -20,7 +20,7 @@ import { useAppShell } from "@/components/layout/AppShell";
 import { playSendSound, playReceiveSound } from "@/utils/sound";
 import { chatService } from "@/services/chat/chatService";
 import { ChatMessageContent } from "@/components/features/ChatMessageContent";
-import { ThinkingStatus } from "@/components/features/ThinkingStatus";
+import { ThinkingStatus, thinkingContext } from "@/components/features/ThinkingStatus";
 import { TodayWeather } from "@/components/features/weather/TodayWeather";
 import { ChatShoppingSuggestions } from "@/components/features/shopping/ShoppingLinks";
 import { shoppingSuggestionsIn } from "@/services/shopping/shoppingLinks";
@@ -33,13 +33,14 @@ import { WardrobeSaveToggle } from "@/components/features/WardrobeSaveToggle";
 import { WardrobeSaveResult } from "@/components/features/WardrobeSaveResult";
 import { useSaveToWardrobePreference } from "@/utils/wardrobePreference";
 import { compressImage } from "@/utils/imageCompression";
-import { MentionInput, MENTIONS_PER_CONVERSATION } from "@/components/features/mentions/MentionInput";
+import { takeChatDraft } from "@/utils/chatDraft";
+import { MentionInput, MENTIONS_PER_CONVERSATION, mentionToken } from "@/components/features/mentions/MentionInput";
 import { StellaMark } from "@/components/ui/StellaMark";
 import { FeedbackReasonPicker } from "@/components/features/FeedbackReasonPicker";
 import { ImageViewer } from "@/components/ui/ImageViewer";
 import { PlanLimitNotice } from "@/components/features/billing/PlanLimitNotice";
 import { planLimitFrom } from "@/services/billing/billingService";
-import { apiErrorMessage } from "@/services/wardrobe/wardrobeService";
+import { apiErrorMessage, wardrobeService } from "@/services/wardrobe/wardrobeService";
 import { MentionedItems, MentionedText } from "@/components/features/mentions/MentionedContent";
 import { RecommendedItems } from "@/components/features/wardrobe/RecommendedItems";
 import type { ClothingItem } from "@/types/wardrobe";
@@ -122,6 +123,10 @@ export default function ChatPage() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const lastMessage = messages[messages.length - 1];
+  // Frases de "pensando" no tom do que a pessoa mandou: look, foto ou uma pergunta qualquer
+  const lastUserMessage = [...messages].reverse().find((message) => message.sender === "USER");
+  const lastUserContext = thinkingContext(lastUserMessage?.content, (lastUserMessage?.imageUrls?.length ?? 0) > 0,
+    (lastUserMessage?.mentionedItems?.length ?? 0) > 0);
 
   const conversationRef = useRef<HTMLElement>(null);
   // Segue o fim da conversa (como no ChatGPT) enquanto a pessoa está lá embaixo; se ela rolar para cima para
@@ -217,8 +222,10 @@ export default function ChatPage() {
       setActiveThreadId(null);
       setMessages([]);
       setInput("");
+      setMentions([]);
       setSelectedFiles([]);
       setIsInitializing(false);
+      if (newConversation) await applyDraft(newConversation, signal);
       return;
     }
     try {
@@ -233,6 +240,26 @@ export default function ChatPage() {
       if (!signal.aborted && authService.getToken()) setIsInitializing(false);
     }
   });
+
+  // Conversa aberta de outra tela (ex: "montar um look com as tendências"): a mensagem chega escrita, com as peças
+  // marcadas, para a pessoa revisar e enviar
+  async function applyDraft(conversation: string, signal: AbortSignal) {
+    const draft = takeChatDraft(conversation);
+    if (!draft) return;
+    let items: ClothingItem[] = [];
+    try {
+      const wardrobe = await wardrobeService.listItems({ signal });
+      const byId = new Map(wardrobe.map((item) => [item.id, item]));
+      items = draft.itemIds.map((id) => byId.get(id)).filter((item): item is ClothingItem => Boolean(item))
+        .slice(0, MENTIONS_PER_CONVERSATION);
+    } catch {
+      if (signal.aborted) return;
+    }
+    if (signal.aborted) return;
+    const tokens = items.map((item) => mentionToken(item)).join(" ");
+    setMentions(items);
+    setInput(`${draft.before}${tokens}${draft.after}`.trim());
+  }
 
   useEffect(() => {
     if (!currentUser) return;
@@ -572,7 +599,7 @@ export default function ChatPage() {
             ))
           )}
 
-          {isLoading && <ThinkingStatus />}
+          {isLoading && <ThinkingStatus context={lastUserContext} />}
 
           <div ref={messagesEndRef} />
         </main>

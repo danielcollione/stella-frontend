@@ -175,7 +175,19 @@ body {
   to { background-position: 0 0; }
 }
 
+/* Tendências: enquanto um look se forma, um brilho largo e lento atravessa a poeira (DustField) */
+.stella-forming-sheen {
+  background: linear-gradient(110deg, transparent 30%, rgba(255, 255, 255, 0.55) 50%, transparent 70%) 150% 0 / 220% 100% no-repeat;
+  animation: stella-forming-sheen 3.2s ease-in-out infinite;
+}
+
+@keyframes stella-forming-sheen {
+  from { background-position: 150% 0; }
+  to { background-position: -50% 0; }
+}
+
 @media (prefers-reduced-motion: reduce) {
+  .stella-forming-sheen,
   .stella-revealing .stella-chunk,
   .stella-revealing :is(li, h3),
   .stella-message-in,
@@ -284,3 +296,42 @@ html.stella-app body {
   overscroll-behavior: none;
 }
 
+
+/*
+ * Área de toque mínima de 44px (recomendação da Apple e do Google) sem mudar o tamanho visível do botão: uma camada
+ * invisível, centrada no botão, recebe o toque. Para botões pequenos e discretos (textos, ícones, chips).
+ */
+.stella-hit {
+  position: relative;
+}
+
+.stella-hit::before {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: max(100%, 44px);
+  height: max(100%, 44px);
+  transform: translate(-50%, -50%);
+}
+
+/*
+ * Tecla discreta (as marcações dos cards de compra): fundo creme com luz vinda de cima e a letra levemente iluminada,
+ * para parecer um botão sem perder a delicadeza. Ao tocar, afunda um pouco.
+ */
+.stella-key {
+  background: linear-gradient(180deg, #ffffff 0%, #f7f3ed 100%);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.95);
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.95), 0 0 12px rgba(255, 250, 240, 0.9);
+  transition: background 0.2s ease, color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.stella-key:hover {
+  background: linear-gradient(180deg, #ffffff 0%, #fbf8f3 100%);
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 1), 0 0 14px rgba(255, 244, 222, 1);
+}
+
+.stella-key:active {
+  background: linear-gradient(180deg, #f3eee6 0%, #faf7f2 100%);
+  box-shadow: inset 0 1px 3px rgba(28, 25, 23, 0.08);
+}

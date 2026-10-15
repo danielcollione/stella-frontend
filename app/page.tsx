@@ -5,7 +5,7 @@ import { Features } from "@/components/landing/Features";
 import { Hero, TrustRow } from "@/components/landing/Hero";
 import { LandingNav } from "@/components/landing/LandingNav";
 import { Pricing } from "@/components/landing/Pricing";
-import { NumbersReveal, PhotoFilm, PlannerSpotlight } from "@/components/landing/Showcase";
+import { PhotoFilm, PlannerSpotlight, TrendsReveal } from "@/components/landing/Showcase";
 import { Skills } from "@/components/landing/Skills";
 import { VisitCounter } from "@/components/landing/VisitCounter";
 import { SITE_DESCRIPTION, SITE_NAME, SITE_URL } from "@/utils/site";
@@ -75,7 +75,7 @@ export default function Home() {
         <TrustRow />
         <Skills />
         <PlannerSpotlight />
-        <NumbersReveal />
+        <TrendsReveal />
         <PhotoFilm />
         <Features />
         <Pricing />

@@ -5,7 +5,6 @@ import type { MotionValue } from "framer-motion";
 import { motion, useMotionTemplate, useScroll, useSpring, useTransform } from "framer-motion";
 import { Check, CloudSun } from "lucide-react";
 import { CtaLink, Eyebrow, LandingAsset, PhoneFrame, useViewport } from "@/components/landing/primitives";
-import { StellaMark } from "@/components/ui/StellaMark";
 
 function useSectionProgress(ref: React.RefObject<HTMLElement | null>): MotionValue<number> {
   const { scrollYProgress } = useScroll({ target: ref, offset: ["start start", "end end"] });
@@ -70,10 +69,10 @@ const PHONE_WIDTH = 320;
 const PHONE_HEIGHT = 640;
 
 /**
- * Painéis do guarda-roupa: um ponto claro nasce no fundo escuro, vira um cartão e cresce até quase tomar a
- * tela (para antes das bordas, com os cantos arredondados), revelando o conteúdo que já estava atrás dele.
+ * Tendências: um ponto claro nasce no fundo escuro, vira um cartão e cresce até quase tomar a tela (para antes das
+ * bordas, com os cantos arredondados), revelando o celular com um look da estação montado com as roupas da pessoa.
  */
-export function NumbersReveal() {
+export function TrendsReveal() {
   const ref = useRef<HTMLElement>(null);
   const viewport = useViewport();
   const progress = useSectionProgress(ref);
@@ -97,7 +96,7 @@ export function NumbersReveal() {
   const phoneScale = Math.min(1, (width >= 1024 ? height - 144 : height * 0.42) / PHONE_HEIGHT);
 
   return (
-    <section ref={ref} className="relative h-[220vh] bg-stone-950 lg:h-[300vh]">
+    <section id="tendencias" ref={ref} className="relative h-[220vh] bg-stone-950 lg:h-[300vh]">
       <div className="sticky top-0 flex h-screen items-center justify-center overflow-hidden">
         <motion.div style={{ width: panelWidth, height: panelHeight, borderRadius }} className="relative overflow-hidden bg-[#FAF8F5]">
           {/* O conteúdo tem o tamanho da tela inteira e fica centralizado: o painel só o revela ao crescer */}
@@ -105,22 +104,22 @@ export function NumbersReveal() {
             <motion.div style={{ opacity: contentOpacity, y: contentY }} className="mx-auto grid h-full max-w-6xl items-center gap-5 px-6 max-lg:content-start lg:grid-cols-[1fr_auto_1fr] lg:gap-14">
               {/* Os dois textos encostam no celular, cada um do seu lado, com a mesma distância */}
               <div className="max-lg:pt-24 max-lg:text-center lg:justify-self-end">
-                <Eyebrow>Painéis</Eyebrow>
-                <h2 className="mt-3 font-serif text-3xl leading-[1.1] tracking-tight text-stone-900 sm:text-5xl lg:mt-4">Seu guarda-roupa, <span className="font-light italic">em números</span></h2>
-                <p className="mt-4 font-serif text-xl font-light leading-snug text-stone-500 max-lg:hidden">Quanto vale.<br />O que você usa.<br />O que ficou esquecido.</p>
+                <Eyebrow>Motor de Tendências</Eyebrow>
+                <h2 className="mt-3 font-serif text-3xl leading-[1.1] tracking-tight text-stone-900 sm:text-5xl lg:mt-4">A estação, <span className="font-light italic">no seu armário</span></h2>
+                <p className="mt-4 font-serif text-xl font-light leading-snug text-stone-500 max-lg:hidden">O que está em alta.<br />O que você já tem.<br />O que vale comprar.</p>
               </div>
               {/* O celular aparece inteiro e é a peça mais alta da cena. Ele é desenhado num tamanho fixo e
                   reduzido por escala para caber na janela, então a tela de dentro nunca é cortada */}
               <motion.div style={{ y: phoneY, width: PHONE_WIDTH * phoneScale, height: PHONE_HEIGHT * phoneScale }} className="mx-auto max-lg:mb-8">
                 <div style={{ width: PHONE_WIDTH, height: PHONE_HEIGHT, transform: `scale(${phoneScale})` }} className="origin-top-left">
-                  <PhoneFrame className="h-full"><NumbersScreen /></PhoneFrame>
+                  <PhoneFrame className="h-full"><TrendsScreen /></PhoneFrame>
                 </div>
               </motion.div>
               <div className="max-lg:text-center lg:justify-self-start">
                 <p className="max-w-sm text-base font-light leading-relaxed text-stone-600 max-lg:mx-auto max-lg:text-sm">
-                  Veja as peças que mais trabalham por você, as que nunca saíram do cabide e o custo de cada uso. Decidir o que comprar, e o que doar, fica simples.
+                  Meu Motor de Tendências lê toda semana centenas de matérias de moda e o que o Brasil está buscando. Com isso, monto looks da estação com as suas roupas e sugiro só a peça que soma.
                 </p>
-                <CtaLink href="/login" className="mt-5 lg:mt-7">Ver meus números</CtaLink>
+                <CtaLink href="/login" className="mt-5 lg:mt-7">Ver meus looks da estação</CtaLink>
               </div>
             </motion.div>
           </div>
@@ -130,46 +129,89 @@ export function NumbersReveal() {
   );
 }
 
-// Tela de demonstração dos painéis (valores ilustrativos)
-function NumbersScreen() {
+// Tela de demonstração da aba Tendências, no desenho da tela de verdade (conteúdo ilustrativo).
+// A estação em uma frase, a paleta e um look da estação montado com as peças da pessoa, com o próximo aparecendo
+// no slide
+const SEASON_PALETTE = [
+  { name: "Areia", hex: "#D9C7A7" },
+  { name: "Off-white", hex: "#EFE6D6" },
+  { name: "Terracota", hex: "#C0603F" },
+  { name: "Oliva", hex: "#7A8B6F" },
+  { name: "Vermelho", hex: "#E34234" },
+];
+
+const LOOK = {
+  occasion: "Trabalho",
+  title: "Linho no escritório",
+  trends: [{ name: "Linho", dot: "bg-[#CDB892]" }, { name: "Saia midi fluida", dot: "bg-stone-900" }],
+  pieces: [
+    { name: "piece-01.webp", tone: "sand" },
+    { name: "piece-02.webp", tone: "clay" },
+    { name: "piece-03.webp", tone: "olive" },
+    { name: "piece-04.webp", tone: "rose" },
+  ] as const,
+};
+
+function TrendsScreen() {
   return (
-    <div className="flex h-full flex-col gap-3 px-4 pb-6 pt-12">
-      <p className="flex items-center gap-1.5 font-serif text-lg italic text-stone-900"><StellaMark size={20} decorative />Painéis</p>
-      <div className="grid grid-cols-2 gap-2">
-        <div className="rounded-2xl border border-stone-200/80 bg-white p-3">
-          <p className="text-[8px] font-semibold uppercase tracking-[0.12em] text-stone-400">Valor do guarda-roupa</p>
-          <p className="mt-1.5 font-serif text-xl text-stone-900">R$ 3.280</p>
-        </div>
-        <div className="rounded-2xl border border-stone-200/80 bg-white p-3">
-          <p className="text-[8px] font-semibold uppercase tracking-[0.12em] text-stone-400">Em uso</p>
-          <p className="mt-1.5 font-serif text-xl text-stone-900">68%</p>
-          <div className="mt-1.5 h-1 overflow-hidden rounded-full bg-stone-200"><div className="h-full w-[68%] rounded-full bg-stone-800" /></div>
-        </div>
+    <div className="flex h-full flex-col overflow-hidden px-4 pb-6 pt-12">
+      <p className="text-[7px] font-semibold uppercase tracking-[0.18em] text-stone-400">Primavera-Verão 2026/27</p>
+      <p className="font-serif text-[22px] italic leading-tight tracking-tight text-stone-900">Tendências</p>
+
+      <p className="mt-2 font-serif text-[11px] italic leading-snug text-stone-700">
+        Conforto e elegância sem rigidez: linho, pantalonas e tons terrosos, com um toque de vermelho.
+      </p>
+      <div className="mt-2 grid grid-cols-5 gap-1" aria-hidden="true">
+        {SEASON_PALETTE.map((color) => (
+          <div key={color.name}>
+            <span className="block h-4 rounded-md border border-stone-900/5" style={{ backgroundColor: color.hex }} />
+            <span className="mt-0.5 block truncate text-[5.5px] text-stone-500">{color.name}</span>
+          </div>
+        ))}
       </div>
-      <div className="rounded-2xl border border-stone-200/80 bg-white p-3">
-        <p className="text-[8px] font-semibold uppercase tracking-[0.12em] text-stone-400">Cores</p>
-        <div className="mt-2 flex items-center gap-3">
-          <svg viewBox="0 0 40 40" className="h-14 w-14 -rotate-90" aria-hidden="true">
-            <circle cx="20" cy="20" r="14" fill="none" stroke="#1C1917" strokeWidth="7" strokeDasharray="34 88" />
-            <circle cx="20" cy="20" r="14" fill="none" stroke="#D6C4A6" strokeWidth="7" strokeDasharray="24 88" strokeDashoffset="-35" />
-            <circle cx="20" cy="20" r="14" fill="none" stroke="#B07A45" strokeWidth="7" strokeDasharray="16 88" strokeDashoffset="-60" />
-            <circle cx="20" cy="20" r="14" fill="none" stroke="#5F8A5A" strokeWidth="7" strokeDasharray="11 88" strokeDashoffset="-77" />
-          </svg>
-          <ul className="flex-1 space-y-1 text-[9px] text-stone-600">
-            <li className="flex justify-between"><span>Preto</span><span className="text-stone-400">39%</span></li>
-            <li className="flex justify-between"><span>Bege</span><span className="text-stone-400">27%</span></li>
-            <li className="flex justify-between"><span>Caramelo</span><span className="text-stone-400">18%</span></li>
-          </ul>
-        </div>
+
+      <p className="mt-3.5 border-t border-stone-200/80 pt-3 text-[7px] font-semibold uppercase tracking-[0.16em] text-stone-400">Seus looks da estação</p>
+      <p className="font-serif text-[15px] italic leading-tight text-stone-900">Looks com as suas peças e as tendências</p>
+      <div className="mt-2 flex gap-1">
+        {["Trabalho", "Equilibrado", "Clima da semana"].map((filter) => (
+          <span key={filter} className="rounded-full bg-stone-200/60 px-2 py-0.5 text-[7px] font-medium text-stone-600">{filter}</span>
+        ))}
       </div>
-      <div className="flex-1 rounded-2xl border border-stone-200/80 bg-white p-3">
-        <p className="text-[8px] font-semibold uppercase tracking-[0.12em] text-stone-400">Mais usadas</p>
-        <div className="mt-2 grid grid-cols-3 gap-1.5">
-          <LandingAsset name="piece-01.webp" tone="sand" className="aspect-[4/5] w-full rounded-lg" />
-          <LandingAsset name="piece-02.webp" tone="clay" className="aspect-[4/5] w-full rounded-lg" />
-          <LandingAsset name="piece-03.webp" tone="olive" className="aspect-[4/5] w-full rounded-lg" />
+
+      <div className="-mr-4 mt-2.5 flex gap-2">
+        <div className="w-[86%] shrink-0 overflow-hidden rounded-[1.25rem] border border-stone-200/80 bg-white shadow-[0_1px_2px_rgba(28,25,23,0.03)]">
+          <div className="grid grid-cols-2 gap-[3px] bg-stone-100 p-[3px]">
+            {LOOK.pieces.map((piece) => <LandingAsset key={piece.name} name={piece.name} tone={piece.tone} className="aspect-square w-full rounded-xl" />)}
+          </div>
+          <div className="px-3 pb-3 pt-2.5">
+            <p className="text-[7px] uppercase tracking-[0.14em] text-stone-400">{LOOK.occasion}</p>
+            <p className="mt-0.5 font-serif text-[15px] italic leading-tight text-stone-900">{LOOK.title}</p>
+            <div className="mt-1.5 flex flex-wrap gap-1">
+              {LOOK.trends.map((trend) => (
+                <span key={trend.name} className="inline-flex items-center gap-1 rounded-full border border-stone-200 px-1.5 py-px text-[7px] text-stone-600">
+                  <span className={`h-1 w-1 rounded-full ${trend.dot}`} />{trend.name}
+                </span>
+              ))}
+            </div>
+            <p className="mt-1.5 text-[8.5px] leading-relaxed text-stone-600">
+              O <b className="font-semibold text-stone-800">blazer de linho</b> sobre a <b className="font-semibold text-stone-800">saia caramelo</b> deixa o look leve e atual; o <b className="font-semibold text-stone-800">mule</b> e a <b className="font-semibold text-stone-800">bolsa rosé</b> fecham com conforto.
+            </p>
+            <div className="mt-2 flex items-center justify-between border-t border-stone-100 pt-2">
+              <span className="inline-flex items-center gap-1 rounded-full border border-[#5E8B6E]/35 bg-[#F1F6F2] py-0.5 pl-1.5 pr-0.5 text-[7.5px] font-medium text-[#2F4A38]">
+                <Check size={8} className="text-[#4E7A5E]" />Usei hoje
+                <span className="flex h-2.5 w-[18px] items-center justify-end rounded-full bg-[#5E8B6E] p-px"><span className="h-2 w-2 rounded-full bg-white" /></span>
+              </span>
+              <span className="text-[7.5px] text-stone-500">Trocar (3)</span>
+            </div>
+          </div>
         </div>
-        <p className="mt-2 text-[9px] text-stone-500">Blazer de linho · R$ 14 por uso</p>
+        {/* O próximo look do slide, aparecendo na borda */}
+        <div aria-hidden="true" className="w-[86%] shrink-0 overflow-hidden rounded-[1.25rem] border border-stone-200/80 bg-white">
+          <div className="grid grid-cols-2 gap-[3px] bg-stone-100 p-[3px]">
+            <LandingAsset name="piece-05.webp" tone="olive" className="aspect-square w-full rounded-xl" />
+            <span className="aspect-square w-full rounded-xl bg-stone-200/70" />
+          </div>
+        </div>
       </div>
     </div>
   );
