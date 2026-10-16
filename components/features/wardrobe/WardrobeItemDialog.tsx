@@ -215,7 +215,7 @@ export function WardrobeItemDialog({ target, onClose, onSaved, onDeleted }: Ward
   const { title, description } = describe(view);
 
   return (
-    <Modal open onClose={onClose} title={title} description={description} dismissible={!busy}>
+    <Modal open onClose={onClose} title={title} description={description} dismissible={!busy} scrollBody={view.step !== "form" && view.step !== "forms"}>
       {view.step === "pick" && <PhotoPicker error={view.error} planLimit={view.planLimit} bulkMax={bulkMax} onSelect={selectFiles} />}
 
       {view.step === "batch" && (

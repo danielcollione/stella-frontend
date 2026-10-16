@@ -20,13 +20,15 @@ interface ModalProps {
   children: ReactNode;
   // false enquanto há uma operação em andamento (upload, salvamento): Esc, clique fora e o X ficam bloqueados
   dismissible?: boolean;
+  // false quando o conteúdo cuida da própria rolagem (ex: formulário com rodapé fixo, fora da área que rola)
+  scrollBody?: boolean;
 }
 
 /**
  * Modal sobre o <dialog> nativo: foco preso, Esc, fundo inerte e camada superior vêm do navegador.
  * No celular vira um bottom sheet.
  */
-export function Modal({ open, onClose, title, description, children, dismissible = true }: ModalProps) {
+export function Modal({ open, onClose, title, description, children, dismissible = true, scrollBody = true }: ModalProps) {
   const dialogRef = useRef<HTMLDialogElement>(null);
   const [portalContainer, setPortalContainer] = useState<HTMLDialogElement | null>(null);
   const titleId = useId();
@@ -90,7 +92,7 @@ export function Modal({ open, onClose, title, description, children, dismissible
             <X size={18} />
           </button>
         </header>
-        <div className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden overscroll-contain">{children}</div>
+        <div className={scrollBody ? "min-h-0 flex-1 overflow-y-auto overflow-x-hidden overscroll-contain" : "flex min-h-0 flex-1 flex-col overflow-hidden"}>{children}</div>
       </div>
       </ModalPortalContext.Provider>
     </dialog>

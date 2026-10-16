@@ -81,6 +81,8 @@ export interface TrendLooks {
   advancedFilters: boolean;
   // false quando o guarda-roupa ainda não forma nem um look
   canBuildLook: boolean;
+  // O que falta no guarda-roupa para montar looks (nulo quando já dá)
+  buildHint: string | null;
   round: {
     id: string;
     createdAt: string;

@@ -188,7 +188,10 @@ export function ClothingItemForm({ item: initialItem, isNew, pager, onBusyChange
   }
 
   return (
-    <form onSubmit={handleSubmit} className="flex flex-col">
+    // Só os campos rolam; o rodapé fica fora da rolagem, preso à base da janela (no iPhone, o efeito elástico da
+    // rolagem não o arrasta junto)
+    <form onSubmit={handleSubmit} className="flex min-h-0 flex-1 flex-col">
+      <div className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden overscroll-contain">
       <div className="grid gap-6 px-6 py-6 sm:grid-cols-[minmax(0,14rem)_1fr] sm:px-7">
         <figure className="mx-auto w-40 sm:w-full">
           {/* Miniatura no formulário; tocar abre a foto original em tamanho real */}
@@ -293,9 +296,10 @@ export function ClothingItemForm({ item: initialItem, isNew, pager, onBusyChange
       </div>
 
       {error && <p role="alert" className="mx-6 mb-4 rounded-lg border border-red-200 bg-red-50 px-3.5 py-2.5 text-sm text-red-700 sm:mx-7">{error}</p>}
+      </div>
 
       {/* Rodapé fixo na base da janela: excluir, trocar de peça e salvar sempre à mão, sem rolar até o fim */}
-      <footer className="sticky bottom-0 z-10 flex flex-wrap items-center justify-between gap-3 border-t border-stone-200/70 bg-[#FAF8F5]/95 px-6 py-3.5 backdrop-blur-md sm:px-7 sm:py-4">
+      <footer className="flex shrink-0 flex-wrap items-center justify-between gap-3 border-t border-stone-200/70 bg-[#FAF8F5] px-6 py-3.5 sm:px-7 sm:py-4">
         {confirmingDelete ? (
           <div className="flex items-center gap-2">
             <span className="text-sm text-stone-600">Excluir esta peça?</span>

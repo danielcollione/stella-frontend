@@ -150,6 +150,7 @@ export function SeasonLooks() {
           advanced={data.advancedFilters}
           disabled={generating}
           canBuildLook={data.canBuildLook}
+          buildHint={data.buildHint}
           roundsLeft={roundsLeft}
           generating={generating}
           step={GENERATING_STEPS[step]}
@@ -215,12 +216,13 @@ export function StellaThinking({ text }: { text: string }) {
   );
 }
 
-function Filters({ filters, onChange, advanced, disabled, canBuildLook, roundsLeft, generating, step, onGenerate, onCancel }: {
+function Filters({ filters, onChange, advanced, disabled, canBuildLook, buildHint, roundsLeft, generating, step, onGenerate, onCancel }: {
   filters: LookFilters;
   onChange: (filters: LookFilters) => void;
   advanced: boolean;
   disabled: boolean;
   canBuildLook: boolean;
+  buildHint: string | null;
   roundsLeft: number;
   generating: boolean;
   step: string;
@@ -275,7 +277,7 @@ function Filters({ filters, onChange, advanced, disabled, canBuildLook, roundsLe
       <div className="mt-6 flex flex-wrap items-center gap-3 border-t border-stone-100 pt-5">
         {!canBuildLook ? (
           <p className="text-sm text-stone-500">
-            Para montar looks, a Stella precisa de pelo menos duas peças: uma parte de cima e uma de baixo, ou uma peça inteira com um calçado ou acessório.{" "}
+            {buildHint ?? "Para montar looks, a Stella precisa de uma parte de cima e uma de baixo, ou de uma peça inteira."}{" "}
             <Link href="/wardrobe" className="font-medium text-stone-800 underline decoration-stone-300 underline-offset-4">Cadastrar peças</Link>
           </p>
         ) : generating ? (
