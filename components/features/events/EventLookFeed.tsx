@@ -1,9 +1,10 @@
 "use client";
 
 import { useState } from "react";
+import type { CSSProperties } from "react";
 import ReactMarkdown from "react-markdown";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
-import { Check, ChevronLeft, ChevronRight, CloudSun, LoaderCircle, Pencil, ShoppingBag } from "lucide-react";
+import { Check, ChevronLeft, ChevronRight, CloudSun, LoaderCircle, Pencil, ShoppingBag, Sparkle, Sparkles } from "lucide-react";
 import { markGoodMoment } from "@/utils/goodMoment";
 import { displayName } from "@/services/wardrobe/wardrobeCatalog";
 import { PieceThumb } from "@/components/features/trends/TrendCard";
@@ -185,10 +186,21 @@ function EventLookDetails({ look, chosen, choosing, onChoose, canEdit, busy, onE
 
         {look.basics.length > 0 && (
           <div className="mt-3">
-            <p className="mb-1.5 text-xs text-stone-500">{look.items.length > 0 ? "Com básicos que você já deve ter" : "Básicos que você já deve ter"}</p>
-            <ul className="flex flex-wrap gap-1.5">
-              {look.basics.map((basic) => (
-                <li key={basic} className="rounded-full border border-stone-200 bg-white px-3 py-1 text-xs text-stone-700">{basic}</li>
+            <p className="mb-2 flex items-center gap-1.5 text-xs font-medium text-[#8A6A4A]">
+              <Sparkles aria-hidden="true" size={13} className="text-[#C9A27E]" />
+              {look.items.length > 0 ? "Com básicos que você já deve ter" : "Básicos que você já deve ter"}
+            </p>
+            {/* Em dourado, com um brilho que passa por cada etiqueta em momentos diferentes: completam o look */}
+            <ul className="flex flex-wrap gap-2">
+              {look.basics.map((basic, index) => (
+                <li
+                  key={basic}
+                  style={{ "--stella-chip-delay": `${index * 0.6}s` } as CSSProperties}
+                  className="stella-gold-chip flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium text-stone-800"
+                >
+                  <Sparkle aria-hidden="true" size={10} className="shrink-0 fill-[#C9A27E] text-[#C9A27E]" />
+                  {basic}
+                </li>
               ))}
             </ul>
           </div>

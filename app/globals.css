@@ -116,14 +116,19 @@ body {
   animation: stella-page-in 300ms cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
-/* A barra de abas do celular fica numa camada própria, acima da página que entra e sai: sem isso, a foto da
-   página nova cobre a barra por um instante e ela parece sumir e voltar a cada troca de aba. Só a imagem nova
-   aparece, parada e sem a mistura padrão (que somava as duas imagens e fazia a barra piscar mais clara) */
+/* A barra de abas do celular fica numa camada própria e SEMPRE por cima da página que entra e sai. O navegador
+   empilha as camadas na ordem em que foram capturadas: a página nova entra depois da barra e, sem o z-index,
+   a cobria enquanto aparecia (a barra "piscava" a cada troca de aba). Só a imagem nova da barra aparece, parada
+   e sem a mistura padrão (que somava as duas imagens e a deixava mais clara) */
 .stella-tab-bar {
   view-transition-name: stella-tab-bar;
 }
 
-::view-transition-group(stella-tab-bar),
+::view-transition-group(stella-tab-bar) {
+  animation: none;
+  z-index: 100;
+}
+
 ::view-transition-image-pair(stella-tab-bar) {
   animation: none;
 }
@@ -403,7 +408,32 @@ html.stella-app body {
   45%, 55% { opacity: 1; transform: scale(1) rotate(25deg); }
 }
 
+/*
+ * Etiqueta dourada (os básicos que a pessoa já deve ter no look do evento): fundo champanhe, borda dourada e um
+ * brilho que atravessa de tempos em tempos, cada etiqueta no seu momento (--stella-chip-delay).
+ */
+.stella-gold-chip {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  background: linear-gradient(135deg, #f7eedf 0%, #fdf9f2 55%, #f3e6d1 100%);
+  box-shadow: inset 0 0 0 1px rgba(201, 162, 126, 0.55), 0 4px 12px -8px rgba(150, 110, 70, 0.55);
+}
+
+.stella-gold-chip::before {
+  content: "";
+  position: absolute;
+  inset: -2px;
+  z-index: -1;
+  pointer-events: none;
+  background: linear-gradient(115deg, transparent 30%, rgba(255, 255, 255, 0.5) 46%, rgba(255, 255, 255, 0.9) 50%, rgba(255, 255, 255, 0.5) 54%, transparent 70%);
+  transform: translateX(-130%);
+  animation: stella-sweep 5.2s cubic-bezier(0.22, 1, 0.36, 1) infinite;
+  animation-delay: var(--stella-chip-delay, 0s);
+}
+
 @media (prefers-reduced-motion: reduce) {
+  .stella-gold-chip::before,
   .stella-shine-button,
   .stella-shine-button::before,
   .stella-twinkle {
