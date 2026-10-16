@@ -1,4 +1,9 @@
 import { api } from "@/services/api";
+import { readCache, writeCache } from "@/utils/screenCache";
+
+// A previsão muda devagar: a última que chegou aparece na hora ao abrir outra tela (e a busca atualiza por trás)
+const OVERVIEW_CACHE = "weather:overview";
+const OVERVIEW_MAX_AGE_MS = 30 * 60 * 1000;
 
 // Espelha o WeatherOverviewDto: clima da cidade do perfil, agora e nos próximos dias
 export interface WeatherOverview {
@@ -21,7 +26,14 @@ export interface DayWeather {
 export const weatherService = {
   async overview(signal?: AbortSignal): Promise<WeatherOverview | null> {
     const response = await api.get<WeatherOverview>("/weather", { signal });
-    return response.status === 204 ? null : response.data;
+    const overview = response.status === 204 ? null : response.data;
+    writeCache(OVERVIEW_CACHE, overview);
+    return overview;
+  },
+
+  /** A última previsão que chegou nesta sessão (null se ainda não veio nenhuma). */
+  cachedOverview(): WeatherOverview | null {
+    return readCache<WeatherOverview | null>(OVERVIEW_CACHE, OVERVIEW_MAX_AGE_MS) ?? null;
   },
 
   async day(params: { date: string; time?: string; cityName?: string; cityCoordinates?: string }, signal?: AbortSignal): Promise<DayWeather | null> {

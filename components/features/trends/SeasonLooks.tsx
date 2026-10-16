@@ -18,6 +18,8 @@ import { trendsService } from "@/services/trends/trendsService";
 import { saveChatDraft } from "@/utils/chatDraft";
 import { markGoodMoment } from "@/utils/goodMoment";
 import type { LookFilters, LookOccasion, LookSwapReason, LookTrendLevel, TrendLook, TrendLooks } from "@/types/trends";
+import { readCache, writeCache } from "@/utils/screenCache";
+import { uniqueId } from "@/utils/uniqueId";
 
 const OCCASIONS: { value: LookOccasion; label: string }[] = [
   { value: "VARIADOS", label: "Variados" },
@@ -63,10 +65,23 @@ const plural = (count: number, one: string, many: string) => `${count} ${count =
  * Seus looks da estação: a pessoa escolhe os filtros, pede uma rodada e a Stella monta até 5 looks com as peças dela
  * e as tendências. Cada look pode ser trocado (com motivo) e marcado como "Usei hoje", que entra no diário de uso.
  */
+const LOOKS_CACHE = "trends:looks";
+// As fotos das peças vêm com endereço que expira em 15 min: o que foi guardado vale por 10
+const PHOTO_CACHE_MS = 10 * 60 * 1000;
+
 export function SeasonLooks() {
-  const [data, setData] = useState<TrendLooks | null>(null);
+  // Voltando para a aba: a rodada que estava na tela aparece na hora (as fotos das peças expiram, por isso o
+  // limite de tempo) e a busca de sempre atualiza por trás
+  const [data, setData] = useState<TrendLooks | null>(() => readCache<TrendLooks>(LOOKS_CACHE, PHOTO_CACHE_MS) ?? null);
   const [failed, setFailed] = useState(false);
-  const [filters, setFilters] = useState<LookFilters>(DEFAULT_FILTERS);
+  const [filters, setFilters] = useState<LookFilters>(() => {
+    const round = readCache<TrendLooks>(LOOKS_CACHE, PHOTO_CACHE_MS)?.round;
+    return round ? { occasion: round.occasion, useWeather: round.useWeather, trendLevel: round.trendLevel, allowPurchase: round.allowPurchase } : DEFAULT_FILTERS;
+  });
+
+  useEffect(() => {
+    if (data) writeCache(LOOKS_CACHE, data);
+  }, [data]);
   const [editing, setEditing] = useState(false);
   const [generating, setGenerating] = useState(false);
   const [step, setStep] = useState(0);
@@ -821,7 +836,7 @@ function LockedLooks() {
 export function LooksChatShortcut() {
   const router = useRouter();
   const open = () => {
-    const conversation = crypto.randomUUID();
+    const conversation = uniqueId();
     saveChatDraft({ conversation, before: "Stella, monte um look com as tendências da estação para mim", after: ".", itemIds: [] });
     router.push(`/chat?new=${conversation}`);
   };

@@ -39,7 +39,7 @@ export function PlannerMobile({ today, selected, events, dayEvents, upcoming, ha
   onCreate: (iso: string) => void;
 }) {
   const { topBarRight } = useAppShell();
-  const [weather, setWeather] = useState<WeatherOverview | null>(null);
+  const [weather, setWeather] = useState<WeatherOverview | null>(() => weatherService.cachedOverview());
   useEffect(() => {
     if (!hasCity) return;
     const controller = new AbortController();

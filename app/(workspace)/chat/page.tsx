@@ -18,6 +18,7 @@ import { authService } from "@/services/authService";
 import type { ChatMessage, ChatRetry, FeedbackReason } from "@/types/chat";
 import { useAppShell } from "@/components/layout/AppShell";
 import { TopBarActions } from "@/components/layout/MobileNav";
+import { readCache, writeCache } from "@/utils/screenCache";
 import { playSendSound, playReceiveSound } from "@/utils/sound";
 import { chatService } from "@/services/chat/chatService";
 import { ChatMessageContent } from "@/components/features/ChatMessageContent";
@@ -46,9 +47,12 @@ import { apiErrorMessage, wardrobeService } from "@/services/wardrobe/wardrobeSe
 import { MentionedItems, MentionedText } from "@/components/features/mentions/MentionedContent";
 import { RecommendedItems } from "@/components/features/wardrobe/RecommendedItems";
 import type { ClothingItem } from "@/types/wardrobe";
+import { uniqueId } from "@/utils/uniqueId";
 
 // Distância do fim da conversa em que ainda se considera que a pessoa "está lá embaixo"
 const FOLLOW_THRESHOLD_PX = 120;
+// Conversa guardada para a volta ao chat: as fotos das peças citadas expiram em 15 min, então vale por 10
+const CHAT_CACHE_MS = 10 * 60 * 1000;
 
 function ThumbnailPreview({ file, onRemove }: { file: File; onRemove: () => void }) {
   const imageRef = useRef<HTMLImageElement>(null);
@@ -100,8 +104,11 @@ export default function ChatPage() {
   const requestedThread = searchParams.get("thread");
   const newConversation = searchParams.get("new");
   const { user: currentUser, threads, setThreads, threadsReady, activeThreadId, setActiveThreadId, topBarLeft, topBarRight } = useAppShell();
-  const [isInitializing, setIsInitializing] = useState(true);
-  const [messages, setMessages] = useState<ChatMessage[]>([]);
+  // Voltando para o chat: a conversa que estava aberta aparece na hora (sem o "Carregando...") e a busca de sempre
+  // atualiza por trás. As fotos das peças citadas expiram, por isso o limite de tempo
+  const [cachedThread] = useState(() => (newConversation ? null : requestedThread ?? activeThreadId));
+  const [isInitializing, setIsInitializing] = useState(() => !(cachedThread && readCache<ChatMessage[]>(`chat:${cachedThread}`, CHAT_CACHE_MS)));
+  const [messages, setMessages] = useState<ChatMessage[]>(() => (cachedThread && readCache<ChatMessage[]>(`chat:${cachedThread}`, CHAT_CACHE_MS)) || []);
   const [input, setInput] = useState("");
   const [mentions, setMentions] = useState<ClothingItem[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -121,6 +128,10 @@ export default function ChatPage() {
   const [attachNotice, setAttachNotice] = useState("");
   const [draggingFiles, setDraggingFiles] = useState(false);
   const attachNoticeTimer = useRef<number | null>(null);
+
+  useEffect(() => {
+    if (activeThreadId && messages.length > 0 && !isLoading) writeCache(`chat:${activeThreadId}`, messages);
+  }, [activeThreadId, messages, isLoading]);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -411,7 +422,7 @@ export default function ChatPage() {
 
   function startNewConversation() {
     setActiveThreadId(null);
-    router.push(`/chat?new=${crypto.randomUUID()}`);
+    router.push(`/chat?new=${uniqueId()}`);
   }
 
   if (isInitializing) {

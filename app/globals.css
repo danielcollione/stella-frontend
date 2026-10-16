@@ -242,6 +242,34 @@ body {
     animation-delay: 0s !important;
   }
 }
+/*
+ * Celular e tablet (abaixo do lg): como num app nativo, trocar de aba é instantâneo. Sem a troca animada de página,
+ * sem o conteúdo surgindo e sem a cascata dos blocos: as três somadas atrasavam cada toque em 0,6 a 0,8 s.
+ * O halo do botão brilhante fica parado: animar a sombra obrigava o celular a redesenhar o botão a cada quadro,
+ * sem parar (o brilho que atravessa e as estrelinhas continuam: mexem só posição e opacidade, que não pesam).
+ */
+@media (max-width: 1023.98px) {
+  .stella-stagger > * {
+    animation: none !important;
+  }
+
+  .stella-content {
+    transform: none !important;
+    opacity: 1 !important;
+  }
+
+  ::view-transition-old(*),
+  ::view-transition-new(*),
+  ::view-transition-group(*) {
+    animation: none !important;
+  }
+
+  .stella-shine-button {
+    animation: none;
+    box-shadow: inset 0 0 0 1px rgba(201, 162, 126, 0.5), 0 10px 24px -12px rgba(28, 25, 23, 0.7), 0 0 20px 1px rgba(201, 162, 126, 0.3);
+  }
+}
+
 /* Landing: faixa de perguntas que corre devagar da direita para a esquerda, sem parar. A lista é duplicada,
    então andar metade da largura (mais metade do espaço entre as cópias) fecha a volta sem salto. */
 .stella-marquee {

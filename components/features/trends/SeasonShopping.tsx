@@ -19,6 +19,8 @@ import { apiErrorMessage } from "@/services/wardrobe/wardrobeService";
 import { trendsService } from "@/services/trends/trendsService";
 import { saveChatDraft } from "@/utils/chatDraft";
 import type { ShoppingDismissReason, ShoppingMark, ShoppingSuggestion, TrendShopping } from "@/types/trends";
+import { readCache, writeCache } from "@/utils/screenCache";
+import { uniqueId } from "@/utils/uniqueId";
 
 const DISMISS_REASONS: { value: ShoppingDismissReason; label: string }[] = [
   { value: "NOT_MY_STYLE", label: "Não é meu estilo" },
@@ -63,9 +65,16 @@ const dayMonth = (iso: string) => new Date(`${iso}T12:00:00`).toLocaleDateString
  * semana a Stella monta a lista. "Já tenho", "Comprei" e "Não é para mim" pedem confirmação dentro do card: a pessoa
  * troca por outra sugestão da reserva ou deixa o card na tela, marcado. Sem reserva, o card sempre fica.
  */
+const SHOPPING_CACHE = "trends:shopping";
+
 export function SeasonShopping() {
-  const [data, setData] = useState<TrendShopping | null>(null);
+  // Voltando para a aba: a lista da semana que estava na tela aparece na hora e a busca de sempre atualiza por trás
+  const [data, setData] = useState<TrendShopping | null>(() => readCache<TrendShopping>(SHOPPING_CACHE) ?? null);
   const [failed, setFailed] = useState(false);
+
+  useEffect(() => {
+    if (data && !data.pending) writeCache(SHOPPING_CACHE, data);
+  }, [data]);
   const [generating, setGenerating] = useState(false);
   const [step, setStep] = useState(0);
   const [error, setError] = useState("");
@@ -727,7 +736,7 @@ function LockedShopping() {
 function ShoppingChatShortcut() {
   const router = useRouter();
   const open = () => {
-    const conversation = crypto.randomUUID();
+    const conversation = uniqueId();
     saveChatDraft({ conversation, before: "Stella, estou pensando em comprar uma peça nova. Ela combina com o meu guarda-roupa e com as tendências da estação?", after: "", itemIds: [] });
     router.push(`/chat?new=${conversation}`);
   };

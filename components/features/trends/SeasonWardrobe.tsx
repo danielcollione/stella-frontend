@@ -7,6 +7,7 @@ import { BADGES, LockBadge, PieceThumb } from "@/components/features/trends/Tren
 import { Rail } from "@/components/features/trends/Rail";
 import { saveChatDraft } from "@/utils/chatDraft";
 import type { Trends, TrendInsightPiece } from "@/types/trends";
+import { uniqueId } from "@/utils/uniqueId";
 
 // Legenda da foto em tela cheia: o selo da tendência, sem o nome dela
 const badgeLabel = (piece: TrendInsightPiece) => (piece.badge && BADGES[piece.badge] ? `Em alta · ${BADGES[piece.badge].label}` : undefined);
@@ -106,7 +107,7 @@ function LookButton({ pieces }: { pieces: TrendInsightPiece[] }) {
   const router = useRouter();
 
   const askForLook = () => {
-    const conversation = crypto.randomUUID();
+    const conversation = uniqueId();
     saveChatDraft({
       conversation,
       before: "Stella, monte um look com as tendências da estação usando ",

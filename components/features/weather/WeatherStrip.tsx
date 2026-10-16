@@ -20,7 +20,7 @@ function dayLabel(iso: string, today: string): string {
  * sem cidade no perfil, vira um convite para informá-la.
  */
 export function WeatherStrip({ today, hasCity }: { today: string; hasCity: boolean }) {
-  const [weather, setWeather] = useState<WeatherOverview | null>(null);
+  const [weather, setWeather] = useState<WeatherOverview | null>(() => weatherService.cachedOverview());
 
   useEffect(() => {
     if (!hasCity) return;

@@ -23,7 +23,7 @@ export function TodayWeather({ hasCity, fallback = null, compact }: {
   // Topo do celular, ao lado do "Salvar no guarda-roupa": a chuva vira só a gota e a porcentagem
   compact?: boolean;
 }) {
-  const [weather, setWeather] = useState<WeatherOverview | null>(null);
+  const [weather, setWeather] = useState<WeatherOverview | null>(() => weatherService.cachedOverview());
 
   useEffect(() => {
     if (!hasCity) return;

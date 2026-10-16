@@ -5,6 +5,7 @@ import type { ReactNode } from "react";
 import Link from "next/link";
 import { AlertCircle, CalendarCheck, Check, Plus } from "lucide-react";
 import { useAppShell } from "@/components/layout/AppShell";
+import { readCache, writeCache } from "@/utils/screenCache";
 import { PageContent } from "@/components/layout/PageContent";
 import { EventCalendar } from "@/components/features/events/EventCalendar";
 import { PlannerMobile } from "@/components/features/events/PlannerMobile";
@@ -23,33 +24,50 @@ const UPCOMING_DAYS = 60;
 
 type Load = { key: string; events: CalendarEvent[] };
 
+// Primeiro e último dia da grade do mês (com os dias das semanas vizinhas que aparecem nela)
+function monthRange(month: Date): string {
+  const grid = monthGrid(month);
+  return `${toIsoDate(grid[0])}:${toIsoDate(grid[grid.length - 1])}`;
+}
+
 export default function EventsPage() {
   const { user } = useAppShell();
   const [today] = useState(todayIso);
   const [month, setMonth] = useState(() => firstOfMonth(today));
   const [selected, setSelected] = useState(today);
   const [version, setVersion] = useState(0); // incrementa a cada alteração: recarrega calendário e agenda
-  const [monthData, setMonthData] = useState<Load | null>(null);
-  const [upcomingData, setUpcomingData] = useState<Load | null>(null);
+  // Voltando para a aba: o mês e os próximos eventos que já estavam na tela aparecem na hora (guardados pelo
+  // período, sem a versão) e a busca de sempre atualiza por trás
+  const [monthData, setMonthData] = useState<Load | null>(() => {
+    const range = monthRange(firstOfMonth(today));
+    const events = readCache<CalendarEvent[]>(`events:${range}`);
+    return events ? { key: `${range}:0`, events } : null;
+  });
+  const [upcomingData, setUpcomingData] = useState<Load | null>(() => {
+    const events = readCache<CalendarEvent[]>(`events:upcoming:${today}`);
+    return events ? { key: "0", events } : null;
+  });
   const [locked, setLocked] = useState<string | null>(null);
   const [loadError, setLoadError] = useState(false);
   const [dialog, setDialog] = useState<{ key: number; target: EventDialogTarget } | null>(null);
-  const [quota, setQuota] = useState<EventQuota | null>(null);
-  const [quotaSettled, setQuotaSettled] = useState(false);
+  const [quota, setQuota] = useState<EventQuota | null>(() => readCache<EventQuota>("events:quota") ?? null);
+  const [quotaSettled, setQuotaSettled] = useState(() => readCache<EventQuota>("events:quota") !== undefined);
   const [introSeen, markIntroSeen] = usePlannerIntroSeen(user?.id);
   const [upgradeOpen, setUpgradeOpen] = useState(false);
   // Celular e tablet: o mês inteiro só abre pelo ícone de calendário da faixa da semana
   const [calendarOpen, setCalendarOpen] = useState(false);
 
-  const grid = useMemo(() => monthGrid(month), [month]);
-  const monthKey = `${toIsoDate(grid[0])}:${toIsoDate(grid[grid.length - 1])}:${version}`;
+  const monthKey = `${monthRange(month)}:${version}`;
   const upcomingKey = String(version);
 
   useEffect(() => {
     const controller = new AbortController();
     const [from, to] = monthKey.split(":");
     eventService.list(from, to, controller.signal)
-      .then((events) => setMonthData({ key: monthKey, events }))
+      .then((events) => {
+        setMonthData({ key: monthKey, events });
+        writeCache(`events:${from}:${to}`, events);
+      })
       .catch((failure) => {
         if (controller.signal.aborted) return;
         const planLimit = planLimitFrom(failure);
@@ -62,7 +80,10 @@ export default function EventsPage() {
   useEffect(() => {
     const controller = new AbortController();
     eventService.list(today, toIsoDate(addDays(parseIsoDate(today), UPCOMING_DAYS)), controller.signal)
-      .then((events) => setUpcomingData({ key: upcomingKey, events }))
+      .then((events) => {
+        setUpcomingData({ key: upcomingKey, events });
+        writeCache(`events:upcoming:${today}`, events);
+      })
       .catch((failure) => {
         if (controller.signal.aborted) return;
         const planLimit = planLimitFrom(failure);
@@ -75,7 +96,10 @@ export default function EventsPage() {
   // Quantos eventos o plano permite: no limite, "novo evento" vira o convite para assinar
   useEffect(() => {
     const controller = new AbortController();
-    eventService.quota(controller.signal).then(setQuota).catch(() => undefined).finally(() => {
+    eventService.quota(controller.signal).then((loaded) => {
+      setQuota(loaded);
+      writeCache("events:quota", loaded);
+    }).catch(() => undefined).finally(() => {
       if (!controller.signal.aborted) setQuotaSettled(true);
     });
     return () => controller.abort();

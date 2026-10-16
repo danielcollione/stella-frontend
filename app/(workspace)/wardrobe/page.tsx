@@ -6,6 +6,7 @@ import { usePathname, useSearchParams } from "next/navigation";
 import { AlertCircle, ArrowRight, Camera, Sparkle, ImagePlus, LoaderCircle, MessageCircle, Plus, Search, SearchX, Shirt, X } from "lucide-react";
 import { useAppShell } from "@/components/layout/AppShell";
 import { TopBarActions } from "@/components/layout/MobileNav";
+import { readCache, writeCache } from "@/utils/screenCache";
 import { PageContent } from "@/components/layout/PageContent";
 import { Select } from "@/components/ui/Select";
 import { CategoryTabs } from "@/components/features/wardrobe/CategoryTabs";
@@ -90,11 +91,14 @@ export default function WardrobePage() {
   }, [meta, category]);
 
   // Resumo dos painéis no topo; recarrega quando uma peça entra, sai ou é editada (o preço muda o valor)
-  const [summary, setSummary] = useState<WardrobeStats | null>(null);
+  const [summary, setSummary] = useState<WardrobeStats | null>(() => readCache<WardrobeStats>("wardrobe:stats") ?? null);
   const [summaryVersion, setSummaryVersion] = useState(0);
   useEffect(() => {
     const controller = new AbortController();
-    wardrobeService.stats(controller.signal).then(setSummary).catch(() => undefined);
+    wardrobeService.stats(controller.signal).then((stats) => {
+      setSummary(stats);
+      writeCache("wardrobe:stats", stats);
+    }).catch(() => undefined);
     return () => controller.abort();
   }, [summaryVersion]);
   const refreshSummary = () => setSummaryVersion((current) => current + 1);

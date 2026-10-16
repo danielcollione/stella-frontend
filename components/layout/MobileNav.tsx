@@ -40,7 +40,7 @@ export function MobileTopBar({ onMenu, onLeftSlot, onRightSlot }: {
   const title = TITLES.find(([prefix]) => pathname.startsWith(prefix))?.[1];
 
   return (
-    <div className="relative z-20 flex h-14 shrink-0 items-center gap-1.5 border-b border-stone-200/50 bg-[#FAF8F5]/90 px-2.5 backdrop-blur-md lg:hidden">
+    <div className="relative z-20 flex h-14 shrink-0 items-center gap-1.5 border-b border-stone-200/50 bg-[#FAF8F5] px-2.5 lg:hidden">
       <button type="button" onClick={onMenu} aria-label="Abrir menu" title="Abrir menu" className="rounded-xl p-2 text-stone-700 transition-colors active:bg-stone-200/60">
         <Menu size={20} />
       </button>
@@ -111,7 +111,7 @@ export function MobileTabBar({ hidden, user, activeThreadId, onNewChat }: {
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: reducedMotion ? 0 : 24, transition: { duration: 0.15 } }}
           transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
-          className="stella-tab-bar fixed inset-x-3 bottom-[calc(env(safe-area-inset-bottom)+0.5rem)] z-30 mx-auto flex max-w-md items-stretch justify-between rounded-[1.75rem] border border-stone-200/80 bg-white/95 p-1 shadow-[0_14px_36px_-14px_rgba(28,25,23,0.35)] backdrop-blur-xl lg:hidden"
+          className="stella-tab-bar fixed inset-x-3 bottom-[calc(env(safe-area-inset-bottom)+0.5rem)] z-30 mx-auto flex max-w-md items-stretch justify-between rounded-[1.75rem] border border-stone-200/80 bg-white p-1 shadow-[0_14px_36px_-14px_rgba(28,25,23,0.35)] lg:hidden"
         >
           <Tab href="/wardrobe" label="Guarda-roupa" active={pathname.startsWith("/wardrobe")} icon={<Shirt size={21} strokeWidth={1.6} />} />
           <Tab href="/eventos" label="Planejador" active={pathname.startsWith("/eventos")} icon={<CalendarCheck size={21} strokeWidth={1.6} />} />

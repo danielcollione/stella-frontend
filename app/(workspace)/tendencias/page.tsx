@@ -20,6 +20,7 @@ import { TrendCard } from "@/components/features/trends/TrendCard";
 import { TrendFeed } from "@/components/features/trends/TrendFeed";
 import { FloatingMenu } from "@/components/features/trends/PostCarousel";
 import { trendsService } from "@/services/trends/trendsService";
+import { readCache, writeCache } from "@/utils/screenCache";
 import type { Trends } from "@/types/trends";
 
 const buttonClass = "inline-flex items-center justify-center gap-2 rounded-full bg-stone-900 px-5 py-2.5 text-sm font-medium text-white transition-colors hover:bg-stone-800 active:scale-[0.98]";
@@ -34,7 +35,9 @@ const SECTIONS: PageSection[] = [
 const dayMonth = (iso: string) => new Date(iso).toLocaleDateString("pt-BR", { day: "numeric", month: "long" });
 
 export default function TrendsPage() {
-  const [data, setData] = useState<Trends | null>(null);
+  // Voltando para a aba: a estação que estava na tela aparece na hora (as fotos das peças da pessoa expiram, por
+  // isso o limite de tempo) e a busca de sempre atualiza por trás
+  const [data, setData] = useState<Trends | null>(() => readCache<Trends>("trends:season", 10 * 60 * 1000) ?? null);
   const [failed, setFailed] = useState(false);
   const [attempt, setAttempt] = useState(0);
 
@@ -43,6 +46,7 @@ export default function TrendsPage() {
     trendsService.load(controller.signal)
       .then((loaded) => {
         setData(loaded);
+        writeCache("trends:season", loaded);
         setFailed(false);
       })
       .catch(() => {

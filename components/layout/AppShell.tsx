@@ -14,6 +14,7 @@ import { authService } from "@/services/authService";
 import { chatService } from "@/services/chat/chatService";
 import type { UserResponseDto } from "@/types/auth";
 import type { ChatThread } from "@/types/chat";
+import { uniqueId } from "@/utils/uniqueId";
 
 interface AppShellContextValue {
   user: UserResponseDto | null;
@@ -57,7 +58,7 @@ function SidebarContent({ expanded, mobile, toggle, closeMenu }: {
   function newChat() {
     closeMenu();
     setActiveThreadId(null);
-    router.push(`/chat?new=${crypto.randomUUID()}`);
+    router.push(`/chat?new=${uniqueId()}`);
   }
 
   async function deleteThread(threadId: string) {
@@ -200,7 +201,7 @@ export function AppShell({ children }: { children: ReactNode }) {
 
   function newChat() {
     setActiveThreadId(null);
-    router.push(`/chat?new=${crypto.randomUUID()}`);
+    router.push(`/chat?new=${uniqueId()}`);
   }
 
   useEffect(() => {
@@ -253,8 +254,9 @@ export function AppShell({ children }: { children: ReactNode }) {
         <AnimatePresence>
           {mobileMenuOpen && (
             <div className="fixed inset-0 z-50 lg:hidden flex">
-              <motion.button type="button" aria-label="Fechar menu" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.2 }} className="fixed inset-0 bg-stone-900/40 backdrop-blur-xs" onClick={() => setMobileMenuOpen(false)} />
-              <motion.div initial={{ x: "-100%" }} animate={{ x: 0 }} exit={{ x: "-100%" }} transition={{ type: "spring", stiffness: 350, damping: 35 }} className="relative w-72 max-w-[80%] bg-[#FAF8F5] h-full shadow-2xl flex flex-col justify-between p-5 z-10 border-r border-stone-200">
+              <motion.button type="button" aria-label="Fechar menu" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.2 }} className="fixed inset-0 bg-stone-900/40" onClick={() => setMobileMenuOpen(false)} />
+              {/* Deslize curto e direto, como o menu de um app nativo (sem mola e sem desfoque atrás) */}
+              <motion.div initial={{ x: "-100%" }} animate={{ x: 0 }} exit={{ x: "-100%" }} transition={{ duration: 0.22, ease: [0.32, 0.72, 0, 1] }} className="relative w-72 max-w-[80%] bg-[#FAF8F5] h-full shadow-2xl flex flex-col justify-between p-5 z-10 border-r border-stone-200">
                 <SidebarContent mobile expanded toggle={() => setMobileMenuOpen(false)} closeMenu={() => setMobileMenuOpen(false)} />
               </motion.div>
             </div>

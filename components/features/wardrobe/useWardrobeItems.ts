@@ -4,6 +4,7 @@ import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react
 import axios from "axios";
 import { wardrobeService } from "@/services/wardrobe/wardrobeService";
 import type { ClothingCategory, ClothingItem, WardrobePage, WardrobeScope } from "@/types/wardrobe";
+import { readCache, writeCache } from "@/utils/screenCache";
 
 // As URLs das fotos são pré-assinadas e expiram em 15 min no back-end: renovamos antes disso
 const URL_REFRESH_AFTER_MS = 10 * 60 * 1000;
@@ -37,7 +38,10 @@ function splitPage(page: WardrobePage) {
  */
 export function useWardrobeItems(filters: WardrobeFilters, pageSize = 40) {
   const key = `${filters.scope}|${filters.category ?? ""}|${filters.query.trim().toLowerCase()}`;
-  const [state, setState] = useState<State>({ key: "", items: [], page: 0, meta: null, status: "loading" });
+  // Voltando para a aba: a lista que já estava na tela aparece na hora (se as fotos ainda não expiraram) e a
+  // busca de sempre atualiza por trás
+  const [state, setState] = useState<State>(() => readCache<State>(`wardrobe:items:${key}`, URL_REFRESH_AFTER_MS)
+    ?? { key: "", items: [], page: 0, meta: null, status: "loading" });
   const [loadingMore, setLoadingMore] = useState(false);
   const loadedAtRef = useRef(0);
   const lastImageRefreshRef = useRef(0);
@@ -50,6 +54,10 @@ export function useWardrobeItems(filters: WardrobeFilters, pageSize = 40) {
     stateRef.current = state;
     filtersRef.current = filters;
   });
+
+  useEffect(() => {
+    if (state.status === "ready" && state.key) writeCache(`wardrobe:items:${state.key}`, state);
+  }, [state]);
 
   // Recarrega do início; "size" maior serve para renovar as URLs das peças já carregadas de uma vez
   const reload = useCallback(async (mode: "foreground" | "background", size = pageSize) => {
