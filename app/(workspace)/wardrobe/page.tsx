@@ -49,6 +49,13 @@ export default function WardrobePage() {
   // A key remonta o diálogo a cada abertura, zerando o estado interno (passo, formulário, prévia)
   const { topBarRight } = useAppShell();
   const cameraRef = useRef<HTMLInputElement>(null);
+  const photosRef = useRef<HTMLInputElement>(null);
+  // "Adicionar peça": no celular e no tablet abre direto o seletor do aparelho (fototeca, câmera ou arquivos) e as
+  // fotos escolhidas já seguem para a análise; no computador, a janela de sempre (com arrastar e soltar)
+  function addPiece() {
+    if (window.matchMedia("(max-width: 1023.98px)").matches) photosRef.current?.click();
+    else openDialog({ kind: "create" });
+  }
   function openDialog(target: WardrobeDialogTarget) {
     setDialog((current) => ({ key: (current?.key ?? 0) + 1, target }));
   }
@@ -136,7 +143,7 @@ export default function WardrobePage() {
           description="Adicione fotos das suas roupas aqui ou envie no chat com a opção de salvar ligada. A Stella identifica cada peça e organiza tudo por categoria."
           action={
             <div className="flex flex-wrap justify-center gap-2">
-              <button type="button" onClick={() => openDialog({ kind: "create" })} className={buttonClass}><ImagePlus size={16} />Adicionar peça</button>
+              <button type="button" onClick={addPiece} className={buttonClass}><ImagePlus size={16} />Adicionar peça</button>
               <Link href="/chat" className={secondaryButtonClass}><MessageCircle size={16} />Conversar com a Stella</Link>
             </div>
           }
@@ -195,7 +202,7 @@ export default function WardrobePage() {
                 onChange={(event) => {
                   const file = event.target.files?.[0];
                   event.target.value = "";
-                  if (file) openDialog({ kind: "create", file });
+                  if (file) openDialog({ kind: "create", files: [file] });
                 }}
               />
             </TopBarActions>
@@ -231,7 +238,7 @@ export default function WardrobePage() {
                 <Sparkle aria-hidden="true" size={9} className="stella-twinkle pointer-events-none absolute -bottom-2 right-6 fill-[#C9A27E] text-[#C9A27E] [animation-delay:1.7s]" />
                 <button
                   type="button"
-                  onClick={() => openDialog({ kind: "create" })}
+                  onClick={addPiece}
                   className="stella-shine-button inline-flex items-center gap-2 rounded-full bg-stone-900 px-7 py-3.5 text-sm font-medium text-white transition-all hover:bg-stone-800 active:scale-[0.98]"
                 >
                   <Plus size={16} className="text-[#E9D3B4]" />
@@ -286,6 +293,23 @@ export default function WardrobePage() {
           </section>
         </PageContent>
       </main>
+
+      {/* Seletor do aparelho para o "Adicionar peça" do celular: sem "capture", o sistema oferece fototeca, câmera e
+          arquivos; várias fotos de uma vez seguem o envio em lote do plano */}
+      <input
+        ref={photosRef}
+        type="file"
+        accept="image/*,.heic,.heif"
+        multiple
+        className="sr-only"
+        tabIndex={-1}
+        aria-hidden="true"
+        onChange={(event) => {
+          const files = Array.from(event.target.files ?? []);
+          event.target.value = "";
+          if (files.length > 0) openDialog({ kind: "create", files });
+        }}
+      />
 
       {dialog && (
         <WardrobeItemDialog

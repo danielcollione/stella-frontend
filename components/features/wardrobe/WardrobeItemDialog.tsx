@@ -14,8 +14,9 @@ import { compressImage } from "@/utils/imageCompression";
 import { PlanLimitNotice } from "@/components/features/billing/PlanLimitNotice";
 import { billingService, planLimitFrom } from "@/services/billing/billingService";
 
-// create com `file`: a foto já veio da câmera (botão do celular) e segue direto para a análise
-export type WardrobeDialogTarget = { kind: "create"; file?: File } | { kind: "edit"; item: ClothingItem };
+// create com `files`: as fotos já foram escolhidas no celular (câmera, fototeca ou arquivos) e seguem direto para a
+// análise, sem passar pela tela de escolher a foto
+export type WardrobeDialogTarget = { kind: "create"; files?: File[] } | { kind: "edit"; item: ClothingItem };
 
 // Qualquer foto é aceita na escolha: o front converte para JPEG (inclusive HEIC do iPhone, quando o navegador
 // decodifica). Depois da conversão, só seguem JPEG/PNG, que o back-end (ImageIO) lê.
@@ -197,16 +198,16 @@ export function WardrobeItemDialog({ target, onClose, onSaved, onDeleted }: Ward
     }
   }
 
-  // Foto tirada pela câmera antes de a janela abrir: começa a análise na hora (uma vez só, mesmo se o React
-  // montar a janela duas vezes em desenvolvimento)
-  const cameraFile = target.kind === "create" ? target.file : undefined;
-  const cameraStarted = useRef(false);
+  // Fotos escolhidas antes de a janela abrir: começa a análise na hora (uma vez só, mesmo se o React montar a
+  // janela duas vezes em desenvolvimento)
+  const chosenFiles = target.kind === "create" ? target.files : undefined;
+  const chosenStarted = useRef(false);
   useEffect(() => {
-    if (!cameraFile || cameraStarted.current) return;
-    cameraStarted.current = true;
-    void selectFile(cameraFile);
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- só a foto da abertura
-  }, [cameraFile]);
+    if (!chosenFiles?.length || chosenStarted.current) return;
+    chosenStarted.current = true;
+    selectFiles(chosenFiles);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- só as fotos da abertura
+  }, [chosenFiles]);
 
   async function selectFile(selected: File | undefined) {
     if (!selected) return;
