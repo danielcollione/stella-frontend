@@ -130,8 +130,7 @@ export function TrendsReveal() {
 }
 
 // Tela de demonstração da aba Tendências, no desenho da tela de verdade (conteúdo ilustrativo).
-// A estação em uma frase, a paleta e um look da estação montado com as peças da pessoa, com o próximo aparecendo
-// no slide
+// A estação em uma frase, a paleta e um look da estação montado com as peças da pessoa
 const SEASON_PALETTE = [
   { name: "Areia", hex: "#D9C7A7" },
   { name: "Off-white", hex: "#EFE6D6" },
@@ -141,14 +140,14 @@ const SEASON_PALETTE = [
 ];
 
 const LOOK = {
-  occasion: "Trabalho",
-  title: "Linho no escritório",
-  trends: [{ name: "Linho", dot: "bg-[#CDB892]" }, { name: "Saia midi fluida", dot: "bg-stone-900" }],
+  occasion: "Fim de semana",
+  title: "Linho e terracota",
+  trends: [{ name: "Linho", dot: "bg-[#CDB892]" }, { name: "Pantalona", dot: "bg-[#C0603F]" }],
   pieces: [
-    { name: "piece-01.webp", tone: "sand" },
-    { name: "piece-02.webp", tone: "clay" },
-    { name: "piece-03.webp", tone: "olive" },
-    { name: "piece-04.webp", tone: "rose" },
+    { name: "trend-look-01.webp", tone: "sand" },
+    { name: "trend-look-02.webp", tone: "clay" },
+    { name: "trend-look-03.webp", tone: "olive" },
+    { name: "trend-look-04.webp", tone: "sand" },
   ] as const,
 };
 
@@ -178,8 +177,9 @@ function TrendsScreen() {
         ))}
       </div>
 
-      <div className="-mr-4 mt-2.5 flex gap-2">
-        <div className="w-[86%] shrink-0 overflow-hidden rounded-[1.25rem] border border-stone-200/80 bg-white shadow-[0_1px_2px_rgba(28,25,23,0.03)]">
+      {/* Um look só, na largura toda da tela */}
+      <div className="mt-2.5 flex justify-center">
+        <div className="w-full overflow-hidden rounded-[1.25rem] border border-stone-200/80 bg-white shadow-[0_1px_2px_rgba(28,25,23,0.03)]">
           <div className="grid grid-cols-2 gap-[3px] bg-stone-100 p-[3px]">
             {LOOK.pieces.map((piece) => <LandingAsset key={piece.name} name={piece.name} tone={piece.tone} className="aspect-square w-full rounded-xl" />)}
           </div>
@@ -194,7 +194,7 @@ function TrendsScreen() {
               ))}
             </div>
             <p className="mt-1.5 text-[8.5px] leading-relaxed text-stone-600">
-              O <b className="font-semibold text-stone-800">blazer de linho</b> sobre a <b className="font-semibold text-stone-800">saia caramelo</b> deixa o look leve e atual; o <b className="font-semibold text-stone-800">mule</b> e a <b className="font-semibold text-stone-800">bolsa rosé</b> fecham com conforto.
+              A <b className="font-semibold text-stone-800">camisa de linho</b> por dentro da <b className="font-semibold text-stone-800">pantalona terracota</b> deixa o look leve e atual; a <b className="font-semibold text-stone-800">rasteira</b> e a <b className="font-semibold text-stone-800">bolsa de palha</b> fecham com frescor.
             </p>
             <div className="mt-2 flex items-center justify-between border-t border-stone-100 pt-2">
               <span className="inline-flex items-center gap-1 rounded-full border border-[#5E8B6E]/35 bg-[#F1F6F2] py-0.5 pl-1.5 pr-0.5 text-[7.5px] font-medium text-[#2F4A38]">
@@ -203,13 +203,6 @@ function TrendsScreen() {
               </span>
               <span className="text-[7.5px] text-stone-500">Trocar (3)</span>
             </div>
-          </div>
-        </div>
-        {/* O próximo look do slide, aparecendo na borda */}
-        <div aria-hidden="true" className="w-[86%] shrink-0 overflow-hidden rounded-[1.25rem] border border-stone-200/80 bg-white">
-          <div className="grid grid-cols-2 gap-[3px] bg-stone-100 p-[3px]">
-            <LandingAsset name="piece-05.webp" tone="olive" className="aspect-square w-full rounded-xl" />
-            <span className="aspect-square w-full rounded-xl bg-stone-200/70" />
           </div>
         </div>
       </div>

@@ -65,7 +65,9 @@ export function Skills() {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true, margin: "0px 0px -60px 0px" }}
               transition={{ duration: 0.8, delay: Math.min(index, 3) * 0.08, ease: [0.22, 1, 0.36, 1] }}
-              className="group w-[260px] shrink-0 snap-start sm:w-[300px]"
+              // No celular e no tablet (carrossel de arrastar) os cartões ficam parados na mesma altura, sem subir ao
+              // entrar na tela; a entrada um a um fica só no computador
+              className="group w-[260px] shrink-0 snap-start max-lg:!transform-none max-lg:!opacity-100 sm:w-[300px]"
             >
               <div className="overflow-hidden rounded-3xl bg-stone-200">
                 <LandingAsset name={skill.asset} tone={skill.tone} alt={`Ilustração da Stella como ${skill.name.toLowerCase()}: ${skill.description}`} className="aspect-[4/5] w-full transition-transform duration-[900ms] ease-[cubic-bezier(0.22,1,0.36,1)] group-hover:scale-[1.05]" />
