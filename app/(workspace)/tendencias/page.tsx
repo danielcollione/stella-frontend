@@ -4,8 +4,7 @@ import { useEffect, useState } from "react";
 import type { ReactNode } from "react";
 import Link from "next/link";
 import { useReducedMotion } from "framer-motion";
-import { AlertCircle, Info, Menu, X } from "lucide-react";
-import { useAppShell } from "@/components/layout/AppShell";
+import { AlertCircle, Info, X } from "lucide-react";
 import { StellaMark } from "@/components/ui/StellaMark";
 import { PageContent } from "@/components/layout/PageContent";
 import { Rail } from "@/components/features/trends/Rail";
@@ -35,7 +34,6 @@ const SECTIONS: PageSection[] = [
 const dayMonth = (iso: string) => new Date(iso).toLocaleDateString("pt-BR", { day: "numeric", month: "long" });
 
 export default function TrendsPage() {
-  const { openMobileMenu } = useAppShell();
   const [data, setData] = useState<Trends | null>(null);
   const [failed, setFailed] = useState(false);
   const [attempt, setAttempt] = useState(0);
@@ -57,11 +55,8 @@ export default function TrendsPage() {
     <div className="min-h-full bg-[#FAF8F5] text-stone-900">
       <main className="mx-auto w-full max-w-6xl px-4 pb-16 pt-6 sm:px-8 lg:px-10">
         <PageContent stagger>
-          <header className="mb-3 flex items-end justify-between gap-4">
-            <div className="flex items-center gap-2">
-              <button type="button" onClick={openMobileMenu} aria-label="Abrir menu" title="Abrir menu" className="-ml-2 rounded-lg p-2 text-stone-500 hover:bg-stone-100 md:hidden">
-                <Menu size={20} />
-              </button>
+          <header className="mb-3 hidden items-end justify-between gap-4 lg:flex">
+            <div className="hidden items-center gap-2 lg:flex">
               <div>
                 <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-stone-400">{data?.seasonLabel ?? "A estação no Brasil"}</p>
                 <h1 className="font-serif text-3xl italic tracking-tight text-stone-900 sm:text-4xl">Tendências</h1>

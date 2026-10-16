@@ -4,6 +4,8 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import type { ReactNode } from "react";
 import Link from "next/link";
 import { CalendarDays, MapPin, Sparkle, Sparkles } from "lucide-react";
+import { useAppShell } from "@/components/layout/AppShell";
+import { TopBarActions } from "@/components/layout/MobileNav";
 import { WeatherIcon } from "@/components/features/weather/WeatherIcon";
 import { EventRow, NextEventCard } from "@/components/features/events/EventAgenda";
 import { addDays, occasionOf, parseIsoDate, toIsoDate } from "@/services/events/eventCatalog";
@@ -36,6 +38,7 @@ export function PlannerMobile({ today, selected, events, dayEvents, upcoming, ha
   onOpen: (event: CalendarEvent) => void;
   onCreate: (iso: string) => void;
 }) {
+  const { topBarRight } = useAppShell();
   const [weather, setWeather] = useState<WeatherOverview | null>(null);
   useEffect(() => {
     if (!hasCity) return;
@@ -51,7 +54,7 @@ export function PlannerMobile({ today, selected, events, dayEvents, upcoming, ha
 
   return (
     <div>
-      {/* Previsão do dia escolhido, a data e o ícone do mês */}
+      {/* Previsão do dia escolhido e a data */}
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           {forecast ? (
@@ -83,17 +86,20 @@ export function PlannerMobile({ today, selected, events, dayEvents, upcoming, ha
             )}
           </p>
         </div>
+      </div>
+      {/* O ícone do mês fica no topo do app, à direita do nome, como as ações das outras telas */}
+      <TopBarActions slot={topBarRight}>
         <button
           type="button"
           onClick={onToggleCalendar}
           aria-expanded={calendarOpen}
           aria-label={calendarOpen ? "Fechar o mês" : "Ver o mês inteiro"}
           title={calendarOpen ? "Fechar o mês" : "Ver o mês inteiro"}
-          className={`stella-hit -mr-1 shrink-0 rounded-full p-2 transition-colors ${calendarOpen ? "bg-stone-900 text-white" : "text-stone-600 hover:bg-stone-200/60"}`}
+          className={`flex h-10 w-10 items-center justify-center rounded-xl text-stone-900 transition-colors ${calendarOpen ? "bg-stone-200/70" : "active:bg-stone-200/60"}`}
         >
-          <CalendarDays size={20} />
+          <CalendarDays size={23} strokeWidth={1.6} />
         </button>
-      </div>
+      </TopBarActions>
 
       {/* O mês inteiro, aberto pelo ícone; fechado, a faixa de dias */}
       <div className={`grid transition-[grid-template-rows,opacity] duration-300 ease-out ${calendarOpen ? "grid-rows-[1fr] opacity-100" : "grid-rows-[0fr] opacity-0"}`}>

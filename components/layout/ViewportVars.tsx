@@ -4,7 +4,7 @@ import { useEffect } from "react";
 
 const FIELD_SELECTOR = "input:not([type='checkbox']):not([type='radio']):not([type='range']):not([type='file']), textarea, select, [contenteditable='true']";
 
-function focusedField(): HTMLElement | null {
+export function focusedField(): HTMLElement | null {
   const active = document.activeElement;
   return active instanceof HTMLElement && active.matches(FIELD_SELECTOR) ? active : null;
 }

@@ -85,7 +85,7 @@ export function FeedbackProvider({ enabled, children }: { enabled: boolean; chil
             animate={{ opacity: 1, y: 0, scale: 1, filter: "blur(0px)" }}
             exit={{ opacity: 0, y: reducedMotion ? 0 : 12, scale: reducedMotion ? 1 : 0.97, transition: { duration: 0.2 } }}
             transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
-            className={`fixed inset-x-3 z-40 mx-auto max-w-[380px] overflow-hidden rounded-3xl border border-stone-200/80 bg-white shadow-[0_24px_60px_-20px_rgba(28,25,23,0.35)] sm:inset-x-auto sm:right-6 sm:bottom-6 sm:top-auto sm:w-[360px] ${onChat ? "top-[calc(env(safe-area-inset-top)+4.5rem)]" : "bottom-[calc(env(safe-area-inset-bottom)+1rem)]"}`}
+            className={`fixed inset-x-3 z-40 mx-auto max-w-[380px] overflow-hidden rounded-3xl border border-stone-200/80 bg-white shadow-[0_24px_60px_-20px_rgba(28,25,23,0.35)] lg:inset-x-auto lg:right-6 lg:bottom-6 lg:top-auto lg:w-[360px] ${onChat ? "top-[calc(env(safe-area-inset-top)+4.5rem)]" : "bottom-[calc(env(safe-area-inset-bottom)+5.5rem)]"}`}
           >
             <RatingCard
               source={source}

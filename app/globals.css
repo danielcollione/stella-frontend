@@ -116,6 +116,28 @@ body {
   animation: stella-page-in 300ms cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
+/* A barra de abas do celular fica numa camada própria, acima da página que entra e sai: sem isso, a foto da
+   página nova cobre a barra por um instante e ela parece sumir e voltar a cada troca de aba. Só a imagem nova
+   aparece, parada e sem a mistura padrão (que somava as duas imagens e fazia a barra piscar mais clara) */
+.stella-tab-bar {
+  view-transition-name: stella-tab-bar;
+}
+
+::view-transition-group(stella-tab-bar),
+::view-transition-image-pair(stella-tab-bar) {
+  animation: none;
+}
+
+::view-transition-old(stella-tab-bar) {
+  display: none;
+}
+
+::view-transition-new(stella-tab-bar) {
+  animation: none;
+  mix-blend-mode: normal;
+  opacity: 1;
+}
+
 @keyframes stella-page-out {
   to { opacity: 0; }
 }

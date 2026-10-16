@@ -4,15 +4,13 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { motion, useReducedMotion } from "framer-motion";
-import { AlertCircle, Check, LoaderCircle, Menu, Minus, ShieldCheck } from "lucide-react";
-import { useAppShell } from "@/components/layout/AppShell";
+import { AlertCircle, Check, LoaderCircle, Minus, ShieldCheck } from "lucide-react";
 import { PageContent } from "@/components/layout/PageContent";
 import { apiErrorMessage } from "@/services/wardrobe/wardrobeService";
 import { billingService, formatPrice } from "@/services/billing/billingService";
 import type { BillingInterval, BillingStatus, Plan } from "@/types/billing";
 
 export default function PlansPage() {
-  const { openMobileMenu } = useAppShell();
   const searchParams = useSearchParams();
   const reducedMotion = useReducedMotion();
   const [plans, setPlans] = useState<Plan[] | null>(null);
@@ -55,12 +53,6 @@ export default function PlansPage() {
     <div className="min-h-full bg-[#FAF8F5] text-stone-900">
       <main className="mx-auto w-full max-w-6xl px-5 pb-16 pt-6 sm:px-8 lg:px-10">
         <PageContent stagger>
-          <div className="mb-2 flex items-center md:hidden">
-            <button type="button" onClick={openMobileMenu} aria-label="Abrir menu" className="-ml-2 rounded-lg p-2 text-stone-500 hover:bg-stone-100">
-              <Menu size={20} />
-            </button>
-          </div>
-
           <header className="mx-auto mb-10 max-w-2xl text-center">
             <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-stone-400">Planos</p>
             <h1 className="mt-2 font-serif text-4xl italic tracking-tight text-stone-900 sm:text-5xl">Uma estilista para cada momento</h1>

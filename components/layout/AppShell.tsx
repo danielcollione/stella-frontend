@@ -5,9 +5,11 @@ import type { Dispatch, ReactNode, SetStateAction } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
-import { CalendarHeart, ChartNoAxesColumn, Gem, LogOut, MessageSquare, PanelLeft, PanelLeftClose, Plus, Shirt, Trash2, TrendingUp, X } from "lucide-react";
+import { CalendarCheck, ChartNoAxesColumn, Gem, LogOut, MessageSquare, PanelLeft, PanelLeftClose, Plus, Shirt, Trash2, TrendingUp, X } from "lucide-react";
 import { StellaMark } from "@/components/ui/StellaMark";
+import { UserAvatar } from "@/components/ui/UserAvatar";
 import { FeedbackProvider } from "@/components/features/feedback/FeedbackProvider";
+import { MobileTabBar, MobileTopBar, useKeyboardOpen } from "@/components/layout/MobileNav";
 import { authService } from "@/services/authService";
 import { chatService } from "@/services/chat/chatService";
 import type { UserResponseDto } from "@/types/auth";
@@ -21,7 +23,9 @@ interface AppShellContextValue {
   threadsReady: boolean;
   activeThreadId: string | null;
   setActiveThreadId: Dispatch<SetStateAction<string | null>>;
-  openMobileMenu: () => void;
+  // Lugares no topo do celular onde cada tela põe as próprias ações (ver TopBarActions)
+  topBarLeft: HTMLElement | null;
+  topBarRight: HTMLElement | null;
 }
 
 const AppShellContext = createContext<AppShellContextValue | null>(null);
@@ -49,8 +53,6 @@ function SidebarContent({ expanded, mobile, toggle, closeMenu }: {
   const [confirmingDelete, setConfirmingDelete] = useState<string | null>(null);
   // Cadastro por e-mail e senha que ainda não confirmou o código: lembrete discreto ao lado do nome
   const emailPending = user?.emailVerified === false;
-  const initials = user?.name.trim().split(/\s+/).filter(Boolean).slice(0, 2)
-    .map((part) => part[0]).join("").toUpperCase() || "U";
 
   function newChat() {
     closeMenu();
@@ -99,18 +101,22 @@ function SidebarContent({ expanded, mobile, toggle, closeMenu }: {
           <Plus className={`w-5 h-5 shrink-0 ${mobile ? "" : "text-stone-900"}`} />
           <MenuLabel visible={expanded}>Nova conversa</MenuLabel>
         </button>
-        <Link href="/wardrobe" onClick={closeMenu} title="Guarda-roupa" aria-current={pathname.startsWith("/wardrobe") ? "page" : undefined} className={`${mobile ? "flex items-center gap-3 w-full px-4 py-2.5 text-stone-700 hover:bg-stone-200/60 rounded-xl font-medium text-sm transition-colors" : "flex items-center gap-3 text-stone-600 hover:text-stone-900 hover:bg-stone-100 text-sm font-medium transition-all w-full px-3.5 py-2.5 rounded-xl justify-start overflow-hidden active:scale-[0.98]"} ${pathname.startsWith("/wardrobe") ? (mobile ? "bg-stone-200/70 text-stone-900" : "bg-stone-100 text-stone-900") : ""}`}>
+        {/* No celular e no tablet, as telas principais e o perfil ficam na barra de abas: o menu guarda a nova
+            conversa, os planos e as conversas */}
+        {!mobile && <>
+        <Link href="/wardrobe" onClick={closeMenu} title="Guarda-roupa" aria-current={pathname.startsWith("/wardrobe") ? "page" : undefined} className={`flex items-center gap-3 text-stone-600 hover:text-stone-900 hover:bg-stone-100 text-sm font-medium transition-all w-full px-3.5 py-2.5 rounded-xl justify-start overflow-hidden active:scale-[0.98] ${pathname.startsWith("/wardrobe") ? "bg-stone-100 text-stone-900" : ""}`}>
           <Shirt className="w-5 h-5 shrink-0" />
           <MenuLabel visible={expanded}>Guarda-roupa</MenuLabel>
         </Link>
-        <Link href="/eventos" onClick={closeMenu} title="Planejador" aria-current={pathname === "/eventos" ? "page" : undefined} className={`${mobile ? "flex items-center gap-3 w-full px-4 py-2.5 text-stone-700 hover:bg-stone-200/60 rounded-xl font-medium text-sm transition-colors" : "flex items-center gap-3 text-stone-600 hover:text-stone-900 hover:bg-stone-100 text-sm font-medium transition-all w-full px-3.5 py-2.5 rounded-xl justify-start overflow-hidden active:scale-[0.98]"} ${pathname === "/eventos" ? (mobile ? "bg-stone-200/70 text-stone-900" : "bg-stone-100 text-stone-900") : ""}`}>
-          <CalendarHeart className="w-5 h-5 shrink-0" />
+        <Link href="/eventos" onClick={closeMenu} title="Planejador" aria-current={pathname === "/eventos" ? "page" : undefined} className={`flex items-center gap-3 text-stone-600 hover:text-stone-900 hover:bg-stone-100 text-sm font-medium transition-all w-full px-3.5 py-2.5 rounded-xl justify-start overflow-hidden active:scale-[0.98] ${pathname === "/eventos" ? "bg-stone-100 text-stone-900" : ""}`}>
+          <CalendarCheck className="w-5 h-5 shrink-0" />
           <MenuLabel visible={expanded}>Planejador</MenuLabel>
         </Link>
-        <Link href="/tendencias" onClick={closeMenu} title="Tendências" aria-current={pathname === "/tendencias" ? "page" : undefined} className={`${mobile ? "flex items-center gap-3 w-full px-4 py-2.5 text-stone-700 hover:bg-stone-200/60 rounded-xl font-medium text-sm transition-colors" : "flex items-center gap-3 text-stone-600 hover:text-stone-900 hover:bg-stone-100 text-sm font-medium transition-all w-full px-3.5 py-2.5 rounded-xl justify-start overflow-hidden active:scale-[0.98]"} ${pathname === "/tendencias" ? (mobile ? "bg-stone-200/70 text-stone-900" : "bg-stone-100 text-stone-900") : ""}`}>
+        <Link href="/tendencias" onClick={closeMenu} title="Tendências" aria-current={pathname === "/tendencias" ? "page" : undefined} className={`flex items-center gap-3 text-stone-600 hover:text-stone-900 hover:bg-stone-100 text-sm font-medium transition-all w-full px-3.5 py-2.5 rounded-xl justify-start overflow-hidden active:scale-[0.98] ${pathname === "/tendencias" ? "bg-stone-100 text-stone-900" : ""}`}>
           <TrendingUp className="w-5 h-5 shrink-0" />
           <MenuLabel visible={expanded}>Tendências</MenuLabel>
         </Link>
+        </>}
         <Link href="/planos" onClick={closeMenu} title="Planos" aria-current={pathname === "/planos" ? "page" : undefined} className={`${mobile ? "flex items-center gap-3 w-full px-4 py-2.5 text-stone-700 hover:bg-stone-200/60 rounded-xl font-medium text-sm transition-colors" : "flex items-center gap-3 text-stone-600 hover:text-stone-900 hover:bg-stone-100 text-sm font-medium transition-all w-full px-3.5 py-2.5 rounded-xl justify-start overflow-hidden active:scale-[0.98]"} ${pathname === "/planos" ? (mobile ? "bg-stone-200/70 text-stone-900" : "bg-stone-100 text-stone-900") : ""}`}>
           <Gem className="w-5 h-5 shrink-0" />
           <MenuLabel visible={expanded}>Planos</MenuLabel>
@@ -162,10 +168,10 @@ function SidebarContent({ expanded, mobile, toggle, closeMenu }: {
           )}
         </AnimatePresence>
       </div>
-      <div className={`flex shrink-0 items-center w-full justify-between border-t ${mobile ? "border-stone-200 mt-4 pt-4" : "border-stone-200/60 mt-3 pt-3"}`}>
+      {!mobile && <div className="flex shrink-0 items-center w-full justify-between border-t border-stone-200/60 mt-3 pt-3">
         <Link href="/profile" onClick={closeMenu} title={user?.name || "Meu perfil"} aria-label="Abrir meu perfil" aria-current={pathname === "/profile" ? "page" : undefined} className="flex items-center gap-2.5 min-w-0 flex-1 rounded-lg hover:bg-stone-100 transition-colors p-1">
-          <div className="relative w-8 h-8 rounded-full bg-stone-200 border border-stone-300 flex items-center justify-center text-xs font-semibold text-stone-700 shrink-0">
-            {initials}
+          <div className="relative shrink-0">
+            <UserAvatar user={user} className="h-8 w-8 text-xs" />
             {/* Menu recolhido: o lembrete de confirmar o e-mail fica no canto do avatar */}
             {emailPending && !expanded && <span aria-hidden="true" className="absolute -right-1 -top-1 flex h-3.5 w-3.5 items-center justify-center rounded-full bg-amber-500 text-[9px] font-bold leading-none text-white ring-2 ring-white">!</span>}
           </div>
@@ -173,7 +179,7 @@ function SidebarContent({ expanded, mobile, toggle, closeMenu }: {
           {emailPending && expanded && <span role="img" aria-label="E-mail ainda não confirmado" title="Confirme o seu e-mail no perfil" className="flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-amber-500 text-[10px] font-bold leading-none text-white">!</span>}
         </Link>
         <button type="button" onClick={() => void authService.logout()} aria-label="Sair da conta" title="Sair da conta" className="p-2 text-stone-400 hover:text-red-600 hover:bg-red-50 rounded-xl transition-all shrink-0"><LogOut className="w-4 h-4" /></button>
-      </div>
+      </div>}
     </>
   );
 }
@@ -188,6 +194,14 @@ export function AppShell({ children }: { children: ReactNode }) {
   const [expanded, setExpanded] = useState(true);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [error, setError] = useState("");
+  const [topBarLeft, setTopBarLeft] = useState<HTMLDivElement | null>(null);
+  const [topBarRight, setTopBarRight] = useState<HTMLDivElement | null>(null);
+  const keyboardOpen = useKeyboardOpen();
+
+  function newChat() {
+    setActiveThreadId(null);
+    router.push(`/chat?new=${crypto.randomUUID()}`);
+  }
 
   useEffect(() => {
     if (!authService.getToken()) router.replace("/login");
@@ -228,17 +242,17 @@ export function AppShell({ children }: { children: ReactNode }) {
   }, [router]);
 
   return (
-    <AppShellContext.Provider value={{ user, setUser, threads, setThreads, threadsReady, activeThreadId, setActiveThreadId, openMobileMenu: () => setMobileMenuOpen(true) }}>
+    <AppShellContext.Provider value={{ user, setUser, threads, setThreads, threadsReady, activeThreadId, setActiveThreadId, topBarLeft, topBarRight }}>
       <FeedbackProvider enabled={Boolean(user?.onboardingCompleted)}>
       {/* A altura acompanha a área visível: com o teclado aberto no celular, o app encolhe e o campo de
           mensagem fica logo acima dele. As margens seguras cobrem o recorte e a barra de início do iPhone */}
       <div className="flex h-[var(--stella-vvh,100dvh)] bg-[#FAF8F5] text-stone-900 overflow-hidden font-sans pb-[env(safe-area-inset-bottom)] pl-[env(safe-area-inset-left)] pr-[env(safe-area-inset-right)]">
-        <motion.aside initial={false} animate={{ width: expanded ? 256 : 68 }} transition={{ type: "spring", stiffness: 320, damping: 32, mass: 0.8 }} className="hidden md:flex shrink-0 flex-col justify-between bg-white/80 backdrop-blur-md border-r border-stone-200/80 py-5 px-3 z-20 overflow-hidden">
+        <motion.aside initial={false} animate={{ width: expanded ? 256 : 68 }} transition={{ type: "spring", stiffness: 320, damping: 32, mass: 0.8 }} className="hidden lg:flex shrink-0 flex-col justify-between bg-white/80 backdrop-blur-md border-r border-stone-200/80 py-5 px-3 z-20 overflow-hidden">
           <SidebarContent expanded={expanded} toggle={() => setExpanded(!expanded)} closeMenu={() => setMobileMenuOpen(false)} />
         </motion.aside>
         <AnimatePresence>
           {mobileMenuOpen && (
-            <div className="fixed inset-0 z-50 md:hidden flex">
+            <div className="fixed inset-0 z-50 lg:hidden flex">
               <motion.button type="button" aria-label="Fechar menu" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.2 }} className="fixed inset-0 bg-stone-900/40 backdrop-blur-xs" onClick={() => setMobileMenuOpen(false)} />
               <motion.div initial={{ x: "-100%" }} animate={{ x: 0 }} exit={{ x: "-100%" }} transition={{ type: "spring", stiffness: 350, damping: 35 }} className="relative w-72 max-w-[80%] bg-[#FAF8F5] h-full shadow-2xl flex flex-col justify-between p-5 z-10 border-r border-stone-200">
                 <SidebarContent mobile expanded toggle={() => setMobileMenuOpen(false)} closeMenu={() => setMobileMenuOpen(false)} />
@@ -248,7 +262,10 @@ export function AppShell({ children }: { children: ReactNode }) {
         </AnimatePresence>
         {/* Só rola na vertical: um item mais largo que a tela (faixa de previsão, tabela, carrossel) não pode
             deixar a página inteira arrastar para os lados. Os carrosséis rolam dentro de si mesmos */}
-        <div className="stella-scroll-area flex-1 min-w-0 h-full overflow-y-auto overflow-x-hidden overscroll-contain">
+        <div className="flex min-w-0 flex-1 flex-col">
+        {user && <MobileTopBar onMenu={() => setMobileMenuOpen(true)} onLeftSlot={setTopBarLeft} onRightSlot={setTopBarRight} />}
+        {/* No celular, o fim de cada tela deixa espaço para a barra de abas (que some com o teclado aberto) */}
+        <div className={`stella-scroll-area min-h-0 flex-1 overflow-y-auto overflow-x-hidden overscroll-contain ${user && !keyboardOpen ? "max-lg:pb-[4.75rem]" : ""}`}>
           {user ? children : (
             // Enquanto a conta carrega, a mesma imagem da tela de abertura (logo e nome), para a passagem do
             // ícone até o app ser contínua
@@ -267,6 +284,8 @@ export function AppShell({ children }: { children: ReactNode }) {
             </main>
           )}
         </div>
+        </div>
+        {user && <MobileTabBar hidden={keyboardOpen || mobileMenuOpen} user={user} activeThreadId={activeThreadId} onNewChat={newChat} />}
       </div>
       </FeedbackProvider>
     </AppShellContext.Provider>

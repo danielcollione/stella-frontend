@@ -252,7 +252,7 @@ export function MentionInput({ value, onChange, mentions, onMentionsChange, plac
         aria-expanded={open}
         aria-controls={open ? listboxId : undefined}
         aria-activedescendant={activeOptionId}
-        className="relative block w-full resize-none overflow-hidden whitespace-pre-wrap break-words px-4 pt-2 pb-3 text-sm leading-relaxed bg-transparent focus:outline-none placeholder:text-stone-400 text-transparent caret-stone-900 font-light selection:bg-stone-300/60 scrollbar-none"
+        className="relative block w-full resize-none overflow-hidden whitespace-pre-wrap break-words px-4 pt-2 pb-3 max-lg:min-h-[4.25rem] text-sm leading-relaxed bg-transparent focus:outline-none placeholder:text-stone-400 text-transparent caret-stone-900 font-light selection:bg-stone-300/60 scrollbar-none"
       />
       </div>
     </div>

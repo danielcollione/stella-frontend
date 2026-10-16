@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import type { ReactNode } from "react";
+import { Droplets } from "lucide-react";
 import { WeatherIcon } from "@/components/features/weather/WeatherIcon";
 import { parseIsoDate } from "@/services/events/eventCatalog";
 import { weatherService } from "@/services/weather/weatherService";
@@ -16,7 +17,12 @@ function shortDate(iso: string): string {
 }
 
 /** Clima de hoje na cidade do perfil, em duas linhas discretas. Sem cidade ou sem previsão, mostra o `fallback`. */
-export function TodayWeather({ hasCity, fallback = null }: { hasCity: boolean; fallback?: ReactNode }) {
+export function TodayWeather({ hasCity, fallback = null, compact }: {
+  hasCity: boolean;
+  fallback?: ReactNode;
+  // Topo do celular, ao lado do "Salvar no guarda-roupa": a chuva vira só a gota e a porcentagem
+  compact?: boolean;
+}) {
   const [weather, setWeather] = useState<WeatherOverview | null>(null);
 
   useEffect(() => {
@@ -38,7 +44,9 @@ export function TodayWeather({ hasCity, fallback = null }: { hasCity: boolean; f
       <p className="mt-1.5 flex items-center gap-1.5 text-xs tabular-nums text-stone-800">
         <WeatherIcon condition={today.condition} size={15} className="shrink-0 text-stone-500" />
         <span>{today.maxC}°<span className="ml-1 text-stone-400">{today.minC}°</span></span>
-        {rain >= RAIN_WORTH_SHOWING && <span className="text-[11px] text-stone-400">· chuva {rain}%</span>}
+        {rain >= RAIN_WORTH_SHOWING && (compact ? (
+          <span className="flex items-center gap-0.5 text-[11px] text-stone-400" aria-label={`chuva ${rain}%`}><Droplets aria-hidden="true" size={11} />{rain}%</span>
+        ) : <span className="text-[11px] text-stone-400">· chuva {rain}%</span>)}
         <span className="sr-only">{today.condition}</span>
       </p>
     </div>

@@ -1,10 +1,11 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
-import { AlertCircle, ArrowRight, ImagePlus, LoaderCircle, Menu, MessageCircle, Plus, Search, SearchX, Shirt, X } from "lucide-react";
+import { AlertCircle, ArrowRight, Camera, Sparkle, ImagePlus, LoaderCircle, MessageCircle, Plus, Search, SearchX, Shirt, X } from "lucide-react";
 import { useAppShell } from "@/components/layout/AppShell";
+import { TopBarActions } from "@/components/layout/MobileNav";
 import { PageContent } from "@/components/layout/PageContent";
 import { Select } from "@/components/ui/Select";
 import { CategoryTabs } from "@/components/features/wardrobe/CategoryTabs";
@@ -40,12 +41,13 @@ const secondaryButtonClass = "inline-flex items-center justify-center gap-2 roun
 const buttonClass = "inline-flex items-center justify-center gap-2 rounded-full bg-stone-900 px-5 py-2.5 text-sm font-medium text-white transition-colors hover:bg-stone-800 active:scale-[0.98]";
 
 export default function WardrobePage() {
-  const { openMobileMenu } = useAppShell();
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const [dialog, setDialog] = useState<{ key: number; target: WardrobeDialogTarget } | null>(null);
 
   // A key remonta o diálogo a cada abertura, zerando o estado interno (passo, formulário, prévia)
+  const { topBarRight } = useAppShell();
+  const cameraRef = useRef<HTMLInputElement>(null);
   function openDialog(target: WardrobeDialogTarget) {
     setDialog((current) => ({ key: (current?.key ?? 0) + 1, target }));
   }
@@ -172,11 +174,30 @@ export default function WardrobePage() {
     <div className="min-h-full bg-[#FAF8F5] text-stone-900">
       <main className="mx-auto w-full max-w-6xl pb-16 pt-6 sm:px-8 lg:px-10">
         <PageContent stagger>
-          <header className="mb-7 flex items-end justify-between gap-4 px-5 sm:px-0">
-            <div className="flex items-center gap-2">
-              <button type="button" onClick={openMobileMenu} aria-label="Abrir menu" title="Abrir menu" className="-ml-2 rounded-lg p-2 text-stone-500 hover:bg-stone-100 md:hidden">
-                <Menu size={20} />
+          {/* No celular e no tablet, a câmera no topo do app: abre direto e a foto tirada já segue para a análise */}
+          {status === "ready" && hasAnyItem && (
+            <TopBarActions slot={topBarRight}>
+              <button type="button" onClick={() => cameraRef.current?.click()} aria-label="Fotografar uma peça" title="Fotografar uma peça" className="flex h-10 w-10 items-center justify-center rounded-xl text-stone-900 transition-colors active:bg-stone-200/60">
+                <Camera size={24} strokeWidth={1.6} />
               </button>
+              <input
+                ref={cameraRef}
+                type="file"
+                accept="image/*"
+                capture="environment"
+                className="sr-only"
+                tabIndex={-1}
+                aria-hidden="true"
+                onChange={(event) => {
+                  const file = event.target.files?.[0];
+                  event.target.value = "";
+                  if (file) openDialog({ kind: "create", file });
+                }}
+              />
+            </TopBarActions>
+          )}
+          <header className="mb-7 hidden items-end justify-between gap-4 lg:flex">
+            <div className="hidden items-center gap-2 lg:flex">
               <div>
                 <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-stone-400">Seu acervo</p>
                 <h1 className="font-serif text-3xl italic tracking-tight text-stone-900 sm:text-4xl">Guarda-roupa</h1>
@@ -196,6 +217,25 @@ export default function WardrobePage() {
           </header>
 
           {status === "ready" && hasAnyItem && summary && summary.totalItems > 0 && <WardrobeSummary stats={summary} />}
+
+          {/* No celular e no tablet, o botão principal da tela, no mesmo desenho do "Planejar um look" do Planejador */}
+          {status === "ready" && hasAnyItem && (
+            <div className="mb-6 flex justify-center lg:hidden">
+              <span className="relative inline-flex">
+                <Sparkle aria-hidden="true" size={11} className="stella-twinkle pointer-events-none absolute -left-3 -top-2 fill-[#C9A27E] text-[#C9A27E]" />
+                <Sparkle aria-hidden="true" size={8} className="stella-twinkle pointer-events-none absolute -right-2 -top-3 fill-[#D9B98F] text-[#D9B98F] [animation-delay:0.9s]" />
+                <Sparkle aria-hidden="true" size={9} className="stella-twinkle pointer-events-none absolute -bottom-2 right-6 fill-[#C9A27E] text-[#C9A27E] [animation-delay:1.7s]" />
+                <button
+                  type="button"
+                  onClick={() => openDialog({ kind: "create" })}
+                  className="stella-shine-button inline-flex items-center gap-2 rounded-full bg-stone-900 px-7 py-3.5 text-sm font-medium text-white transition-all hover:bg-stone-800 active:scale-[0.98]"
+                >
+                  <Plus size={16} className="text-[#E9D3B4]" />
+                  Adicionar peça
+                </button>
+              </span>
+            </div>
+          )}
 
           {status === "ready" && hasAnyItem && (
             <div className="mb-3 flex items-center gap-2 px-5 sm:px-0">

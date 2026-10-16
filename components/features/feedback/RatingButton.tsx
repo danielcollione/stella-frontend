@@ -37,7 +37,7 @@ export function RatingButton() {
           animate={{ opacity: 1, scale: 1, y: 0, filter: "blur(0px)" }}
           exit={{ opacity: 0, scale: 0.9, transition: { duration: 0.2 } }}
           transition={reducedMotion ? { duration: 0.2 } : { type: "spring", stiffness: 260, damping: 22, mass: 0.9 }}
-          className="fixed bottom-[calc(env(safe-area-inset-bottom)+1.25rem)] right-4 z-30 sm:bottom-6 sm:right-6"
+          className="fixed bottom-[calc(env(safe-area-inset-bottom)+5.5rem)] right-4 z-30 lg:bottom-6 lg:right-6"
         >
           {/* Aura dourada e suave atrás do botão */}
           <span aria-hidden="true" className="pointer-events-none absolute -inset-3 rounded-full bg-[radial-gradient(closest-side,rgba(201,162,126,0.45),transparent)] blur-md" />

@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import type { ReactNode } from "react";
-import { AlertCircle, Menu, RefreshCw } from "lucide-react";
+import { AlertCircle, RefreshCw } from "lucide-react";
 import { useAppShell } from "@/components/layout/AppShell";
 import { PageContent } from "@/components/layout/PageContent";
 import { parseIsoDate } from "@/services/events/eventCatalog";
@@ -32,7 +32,7 @@ const usd = (value: number, digits = 2) => `US$ ${value.toLocaleString("pt-BR", 
 const shortDay = (iso: string) => parseIsoDate(iso).toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" });
 
 export default function AdminPage() {
-  const { openMobileMenu, user } = useAppShell();
+  const { user } = useAppShell();
   const [days, setDays] = useState<number>(30);
   const [loaded, setLoaded] = useState<{ days: number; data: AdminOverview } | null>(null);
   const [failed, setFailed] = useState(false);
@@ -59,10 +59,7 @@ export default function AdminPage() {
       <main className="mx-auto w-full max-w-6xl px-4 pb-16 pt-6 sm:px-8 lg:px-10">
         <PageContent stagger>
           <header className="mb-7 flex flex-wrap items-end justify-between gap-4">
-            <div className="flex items-center gap-2">
-              <button type="button" onClick={openMobileMenu} aria-label="Abrir menu" title="Abrir menu" className="-ml-2 rounded-lg p-2 text-stone-500 hover:bg-stone-100 md:hidden">
-                <Menu size={20} />
-              </button>
+            <div className="hidden items-center gap-2 lg:flex">
               <div>
                 <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-stone-400">Uso interno</p>
                 <h1 className="font-serif text-3xl italic tracking-tight text-stone-900 sm:text-4xl">Painel</h1>

@@ -3,8 +3,7 @@
 import { useEffect, useState } from "react";
 import type { ReactNode } from "react";
 import Link from "next/link";
-import { AlertCircle, ArrowLeft, LoaderCircle, Menu, Shirt } from "lucide-react";
-import { useAppShell } from "@/components/layout/AppShell";
+import { AlertCircle, ArrowLeft, LoaderCircle, Shirt } from "lucide-react";
 import { PageContent } from "@/components/layout/PageContent";
 import { colorSwatch } from "@/services/wardrobe/colorSwatch";
 import { CATEGORY_LABELS, displayName } from "@/services/wardrobe/wardrobeCatalog";
@@ -22,7 +21,6 @@ const buttonClass = "inline-flex items-center justify-center gap-2 rounded-full 
 const linkClass = "font-medium text-stone-800 underline decoration-stone-300 underline-offset-4 transition-colors hover:decoration-stone-600";
 
 export default function WardrobeStatsPage() {
-  const { openMobileMenu } = useAppShell();
   const [stats, setStats] = useState<WardrobeStats | null>(null);
   const [failed, setFailed] = useState(false);
   const [attempt, setAttempt] = useState(0);
@@ -45,10 +43,7 @@ export default function WardrobeStatsPage() {
       <main className="mx-auto w-full max-w-6xl px-4 pb-16 pt-6 sm:px-8 lg:px-10">
         <PageContent stagger>
           <header className="mb-7 flex items-end justify-between gap-4">
-            <div className="flex items-center gap-2">
-              <button type="button" onClick={openMobileMenu} aria-label="Abrir menu" title="Abrir menu" className="-ml-2 rounded-lg p-2 text-stone-500 hover:bg-stone-100 md:hidden">
-                <Menu size={20} />
-              </button>
+            <div className="hidden items-center gap-2 lg:flex">
               <div>
                 <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-stone-400">Seu acervo em números</p>
                 <h1 className="font-serif text-3xl italic tracking-tight text-stone-900 sm:text-4xl">Painéis</h1>

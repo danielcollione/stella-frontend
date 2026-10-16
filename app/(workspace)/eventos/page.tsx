@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useState, useSyncExternalStore } from "react";
 import type { ReactNode } from "react";
 import Link from "next/link";
-import { AlertCircle, CalendarHeart, Check, Menu, Plus } from "lucide-react";
+import { AlertCircle, CalendarCheck, Check, Plus } from "lucide-react";
 import { useAppShell } from "@/components/layout/AppShell";
 import { PageContent } from "@/components/layout/PageContent";
 import { EventCalendar } from "@/components/features/events/EventCalendar";
@@ -24,7 +24,7 @@ const UPCOMING_DAYS = 60;
 type Load = { key: string; events: CalendarEvent[] };
 
 export default function EventsPage() {
-  const { openMobileMenu, user } = useAppShell();
+  const { user } = useAppShell();
   const [today] = useState(todayIso);
   const [month, setMonth] = useState(() => firstOfMonth(today));
   const [selected, setSelected] = useState(today);
@@ -120,7 +120,7 @@ export default function EventsPage() {
 
   if (locked) {
     return (
-      <PlannerIntro onMenu={openMobileMenu} eyebrow="Atelier e Couture" note={locked}>
+      <PlannerIntro eyebrow="Atelier e Couture" note={locked}>
         <Link href="/planos" className={INTRO_ACTION_CLASS}>Conhecer os planos</Link>
       </PlannerIntro>
     );
@@ -132,7 +132,6 @@ export default function EventsPage() {
     if (quota?.used === 0) {
       return (
         <PlannerIntro
-          onMenu={openMobileMenu}
           eyebrow="Planejador"
           note={quota.max !== null ? `Seu plano inclui ${quota.max === 1 ? "1 evento" : `${quota.max} eventos`} para você experimentar.` : undefined}
         >
@@ -146,11 +145,8 @@ export default function EventsPage() {
     <div className="min-h-full bg-[#FAF8F5] text-stone-900">
       <main className="mx-auto w-full max-w-6xl px-4 pb-16 pt-6 sm:px-8 lg:px-10">
         <PageContent stagger>
-          <header className="mb-4 flex items-end justify-between gap-4 lg:mb-7">
-            <div className="flex items-center gap-2">
-              <button type="button" onClick={openMobileMenu} aria-label="Abrir menu" title="Abrir menu" className="-ml-2 rounded-lg p-2 text-stone-500 hover:bg-stone-100 md:hidden">
-                <Menu size={20} />
-              </button>
+          <header className="mb-7 hidden items-end justify-between gap-4 lg:flex">
+            <div className="hidden items-center gap-2 lg:flex">
               <div>
                 <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-stone-400">Sua agenda</p>
                 <h1 className="font-serif text-3xl italic tracking-tight text-stone-900 sm:text-4xl">Planejador</h1>
@@ -312,19 +308,16 @@ function EventLimitDialog({ open, max, onClose }: { open: boolean; max: number; 
 }
 
 // Apresentação do planejador: na primeira visita (leva à agenda) e para planos sem agenda (leva aos planos)
-function PlannerIntro({ onMenu, eyebrow, note, children }: { onMenu: () => void; eyebrow: string; note?: string; children: ReactNode }) {
+function PlannerIntro({ eyebrow, note, children }: { eyebrow: string; note?: string; children: ReactNode }) {
   return (
     <div className="min-h-full bg-[#FAF8F5] text-stone-900">
       <main className="mx-auto w-full max-w-3xl px-5 pb-16 pt-6 sm:px-8">
         <PageContent stagger>
-          <div className="mb-2 flex items-center md:hidden">
-            <button type="button" onClick={onMenu} aria-label="Abrir menu" className="-ml-2 rounded-lg p-2 text-stone-500 hover:bg-stone-100"><Menu size={20} /></button>
-          </div>
           <section className="relative overflow-hidden rounded-[2rem] border border-stone-200/80 bg-white px-6 py-12 text-center shadow-[0_18px_48px_rgba(28,25,23,0.06)] sm:px-12 sm:py-16">
             <span aria-hidden="true" className="pointer-events-none absolute -left-24 -top-24 h-64 w-64 rounded-full bg-[#C9A27E]/15 blur-3xl" />
             <span aria-hidden="true" className="pointer-events-none absolute -bottom-24 -right-24 h-64 w-64 rounded-full bg-[#A383A0]/15 blur-3xl" />
             <span className="relative mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-stone-900 text-white">
-              <CalendarHeart size={22} strokeWidth={1.5} />
+              <CalendarCheck size={22} strokeWidth={1.5} />
             </span>
             <p className="relative mt-6 text-[11px] font-semibold uppercase tracking-[0.18em] text-stone-400">{eyebrow}</p>
             <h1 className="relative mt-2 font-serif text-3xl italic tracking-tight text-stone-900 sm:text-4xl">Saiba o que vestir antes do dia chegar</h1>

@@ -7,12 +7,14 @@ import { useRouter, useSearchParams } from "next/navigation";
 import {
   BadgeCheck,
   ArrowLeft, ChevronRight, CreditCard, Eye, EyeOff, Headphones,
-  KeyRound, LoaderCircle, LogOut, MapPin, Menu, Save, Star, UserRound,
+  KeyRound, LoaderCircle, LogOut, MapPin, Save, Star, UserRound,
 } from "lucide-react";
 import { useFeedback } from "@/components/features/feedback/FeedbackProvider";
 import { useAppShell } from "@/components/layout/AppShell";
 import { PageContent } from "@/components/layout/PageContent";
 import { InstallAppRow } from "@/components/features/account/InstallAppRow";
+import { AvatarPicker } from "@/components/features/account/AvatarPicker";
+import { UserAvatar } from "@/components/ui/UserAvatar";
 import { DeleteAccountDialog } from "@/components/features/account/DeleteAccountDialog";
 import { VerifyEmailDialog } from "@/components/features/account/VerifyEmailDialog";
 import { CopyMessageButton } from "@/components/ui/CopyMessageButton";
@@ -53,11 +55,6 @@ const fieldClass = "w-full rounded-lg border border-stone-200 bg-white px-3.5 py
 const labelClass = "block text-xs font-medium text-stone-500 mb-2";
 const actionClass = "inline-flex items-center justify-center gap-2 rounded-lg bg-stone-900 px-5 py-3 text-sm font-medium text-white hover:bg-stone-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed";
 
-function initials(name: string) {
-  return name.trim().split(/\s+/).filter(Boolean).slice(0, 2)
-    .map((part) => part[0]).join("").toUpperCase() || "U";
-}
-
 function profileValues(user: UserResponseDto): UpdateProfileRequestDto {
   return {
     name: user.name,
@@ -74,7 +71,7 @@ function profileValues(user: UserResponseDto): UpdateProfileRequestDto {
 
 export default function ProfilePage() {
   const router = useRouter();
-  const { user, setUser, openMobileMenu } = useAppShell();
+  const { user, setUser } = useAppShell();
   const [verifyingEmail, setVerifyingEmail] = useState(false);
   const [deletingAccount, setDeletingAccount] = useState(false);
   const searchParams = useSearchParams();
@@ -171,16 +168,19 @@ export default function ProfilePage() {
       
       <main className="flex-1 min-w-0 px-5 sm:px-10 pt-6 pb-12">
         <PageContent contentKey={view} className="max-w-3xl mx-auto" stagger>
-          <div className="flex items-center justify-between mb-8">
+          {/* No celular e no tablet o Perfil é uma aba: na tela inicial dele não há para onde voltar */}
+          <div className={`items-center justify-between mb-8 ${view === "overview" ? "hidden lg:flex" : "flex"}`}>
             {view === "overview" ? (
               <Link href="/chat" aria-label="Voltar ao chat" title="Voltar ao chat" className="p-2 rounded-lg text-stone-500 hover:bg-stone-100"><ArrowLeft size={18} /></Link>
             ) : (
               <button type="button" onClick={() => openView("overview")} disabled={saving} aria-label="Voltar ao perfil" title="Voltar ao perfil" className="p-2 rounded-lg text-stone-500 hover:bg-stone-100 disabled:opacity-40"><ArrowLeft size={18} /></button>
             )}
-            <button type="button" onClick={openMobileMenu} aria-label="Abrir menu" title="Abrir menu" className="p-2 rounded-lg text-stone-500 hover:bg-stone-100 md:hidden"><Menu size={20} /></button>
           </div>
-          <header className="text-center mb-8">
-            <div className="mx-auto h-20 w-20 rounded-full border-4 border-white shadow-sm bg-stone-200 text-stone-700 flex items-center justify-center text-2xl font-semibold">{initials(user.name)}</div>
+          {/* Acima dos blocos seguintes: o menu da foto de perfil abre por cima deles */}
+          <header className="relative z-30 text-center mb-8">
+            {view === "overview"
+              ? <AvatarPicker user={user} onChange={setUser} />
+              : <UserAvatar user={user} className="mx-auto h-20 w-20 border-4 border-white text-2xl shadow-sm" />}
             <h1 className="mt-5 text-xl sm:text-2xl font-semibold break-words">{titles[view]}</h1>
             {view !== "overview" && <p className="mt-1 text-xs text-stone-500 break-all">{user.email}</p>}
           </header>

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import type { ReactNode } from "react";
 import { authService } from "@/services/authService";
 import { api } from "@/services/api";
 
@@ -8,9 +9,11 @@ interface SecureImageProps {
   src: string;
   alt: string;
   className?: string;
+  // Mostrado enquanto carrega e se a foto falhar (ex: as iniciais no lugar da foto de perfil)
+  fallback?: ReactNode;
 }
 
-export function SecureImage({ src, alt, className = "" }: SecureImageProps) {
+export function SecureImage({ src, alt, className = "", fallback }: SecureImageProps) {
   // Se for uma visualização local (blob: ou data:), derivamos o estado diretamente durante o render
   const isLocal = src?.startsWith("blob:") || src?.startsWith("data:");
 
@@ -67,6 +70,8 @@ export function SecureImage({ src, alt, className = "" }: SecureImageProps) {
 
   // Se for local usa o próprio src, caso contrário usa a URL resolvida pelo fetch
   const displayUrl = isLocal ? src : fetchedUrl;
+
+  if (fallback !== undefined && (hasError || !displayUrl)) return <>{fallback}</>;
 
   if (hasError) {
     return (

@@ -134,6 +134,29 @@ export const authService = {
     }
   },
 
+  // Foto de perfil: o servidor guarda só o quadrado do centro da foto, sem edição
+  async uploadAvatar(file: File): Promise<UserResponseDto> {
+    const formData = new FormData();
+    formData.append('file', file);
+    try {
+      const { data } = await api.post<UserResponseDto>('/auth/me/avatar', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      });
+      return data;
+    } catch (error: unknown) {
+      throw authError(error, 'Nao foi possivel enviar a foto. Tente outra.');
+    }
+  },
+
+  async removeAvatar(): Promise<UserResponseDto> {
+    try {
+      const { data } = await api.delete<UserResponseDto>('/auth/me/avatar');
+      return data;
+    } catch (error: unknown) {
+      throw authError(error, 'Nao foi possivel tirar a foto agora. Tente novamente.');
+    }
+  },
+
   // Exclui a conta e todos os dados; em seguida encerra a sessão e volta para a página inicial
   async deleteAccount(password?: string): Promise<void> {
     try {

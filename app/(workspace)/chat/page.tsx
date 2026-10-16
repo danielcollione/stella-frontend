@@ -7,16 +7,17 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   Plus,
   Shirt,
-  Menu,
   ThumbsUp,
   ThumbsDown,
   ArrowUp,
   X,
   RotateCw,
+  SquarePen,
 } from "lucide-react";
 import { authService } from "@/services/authService";
 import type { ChatMessage, ChatRetry, FeedbackReason } from "@/types/chat";
 import { useAppShell } from "@/components/layout/AppShell";
+import { TopBarActions } from "@/components/layout/MobileNav";
 import { playSendSound, playReceiveSound } from "@/utils/sound";
 import { chatService } from "@/services/chat/chatService";
 import { ChatMessageContent } from "@/components/features/ChatMessageContent";
@@ -98,7 +99,7 @@ export default function ChatPage() {
   const searchParams = useSearchParams();
   const requestedThread = searchParams.get("thread");
   const newConversation = searchParams.get("new");
-  const { user: currentUser, threads, setThreads, threadsReady, activeThreadId, setActiveThreadId, openMobileMenu } = useAppShell();
+  const { user: currentUser, threads, setThreads, threadsReady, activeThreadId, setActiveThreadId, topBarLeft, topBarRight } = useAppShell();
   const [isInitializing, setIsInitializing] = useState(true);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState("");
@@ -408,6 +409,11 @@ export default function ChatPage() {
     setSelectedFiles((prev) => prev.filter((_, idx) => idx !== indexToRemove));
   };
 
+  function startNewConversation() {
+    setActiveThreadId(null);
+    router.push(`/chat?new=${crypto.randomUUID()}`);
+  }
+
   if (isInitializing) {
     return <main className="h-full flex items-center justify-center text-stone-600" role="status">Carregando...</main>;
   }
@@ -419,23 +425,21 @@ export default function ChatPage() {
       
 
       <PageContent fadeOnly className="flex-1 flex flex-col h-full max-w-4xl mx-auto w-full relative">
-        <header className="sticky top-0 bg-[#FAF8F5]/90 backdrop-blur-md px-4 sm:px-6 py-4 flex justify-between items-center z-10 border-b border-stone-200/40">
-          <div className="flex items-center gap-3">
-            <button
-              onClick={openMobileMenu}
-              className="md:hidden p-2 text-stone-700 hover:bg-stone-200/60 rounded-xl transition-colors"
-            >
-              <Menu className="w-5 h-5" />
+        {/* No celular e no tablet, o clima e a chave do guarda-roupa vão para o topo do app, dos dois lados do nome */}
+        <TopBarActions slot={topBarLeft}>
+          <TodayWeather compact hasCity={!!currentUser?.cityName} />
+        </TopBarActions>
+        {/* Nova conversa no canto, como nos apps de mensagem; numa conversa vazia não teria o que fazer */}
+        {messages.length > 0 && (
+          <TopBarActions slot={topBarRight}>
+            <button type="button" onClick={startNewConversation} aria-label="Nova conversa" title="Nova conversa" className="flex h-10 w-10 items-center justify-center rounded-xl text-stone-900 transition-colors active:bg-stone-200/60">
+              <SquarePen size={21} strokeWidth={1.7} />
             </button>
-            {/* No celular o clima do dia ocupa o lugar do nome; sem previsão, o nome volta */}
-            <TodayWeather
-              hasCity={!!currentUser?.cityName}
-              fallback={
-                <span className="font-serif italic text-2xl font-semibold tracking-tight text-stone-900 md:hidden">
-                  stella
-                </span>
-              }
-            />
+          </TopBarActions>
+        )}
+        <header className="sticky top-0 bg-[#FAF8F5]/90 backdrop-blur-md px-4 sm:px-6 py-4 hidden lg:flex justify-between items-center z-10 border-b border-stone-200/40">
+          <div className="flex items-center gap-3">
+            <TodayWeather hasCity={!!currentUser?.cityName} />
           </div>
 
           <div className="flex items-center gap-2">
@@ -676,6 +680,10 @@ export default function ChatPage() {
                   <Plus className="w-4 h-4" />
                   <span className="hidden sm:inline">Anexar fotos</span>
                 </button>
+                {/* No celular e no tablet, a chave fica junto do anexar: vale para as fotos enviadas aqui */}
+                <span className="ml-1 lg:hidden">
+                  <WardrobeSaveToggle compact enabled={saveToWardrobe} onChange={setSaveToWardrobe} locked={saveLocked} />
+                </span>
               </div>
 
               <button
