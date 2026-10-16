@@ -125,7 +125,9 @@ export function EventForm({ event, defaultDate, busy, pending, error, onSubmit, 
   const message = validation || error;
 
   return (
-    <form onSubmit={handleSubmit} className="flex flex-col" noValidate>
+    // Como a ficha da peça: só os campos rolam; o rodapé fica fixo na base da janela
+    <form onSubmit={handleSubmit} className="flex min-h-0 flex-1 flex-col" noValidate>
+      <div className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden overscroll-contain">
       <fieldset disabled={busy} className="min-w-0 space-y-5 px-6 py-6 sm:px-7">
         <div>
           <label htmlFor="event-title" className={labelClass}>Nome do evento</label>
@@ -220,9 +222,11 @@ export function EventForm({ event, defaultDate, busy, pending, error, onSubmit, 
       </fieldset>
 
       {message && <p role="alert" className="mx-6 mb-4 rounded-lg border border-red-200 bg-red-50 px-3.5 py-2.5 text-sm text-red-700 sm:mx-7">{message}</p>}
+      </div>
 
-      <footer className="flex flex-wrap items-center justify-end gap-2 border-t border-stone-200/70 px-6 py-4 sm:px-7">
-        <button type="button" onClick={onCancel} disabled={busy} className="mr-auto rounded-full px-4 py-2.5 text-sm font-medium text-stone-600 transition-colors hover:bg-stone-200/60 hover:text-stone-900 disabled:opacity-50">
+      {/* Numa linha só: cancelar, só salvar e o botão principal, curto */}
+      <footer className="flex shrink-0 items-center justify-end gap-1.5 border-t border-stone-200/70 bg-[#FAF8F5] px-4 py-3.5 sm:gap-2 sm:px-7 sm:py-4">
+        <button type="button" onClick={onCancel} disabled={busy} className="mr-auto rounded-full px-3 py-2.5 text-sm font-medium text-stone-600 transition-colors hover:bg-stone-200/60 hover:text-stone-900 disabled:opacity-50 sm:px-4">
           Cancelar
         </button>
         {editing ? (
@@ -232,13 +236,13 @@ export function EventForm({ event, defaultDate, busy, pending, error, onSubmit, 
           </button>
         ) : (
           <>
-            <button type="button" onClick={() => submit(false)} disabled={busy} className="inline-flex items-center gap-2 rounded-full px-4 py-2.5 text-sm font-medium text-stone-600 transition-colors hover:bg-stone-200/60 hover:text-stone-900 disabled:opacity-50">
+            <button type="button" onClick={() => submit(false)} disabled={busy} className="inline-flex items-center gap-2 rounded-full px-3 py-2.5 text-sm font-medium text-stone-600 transition-colors hover:bg-stone-200/60 hover:text-stone-900 disabled:opacity-50 sm:px-4">
               {pending === "save" && <LoaderCircle size={14} className="animate-spin" />}
               Só salvar
             </button>
             <button type="submit" disabled={busy} className="inline-flex items-center gap-2 rounded-full bg-stone-900 px-5 py-2.5 text-sm font-medium text-white transition-colors hover:bg-stone-800 disabled:opacity-60">
-              {pending === "generate" ? <LoaderCircle size={14} className="animate-spin" /> : <Sparkles size={14} />}
-              Salvar e montar o look
+              {pending === "generate" ? <LoaderCircle size={14} className="animate-spin" /> : <Sparkles size={14} className="text-[#E9D3B4]" />}
+              Montar look
             </button>
           </>
         )}

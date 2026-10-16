@@ -7,34 +7,10 @@ import { useFeedback } from "@/components/features/feedback/FeedbackProvider";
 
 /** Quanto tempo na tela antes de o botão aparecer. */
 const APPEAR_AFTER_MS = 10_000;
-// Dia em que a pessoa dispensou o botão (no X, ou abrindo o cartão e fechando sem avaliar): só volta no dia seguinte
-const DISMISSED_ON_KEY = "@stella:rating-button-dismissed";
-
-function today(): string {
-  return new Date().toLocaleDateString("sv-SE"); // AAAA-MM-DD no fuso do aparelho
-}
-
-function dismissedToday(): boolean {
-  try {
-    return window.localStorage.getItem(DISMISSED_ON_KEY) === today();
-  } catch {
-    return false;
-  }
-}
-
-/** A pessoa dispensou o convite hoje: o botão das Tendências e do Planejador volta só amanhã. */
-export function dismissRatingButtonForToday() {
-  try {
-    window.localStorage.setItem(DISMISSED_ON_KEY, today());
-  } catch {
-    // Sem armazenamento (modo privado): o botão pode aparecer de novo, sem problema
-  }
-}
-
 /**
  * Botão flutuante "Avaliar a Stella" (Tendências e Planejador): para quem ainda não avaliou, surge em toda visita
  * depois de alguns segundos na tela, saindo do desfoque com um brilho que o atravessa uma vez, e se transforma no
- * cartão de avaliação ao tocar. Dispensado (no X, ou abrindo e fechando sem avaliar), só volta no dia seguinte.
+ * cartão de avaliação ao tocar. O X esconde só nesta visita.
  */
 export function RatingButton() {
   const { status, panelOpen, open } = useFeedback();
@@ -44,14 +20,12 @@ export function RatingButton() {
   const pending = status !== null && status.rating === null;
 
   useEffect(() => {
-    if (!pending || dismissed || dismissedToday()) return;
+    if (!pending || dismissed) return;
     const timer = window.setTimeout(() => setVisible(true), APPEAR_AFTER_MS);
     return () => window.clearTimeout(timer);
   }, [pending, dismissed]);
 
-  // Fechou o cartão sem avaliar: o FeedbackProvider marca o dia, e o botão sai também (só lê o armazenamento depois
-  // de o botão ter aparecido, nunca na renderização do servidor)
-  const show = visible && pending && !dismissed && !panelOpen && !dismissedToday();
+  const show = visible && pending && !dismissed && !panelOpen;
 
   return (
     <AnimatePresence>
@@ -78,10 +52,7 @@ export function RatingButton() {
             </button>
             <button
               type="button"
-              onClick={() => {
-                dismissRatingButtonForToday();
-                setDismissed(true);
-              }}
+              onClick={() => setDismissed(true)}
               aria-label="Agora não"
               title="Agora não"
               className="stella-hit mr-1.5 rounded-full p-1 text-white/50 transition-colors hover:bg-white/10 hover:text-white"

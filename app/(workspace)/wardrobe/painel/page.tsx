@@ -117,7 +117,7 @@ function Dashboard({ stats, onStats }: { stats: WardrobeStats; onStats: (stats: 
       )}
 
       <Group title="O que há no seu armário" hint="Como suas peças se dividem">
-        <div className="grid gap-3 lg:grid-cols-3">
+        <div className="grid grid-cols-1 gap-3 lg:grid-cols-3">
           <Panel title="Categorias">
             <BarList rows={stats.categories.map(({ category, count }) => ({ label: CATEGORY_LABELS[category].plural, count }))} total={stats.totalItems} />
           </Panel>
@@ -144,7 +144,7 @@ function Dashboard({ stats, onStats }: { stats: WardrobeStats; onStats: (stats: 
             </div>
           </Panel>
         ) : (
-          <div className="grid gap-3 lg:grid-cols-2">
+          <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
             <Panel title="Mais usadas">
               <ItemStrip items={stats.mostWorn} caption={wearCaption} detail={costPerWear} />
             </Panel>
@@ -153,7 +153,7 @@ function Dashboard({ stats, onStats }: { stats: WardrobeStats; onStats: (stats: 
             </Panel>
             <Panel title="Pares mais repetidos" hint="Peças que você mais usa juntas" className="lg:col-span-2">
               {stats.pairs.length > 0 ? (
-                <ul className="grid gap-x-8 gap-y-4 sm:grid-cols-2">
+                <ul className="grid grid-cols-1 gap-x-8 gap-y-4 sm:grid-cols-2">
                   {stats.pairs.map((pair) => (
                     <li key={`${pair.first.id}-${pair.second.id}`} className="flex items-center gap-3.5">
                       <div className="flex shrink-0">
@@ -248,7 +248,7 @@ function Group({ title, hint, children }: { title: string; hint: string; childre
 
 function Panel({ title, hint, className = "", children }: { title?: string; hint?: string; className?: string; children: ReactNode }) {
   return (
-    <div className={`rounded-2xl border border-stone-200/80 bg-white p-5 shadow-[0_1px_2px_rgba(28,25,23,0.03)] sm:p-6 ${className}`}>
+    <div className={`min-w-0 rounded-2xl border border-stone-200/80 bg-white p-5 shadow-[0_1px_2px_rgba(28,25,23,0.03)] sm:p-6 ${className}`}>
       {title && (
         <div className="mb-4">
           <h3 className="text-[11px] font-semibold uppercase tracking-[0.16em] text-stone-500">{title}</h3>
@@ -393,7 +393,7 @@ function Skeleton() {
         {[0, 1, 2, 3].map((index) => <div key={index} className="h-32 animate-pulse rounded-2xl bg-stone-200/50" />)}
       </div>
       <div className="h-56 animate-pulse rounded-2xl bg-stone-200/50" />
-      <div className="grid gap-3 lg:grid-cols-3">
+      <div className="grid grid-cols-1 gap-3 lg:grid-cols-3">
         {[0, 1, 2].map((index) => <div key={index} className="h-64 animate-pulse rounded-2xl bg-stone-200/50" />)}
       </div>
     </div>

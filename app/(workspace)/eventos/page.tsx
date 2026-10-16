@@ -7,6 +7,7 @@ import { AlertCircle, CalendarHeart, Check, Menu, Plus } from "lucide-react";
 import { useAppShell } from "@/components/layout/AppShell";
 import { PageContent } from "@/components/layout/PageContent";
 import { EventCalendar } from "@/components/features/events/EventCalendar";
+import { PlannerMobile } from "@/components/features/events/PlannerMobile";
 import { EventAgenda } from "@/components/features/events/EventAgenda";
 import { EventDialog } from "@/components/features/events/EventDialog";
 import { WeatherStrip } from "@/components/features/weather/WeatherStrip";
@@ -37,6 +38,8 @@ export default function EventsPage() {
   const [quotaSettled, setQuotaSettled] = useState(false);
   const [introSeen, markIntroSeen] = usePlannerIntroSeen(user?.id);
   const [upgradeOpen, setUpgradeOpen] = useState(false);
+  // Celular e tablet: o mês inteiro só abre pelo ícone de calendário da faixa da semana
+  const [calendarOpen, setCalendarOpen] = useState(false);
 
   const grid = useMemo(() => monthGrid(month), [month]);
   const monthKey = `${toIsoDate(grid[0])}:${toIsoDate(grid[grid.length - 1])}:${version}`;
@@ -143,7 +146,7 @@ export default function EventsPage() {
     <div className="min-h-full bg-[#FAF8F5] text-stone-900">
       <main className="mx-auto w-full max-w-6xl px-4 pb-16 pt-6 sm:px-8 lg:px-10">
         <PageContent stagger>
-          <header className="mb-7 flex items-end justify-between gap-4">
+          <header className="mb-4 flex items-end justify-between gap-4 lg:mb-7">
             <div className="flex items-center gap-2">
               <button type="button" onClick={openMobileMenu} aria-label="Abrir menu" title="Abrir menu" className="-ml-2 rounded-lg p-2 text-stone-500 hover:bg-stone-100 md:hidden">
                 <Menu size={20} />
@@ -153,13 +156,15 @@ export default function EventsPage() {
                 <h1 className="font-serif text-3xl italic tracking-tight text-stone-900 sm:text-4xl">Planejador</h1>
               </div>
             </div>
-            <button type="button" onClick={() => openDialog({ kind: "create", date: selected >= today ? selected : today })} className="mb-1 inline-flex items-center gap-1.5 rounded-full bg-stone-900 px-4 py-2 text-sm font-medium text-white shadow-sm transition-colors hover:bg-stone-800 active:scale-[0.98]">
+            <button type="button" onClick={() => openDialog({ kind: "create", date: selected >= today ? selected : today })} className="mb-1 hidden items-center gap-1.5 rounded-full bg-stone-900 px-4 py-2 text-sm font-medium text-white shadow-sm transition-colors hover:bg-stone-800 active:scale-[0.98] lg:inline-flex">
               <Plus size={16} />
               <span>Novo<span className="hidden sm:inline"> evento</span></span>
             </button>
           </header>
 
-          <WeatherStrip today={today} hasCity={Boolean(user?.cityName?.trim())} />
+          <div className="hidden lg:block">
+            <WeatherStrip today={today} hasCity={Boolean(user?.cityName?.trim())} />
+          </div>
 
           {loadError ? (
             <div role="alert" className="flex flex-col items-center rounded-3xl border border-dashed border-stone-200 bg-white/60 px-6 py-14 text-center">
@@ -169,7 +174,39 @@ export default function EventsPage() {
               <button type="button" onClick={() => { setLoadError(false); refresh(); }} className="mt-5 rounded-full bg-stone-900 px-5 py-2.5 text-sm font-medium text-white hover:bg-stone-800">Tentar novamente</button>
             </div>
           ) : (
-            <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_22rem] xl:gap-8">
+            <>
+            {/* Celular e tablet: topo enxuto (previsão do dia, faixa de dias), o botão de planejar e a agenda */}
+            <div className="lg:hidden">
+              <PlannerMobile
+                today={today}
+                selected={selected}
+                events={[...monthEvents, ...(upcoming ?? [])]}
+                dayEvents={dayEvents}
+                upcoming={upcoming}
+                hasCity={Boolean(user?.cityName?.trim())}
+                calendarOpen={calendarOpen}
+                calendar={
+                  <EventCalendar
+                    month={month}
+                    today={today}
+                    selected={selected}
+                    events={monthEvents}
+                    loading={monthData?.key !== monthKey}
+                    onMonthChange={changeMonth}
+                    onSelectDay={(iso) => { selectDay(iso); setCalendarOpen(false); }}
+                    onToday={() => changeMonth(firstOfMonth(today))}
+                  />
+                }
+                onSelect={(iso) => {
+                  setSelected(iso);
+                  if (iso.slice(0, 7) !== toIsoDate(month).slice(0, 7)) setMonth(firstOfMonth(iso));
+                }}
+                onToggleCalendar={() => setCalendarOpen((open) => !open)}
+                onOpen={(event) => openDialog({ kind: "open", event })}
+                onCreate={(date) => openDialog({ kind: "create", date })}
+              />
+            </div>
+            <div className="hidden grid-cols-1 items-start gap-6 lg:grid lg:grid-cols-[minmax(0,1fr)_22rem] xl:gap-8">
               <EventCalendar
                 month={month}
                 today={today}
@@ -199,6 +236,7 @@ export default function EventsPage() {
                 )}
               </aside>
             </div>
+            </>
           )}
         </PageContent>
         <RatingButton />

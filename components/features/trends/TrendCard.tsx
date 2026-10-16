@@ -14,7 +14,7 @@ export const BADGES: Record<TrendBadge, { label: string; className: string; bar:
   EMERGING: { label: "Chegando", className: "border border-stone-300 bg-white text-stone-600", bar: "bg-stone-300" },
 };
 
-const KINDS: Record<TrendKind, string> = {
+export const KINDS: Record<TrendKind, string> = {
   COLOR: "Cor",
   SILHOUETTE: "Modelagem",
   PIECE: "Peça",
@@ -101,7 +101,7 @@ export function LockBadge({ text }: { text: string }) {
 }
 
 // Presença na imprensa: cinco barrinhas, relativas à tendência mais citada da estação
-function PressMeter({ level, mentions }: { level: number; mentions: number }) {
+export function PressMeter({ level, mentions }: { level: number; mentions: number }) {
   return (
     <div className="flex items-center gap-2 text-[11px] text-stone-500" title="Matérias e manchetes do último mês e meio que citam a tendência">
       <span className="flex items-end gap-[3px]" aria-hidden="true">
@@ -115,7 +115,7 @@ function PressMeter({ level, mentions }: { level: number; mentions: number }) {
 }
 
 // "Você tem": as peças da pessoa nesta tendência; cada uma abre a foto
-function Owned({ trend }: { trend: Trend }) {
+export function Owned({ trend }: { trend: Trend }) {
   if (trend.ownedCount === 0) return null;
   if (trend.ownedLocked) {
     return (
@@ -198,15 +198,18 @@ export const STAND_INS: Record<string, string> = {
  * As ilustrações que classificam a tendência: a principal ocupando o topo do card e, no canto, até duas menores.
  * Sem ilustração, a cor da tendência ou um fundo creme com o nome, no mesmo formato.
  */
-function TrendCollage({ trend }: { trend: Trend }) {
+// hideBadge: no feed do celular, o selo fica na linha da publicação, fora da imagem
+export function TrendCollage({ trend, hideBadge }: { trend: Trend; hideBadge?: boolean }) {
   const keys = [...new Set(trend.illustrationKeys.map((key) => STAND_INS[key] ?? key))];
   const [main, ...others] = keys;
   return (
     <div className="relative">
       {main ? <Illustration name={main} trend={trend} className="aspect-[4/3] w-full object-cover" /> : <Fallback trend={trend} />}
-      <span className="absolute left-3 top-3">
-        <TrendBadgeChip badge={trend.badge} />
-      </span>
+      {!hideBadge && (
+        <span className="absolute left-3 top-3">
+          <TrendBadgeChip badge={trend.badge} />
+        </span>
+      )}
       {others.length > 0 && (
         <div className="absolute bottom-3 right-3 flex gap-1.5">
           {others.slice(0, 2).map((name) => (

@@ -5,7 +5,6 @@ import type { ReactNode } from "react";
 import { usePathname } from "next/navigation";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { RatingCard } from "@/components/features/feedback/RatingCard";
-import { dismissRatingButtonForToday } from "@/components/features/feedback/RatingButton";
 import { feedbackService } from "@/services/feedback/feedbackService";
 import { onGoodMoment } from "@/utils/goodMoment";
 import type { AppRating, RatingSource } from "@/types/feedback";
@@ -68,13 +67,7 @@ export function FeedbackProvider({ enabled, children }: { enabled: boolean; chil
   }, [status]);
 
   const saved = useCallback((rating: AppRating) => setStatus(rating), []);
-  // Aberto pelo botão das Tendências ou do Planejador e fechado sem avaliar: o botão volta só amanhã
-  const close = useCallback(() => {
-    setSource((current) => {
-      if (current === "TRENDS" && !status?.rating) dismissRatingButtonForToday();
-      return null;
-    });
-  }, [status]);
+  const close = useCallback(() => setSource(null), []);
   // No chat, o campo de mensagem fica embaixo: no celular, o cartão aparece no alto
   const onChat = pathname?.startsWith("/chat");
 

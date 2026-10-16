@@ -4,7 +4,7 @@ import type { Trend, TrendBadge } from "@/types/trends";
 const ORDER: TrendBadge[] = ["INVESTMENT", "SEASON", "FLEETING", "EMERGING"];
 
 // O que cada selo quer dizer, por extenso, para quem vai decidir uma compra
-const MEANINGS: Record<TrendBadge, string> = {
+export const MEANINGS: Record<TrendBadge, string> = {
   INVESTMENT: "Já atravessaram mais de uma estação e combinam com o básico. Se for comprar algo novo, comece por elas: vão continuar valendo nas próximas temporadas.",
   SEASON: "Estão fortes agora e já são procuradas no Brasil. Aproveite nesta estação, de preferência combinando com peças que você já tem.",
   FLEETING: "Picos rápidos, puxados por virais, novelas ou celebridades. Divertidas para experimentar, mas sem gastar muito: costumam sumir logo.",

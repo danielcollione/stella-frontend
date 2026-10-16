@@ -5,11 +5,14 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { isAxiosError } from "axios";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
-import { Check, ChevronRight, MessageCircle, RefreshCw, ShoppingBag, X } from "lucide-react";
+import { Check, ChevronRight, MapPin, MessageCircle, RefreshCw, Search, ShoppingBag, X } from "lucide-react";
 import { DustField } from "@/components/ui/DustField";
 import { LockBadge, PieceThumb, STAND_INS, TrendBadgeChip } from "@/components/features/trends/TrendCard";
 import { Reasoning, StellaThinking } from "@/components/features/trends/SeasonLooks";
 import { Rail } from "@/components/features/trends/Rail";
+import { FloatingMenu, POST_SLIDE, PostAction, PostCarousel } from "@/components/features/trends/PostCarousel";
+import { useAppShell } from "@/components/layout/AppShell";
+import { amazonSearchUrl, nearbyStoresUrl } from "@/services/shopping/shoppingLinks";
 import { UpgradePitch } from "@/components/features/trends/UpgradePitch";
 import { PartnerLinkNote, ShoppingLinks } from "@/components/features/shopping/ShoppingLinks";
 import { apiErrorMessage } from "@/services/wardrobe/wardrobeService";
@@ -157,6 +160,11 @@ export function SeasonShopping() {
           </motion.div>
         ) : data.suggestions.length > 0 ? (
           <motion.div key="suggestions" initial={{ opacity: 0 }} animate={{ opacity: 1, transition: { duration: 0.3 } }}>
+            {/* Celular e tablet: um post por vez, na largura da tela */}
+            <div className="lg:hidden">
+              <ShoppingFeed suggestions={data.suggestions} reserveLeft={data.reserveLeft} onMarked={marked} />
+            </div>
+            <div className="hidden lg:block">
             <Rail label="Sugestões de compra da semana">
               {/* Cada vaga fica parada no lugar; só o conteúdo dela troca, num esmaecer, quando entra outra sugestão */}
               {data.suggestions.map((suggestion, slot) => (
@@ -175,6 +183,7 @@ export function SeasonShopping() {
                 </li>
               ))}
             </Rail>
+            </div>
           </motion.div>
         ) : null}
       </AnimatePresence>
@@ -248,11 +257,14 @@ const REASON_NAMES: Record<ShoppingDismissReason, string> = {
   ROUTINE: "a rotina",
 };
 
-function SuggestionCard({ suggestion, reserveLeft, onMarked }: {
+interface SuggestionProps {
   suggestion: ShoppingSuggestion;
   reserveLeft: number;
   onMarked: (data: TrendShopping, mark: ShoppingMark | null) => void;
-}) {
+}
+
+// Marcar, confirmar e desfazer: a mesma lógica no card do computador e no post do celular
+function useSuggestionActions({ suggestion, reserveLeft, onMarked }: SuggestionProps) {
   const [busy, setBusy] = useState(false);
   const [asking, setAsking] = useState<ShoppingMark | null>(null);
   const [error, setError] = useState("");
@@ -285,6 +297,52 @@ function SuggestionCard({ suggestion, reserveLeft, onMarked }: {
     }
   };
 
+  return { busy, asking, setAsking, error, mark, confirm, undo };
+}
+
+// Rodapé de quem já marcou: o que ficou anotado e o "Desfazer"
+function MarkedNote({ suggestion, busy, onUndo }: { suggestion: ShoppingSuggestion; busy: boolean; onUndo: () => void }) {
+  return (
+    <>
+      <p className="text-xs text-stone-500">
+        {suggestion.status === "BOUGHT" ? (
+          <Link href="/wardrobe" className="text-[#2F4A38] underline decoration-[#5E8B6E]/40 underline-offset-4 hover:decoration-[#5E8B6E]">Cadastrar no guarda-roupa</Link>
+        ) : suggestion.status === "DISMISSED" && suggestion.dismissReason ? (
+          `Motivo: ${REASON_NAMES[suggestion.dismissReason]}`
+        ) : suggestion.status === "HAVE" ? "Não volta nas sugestões" : "Anotado para as próximas"}
+      </p>
+      <button type="button" onClick={onUndo} disabled={busy} className="stella-hit text-xs text-stone-400 transition-colors hover:text-stone-900 disabled:opacity-40">
+        Desfazer
+      </button>
+    </>
+  );
+}
+
+// compact: na linha do selo (feed do celular), na mesma altura do selo da tendência
+function MarkStamp({ suggestion, mark, compact }: { suggestion: ShoppingSuggestion; mark: (typeof MARKED)[ShoppingMark] | null; compact?: boolean }) {
+  return (
+    <AnimatePresence>
+      {mark && (
+        <motion.span
+          key={suggestion.status}
+          initial={{ opacity: 0, scale: 0.9 }}
+          animate={{ opacity: 1, scale: 1, transition: { duration: 0.3, ease: EASE } }}
+          exit={{ opacity: 0 }}
+          className={`inline-flex items-center rounded-full font-medium ${compact ? "gap-1 px-2.5 py-0.5 text-[10px] [&>svg]:h-3 [&>svg]:w-3" : "gap-1.5 px-2.5 py-1 text-[11px] shadow-sm backdrop-blur-md"} ${mark.stamp}`}
+        >
+          {mark.icon}
+          {mark.label}
+        </motion.span>
+      )}
+    </AnimatePresence>
+  );
+}
+
+// Computador: o card de sempre, lado a lado no slide
+function SuggestionCard(props: SuggestionProps) {
+  const { suggestion, reserveLeft } = props;
+  const { busy, asking, setAsking, error, mark, confirm, undo } = useSuggestionActions(props);
+
   return (
     <article className={`relative flex w-full flex-col overflow-hidden rounded-3xl border shadow-[0_1px_2px_rgba(28,25,23,0.03)] transition-colors duration-500 ${mark ? mark.card : "border-stone-200/80 bg-white"}`}>
       <div className="relative">
@@ -294,20 +352,7 @@ function SuggestionCard({ suggestion, reserveLeft, onMarked }: {
         <span className={`absolute left-3 top-3 transition-opacity duration-500 ${mark && mark.content ? "opacity-60" : ""}`}>
           <TrendBadgeChip badge={suggestion.badge} />
         </span>
-        <AnimatePresence>
-          {mark && (
-            <motion.span
-              key={suggestion.status}
-              initial={{ opacity: 0, scale: 0.9 }}
-              animate={{ opacity: 1, scale: 1, transition: { duration: 0.3, ease: EASE } }}
-              exit={{ opacity: 0 }}
-              className={`absolute right-3 top-3 inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-medium shadow-sm backdrop-blur-md ${mark.stamp}`}
-            >
-              {mark.icon}
-              {mark.label}
-            </motion.span>
-          )}
-        </AnimatePresence>
+        <span className="absolute right-3 top-3"><MarkStamp suggestion={suggestion} mark={mark} /></span>
       </div>
 
       <div className="relative flex flex-1 flex-col px-4 pb-4 pt-3.5">
@@ -349,18 +394,7 @@ function SuggestionCard({ suggestion, reserveLeft, onMarked }: {
 
         <div className="mt-4 flex min-h-[58px] items-center justify-between gap-2">
           {mark ? (
-            <>
-              <p className="text-xs text-stone-500">
-                {suggestion.status === "BOUGHT" ? (
-                  <Link href="/wardrobe" className="text-[#2F4A38] underline decoration-[#5E8B6E]/40 underline-offset-4 hover:decoration-[#5E8B6E]">Cadastrar no guarda-roupa</Link>
-                ) : suggestion.status === "DISMISSED" && suggestion.dismissReason ? (
-                  `Motivo: ${REASON_NAMES[suggestion.dismissReason]}`
-                ) : suggestion.status === "HAVE" ? "Não volta nas sugestões" : "Anotado para as próximas"}
-              </p>
-              <button type="button" onClick={undo} disabled={busy} className="stella-hit text-xs text-stone-400 transition-colors hover:text-stone-900 disabled:opacity-40">
-                Desfazer
-              </button>
-            </>
+            <MarkedNote suggestion={suggestion} busy={busy} onUndo={undo} />
           ) : (
             <div role="group" aria-label="Marcar esta sugestão" className="grid w-full grid-cols-3 divide-x divide-stone-200/70 overflow-hidden rounded-2xl border border-stone-200/80 shadow-[0_1px_2px_rgba(28,25,23,0.04)]">
               <MarkButton onClick={() => setAsking("HAVE")} disabled={busy} icon={<Check size={15} />}>Já tenho</MarkButton>
@@ -374,6 +408,118 @@ function SuggestionCard({ suggestion, reserveLeft, onMarked }: {
     </article>
   );
 }
+
+/**
+ * Celular e tablet, como um post do Instagram: só as ilustrações arrastam para o lado (com as bolinhas logo embaixo);
+ * o selo, as ações e a legenda ficam fixos no lugar e trocam junto com a sugestão que está na tela.
+ */
+function ShoppingFeed({ suggestions, reserveLeft, onMarked }: {
+  suggestions: ShoppingSuggestion[];
+  reserveLeft: number;
+  onMarked: (data: TrendShopping, mark: ShoppingMark | null) => void;
+}) {
+  const [active, setActive] = useState(0);
+  const current = suggestions[Math.min(Number.isFinite(active) ? active : 0, suggestions.length - 1)] ?? suggestions[0];
+  const currentMark = current.status === "VISIBLE" ? null : MARKED[current.status];
+
+  return (
+    <div>
+      <header className="flex min-h-[40px] items-center gap-2">
+        <span className={currentMark?.content ? "opacity-60" : ""}><TrendBadgeChip badge={current.badge} /></span>
+        <span className="min-w-0 flex-1 truncate text-xs text-stone-500">{current.trendName}</span>
+        <MarkStamp suggestion={current} mark={currentMark} compact />
+      </header>
+      <PostCarousel label="Sugestões de compra da semana" count={suggestions.length} onActiveChange={setActive}>
+        {suggestions.map((suggestion, slot) => {
+          const mark = suggestion.status === "VISIBLE" ? null : MARKED[suggestion.status];
+          return (
+            <li key={slot} className={POST_SLIDE}>
+              <AnimatePresence mode="wait" initial={false}>
+                <motion.div
+                  key={suggestion.id}
+                  initial={{ opacity: 0, filter: "blur(8px)" }}
+                  animate={{ opacity: 1, filter: "blur(0px)", transition: { duration: 0.45, ease: EASE } }}
+                  exit={{ opacity: 0, transition: { duration: 0.2 } }}
+                  className={`overflow-hidden transition-[opacity,filter] duration-500 sm:rounded-2xl [&>*]:!aspect-[4/3] ${mark?.content ?? ""}`}
+                >
+                  <SuggestionIllustration suggestion={suggestion} />
+                </motion.div>
+              </AnimatePresence>
+            </li>
+          );
+        })}
+      </PostCarousel>
+      <SuggestionDetails key={current.id} suggestion={current} reserveLeft={reserveLeft} onMarked={onMarked} />
+    </div>
+  );
+}
+
+// Abaixo das fotos: as ações (ou a confirmação, no mesmo lugar) e a legenda da sugestão que está na tela
+function SuggestionDetails(props: SuggestionProps) {
+  const { suggestion, reserveLeft } = props;
+  const { busy, asking, setAsking, error, mark, confirm, undo } = useSuggestionActions(props);
+  const { user } = useAppShell();
+  const [expanded, setExpanded] = useState(false);
+
+  return (
+    <div className="mt-1">
+      {/* As ações ficam sempre no lugar; a confirmação abre num menu pequeno, flutuando logo acima delas */}
+      <div className="relative">
+        <FloatingMenu open={asking !== null} locked={busy} onClose={() => setAsking(null)} label="Confirmar">
+          {busy ? (
+            <div className="flex min-h-[44px] items-center"><StellaThinking text="Anotando" /></div>
+          ) : asking && (
+            // As mesmas etapas e a mesma tipografia da confirmação de antes: opções uma embaixo da outra
+            <ConfirmSteps action={asking} reserveLeft={reserveLeft} onConfirm={(reason, replace) => confirm(asking, reason, replace)} onClose={() => setAsking(null)} />
+          )}
+        </FloatingMenu>
+        <div className="-mx-2 flex min-h-[56px] items-center gap-1">
+          {mark ? (
+            <div className="flex w-full items-center justify-between gap-3 px-2">
+              <MarkedNote suggestion={suggestion} busy={busy} onUndo={undo} />
+            </div>
+          ) : (
+            <>
+              <PostAction onClick={() => setAsking("HAVE")} disabled={busy} active={asking === "HAVE"} icon={<Check size={21} strokeWidth={1.6} />}>Já tenho</PostAction>
+              <PostAction onClick={() => setAsking("BOUGHT")} disabled={busy} active={asking === "BOUGHT"} icon={<ShoppingBag size={21} strokeWidth={1.6} />}>Comprei</PostAction>
+              <PostAction onClick={() => setAsking("DISMISSED")} disabled={busy} active={asking === "DISMISSED"} icon={<X size={21} strokeWidth={1.6} />}>Não quero</PostAction>
+              <span className="flex-1" />
+              <PostAction href={amazonSearchUrl(suggestion.searchTerm, user?.fashionPreference)} sponsored icon={<Search size={21} strokeWidth={1.6} />}>Online</PostAction>
+              <PostAction href={nearbyStoresUrl(suggestion.searchTerm, user?.fashionPreference)} icon={<MapPin size={21} strokeWidth={1.6} />}>Lojas</PostAction>
+            </>
+          )}
+        </div>
+      </div>
+
+      <div className={`pb-1 transition-[opacity,filter] duration-500 ${mark?.content ?? ""}`}>
+        <h3 className={`flex items-center gap-2 mt-4 font-serif text-[30px] font-semibold italic leading-tight tracking-tight text-stone-900 ${suggestion.status === "DISMISSED" ? "line-through decoration-stone-400/70 decoration-1" : ""}`}>
+          {suggestion.colorHex && <span aria-hidden="true" className="h-3 w-3 shrink-0 rounded-full border border-stone-300/70" style={{ backgroundColor: suggestion.colorHex }} />}
+          {suggestion.name}
+        </h3>
+        <p className={`mt-1 text-sm leading-relaxed text-stone-600 ${expanded ? "" : "line-clamp-2"}`}>
+          <Reasoning text={suggestion.reasoning} pieces={suggestion.pairsWith.map((item) => item.name)} />
+        </p>
+        {!expanded && (
+          <button type="button" onClick={() => setExpanded(true)} className="stella-hit text-sm text-stone-400 hover:text-stone-700">mais</button>
+        )}
+        {suggestion.pairsWith.length > 0 && (
+          <div className="mt-2 flex items-center gap-2">
+            <span className="text-xs text-stone-500">Combina com</span>
+            <ul className="flex -space-x-1.5">
+              {suggestion.pairsWith.map((item) => (
+                <li key={item.id}>
+                  <PieceThumb item={item} className="h-9 w-9 rounded-full ring-2 ring-[#FAF8F5]" />
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+        {error && <p role="alert" className="mt-2 text-xs text-[#8A4B32]">{error}</p>}
+      </div>
+    </div>
+  );
+}
+
 
 // Uma das três partes iguais da barra: ícone em cima e o texto embaixo, com luz na letra para parecer tecla
 function MarkButton({ onClick, disabled, icon, children }: { onClick: () => void; disabled: boolean; icon: React.ReactNode; children: React.ReactNode }) {

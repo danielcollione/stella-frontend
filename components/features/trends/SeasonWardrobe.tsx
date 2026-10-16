@@ -23,7 +23,7 @@ export function SeasonWardrobe({ data }: { data: Trends }) {
   return (
     <section aria-labelledby="wardrobe-title" className="flex min-w-0 flex-col">
       <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-stone-400">Seu armário na estação</p>
-      <h2 id="wardrobe-title" className="mt-1 font-serif text-xl italic leading-snug tracking-tight text-stone-900">
+      <h2 id="wardrobe-title" className="mt-1 font-serif text-[30px] italic leading-tight tracking-tight text-stone-900">
         {insight && pieces.length > 0
           ? insight.closest ? "Uma peça sua que conversa com a estação" : "Peças suas que já estão em alta"
           : title(data)}
@@ -92,10 +92,11 @@ function LockedLookButton() {
   return (
     <Link
       href="/planos"
-      className="mt-5 inline-flex w-fit items-center gap-2 rounded-full border border-stone-300 bg-white px-5 py-2.5 text-sm font-medium text-stone-500 transition-colors hover:border-stone-400 hover:text-stone-800"
+      className="mx-auto mt-5 inline-flex w-fit items-center gap-2 whitespace-nowrap rounded-full border border-stone-300 bg-white px-6 py-3 text-sm font-medium text-stone-500 transition-colors hover:border-stone-400 hover:text-stone-800 sm:px-5 sm:py-2.5"
     >
       <Lock size={14} />
-      Pedir para a Stella montar um look com as tendências
+      <span className="sm:hidden">Montar um look com estas peças</span>
+      <span className="hidden sm:inline">Pedir para a Stella montar um look com as tendências</span>
     </Link>
   );
 }
@@ -116,13 +117,15 @@ function LookButton({ pieces }: { pieces: TrendInsightPiece[] }) {
   };
 
   return (
+    // Ao centro do bloco; no celular, com o texto curto (numa linha só)
     <button
       type="button"
       onClick={askForLook}
-      className="mt-5 inline-flex w-fit items-center gap-2 rounded-full bg-stone-900 px-5 py-2.5 text-sm font-medium text-white transition-colors hover:bg-stone-800 active:scale-[0.98]"
+      className="mx-auto mt-5 inline-flex w-fit items-center gap-2 whitespace-nowrap rounded-full bg-stone-900 px-6 py-3 text-sm font-medium text-white shadow-[0_10px_24px_-12px_rgba(28,25,23,0.7)] transition-colors hover:bg-stone-800 active:scale-[0.98] sm:px-5 sm:py-2.5"
     >
-      <Sparkles size={15} />
-      Pedir para a Stella montar um look com as tendências
+      <Sparkles size={15} className="text-[#E9D3B4]" />
+      <span className="sm:hidden">Montar um look com estas peças</span>
+      <span className="hidden sm:inline">Pedir para a Stella montar um look com as tendências</span>
     </button>
   );
 }

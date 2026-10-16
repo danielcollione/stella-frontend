@@ -6,7 +6,8 @@ import { Modal } from "@/components/ui/Modal";
 import { PlanLimitNotice } from "@/components/features/billing/PlanLimitNotice";
 import { EventForm } from "@/components/features/events/EventForm";
 import type { EventFormSubmit } from "@/components/features/events/EventForm";
-import { EventLookView, GeneratingLook } from "@/components/features/events/EventLookView";
+import { GeneratingLook } from "@/components/features/events/GeneratingLook";
+import { EventLookFeed } from "@/components/features/events/EventLookFeed";
 import { planLimitFrom } from "@/services/billing/billingService";
 import { eventService } from "@/services/events/eventService";
 import { dressCodeLabel, formatLongDate, formatTime, occasionOf, relativeDay, shortCity, todayIso } from "@/services/events/eventCatalog";
@@ -164,7 +165,7 @@ export function EventDialog({ target, onClose, onChanged, onDeleted }: EventDial
     : event ? describeWhen(event) : undefined;
 
   return (
-    <Modal open onClose={onClose} title={title} description={description} dismissible={!busy}>
+    <Modal open onClose={onClose} title={title} description={description} dismissible={!busy} scrollBody={false}>
       {editing || !event ? (
         <EventForm
           event={event ?? undefined}
@@ -183,7 +184,6 @@ export function EventDialog({ target, onClose, onChanged, onDeleted }: EventDial
           problem={problem}
           lookIndex={lookIndex}
           confirmingDelete={confirmingDelete}
-          onLookIndexChange={setLookIndex}
           onGenerate={() => void generate(event)}
           onChoose={(look) => void choose(look)}
           onRequiredChange={changeRequired}
@@ -202,14 +202,13 @@ function describeWhen(event: CalendarEvent): string {
   return [formatLongDate(event.date), time, relativeDay(event.date)].filter(Boolean).join(" · ");
 }
 
-function EventDetail({ event, detailFailed, pending, problem, lookIndex, confirmingDelete, onLookIndexChange, onGenerate, onChoose, onRequiredChange, onEditLook, onEdit, onAskDelete, onDelete }: {
+function EventDetail({ event, detailFailed, pending, problem, lookIndex, confirmingDelete, onGenerate, onChoose, onRequiredChange, onEditLook, onEdit, onAskDelete, onDelete }: {
   event: CalendarEvent;
   detailFailed: boolean;
   pending: Pending;
   problem: Problem;
   lookIndex: number;
   confirmingDelete: boolean;
-  onLookIndexChange: (index: number) => void;
   onGenerate: () => void;
   onChoose: (look: EventLook) => void;
   onRequiredChange: (items: ClothingItem[]) => void;
@@ -226,10 +225,12 @@ function EventDetail({ event, detailFailed, pending, problem, lookIndex, confirm
   const dressCode = dressCodeLabel(event.dressCode);
 
   return (
-    <div className="flex flex-col">
-      <div className="px-6 py-6 sm:px-7">
-        <div className="flex flex-wrap gap-1.5 text-xs">
-          <span className="inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 font-medium text-stone-700" style={{ backgroundColor: `${occasion.tone}33` }}>
+    // Só o conteúdo rola; o rodapé (editar, excluir, outro look) fica fixo na base da janela
+    <div className="flex min-h-0 flex-1 flex-col">
+      <div className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden overscroll-contain px-4 py-5 sm:px-7 sm:py-6">
+        {/* No celular, os detalhes numa linha só, que arrasta para o lado */}
+        <div className="scrollbar-none -mx-4 flex gap-1.5 overflow-x-auto px-4 text-xs sm:mx-0 sm:flex-wrap sm:overflow-visible sm:px-0">
+          <span className="inline-flex shrink-0 items-center gap-1.5 rounded-full px-3 py-1.5 font-medium text-stone-700" style={{ backgroundColor: `${occasion.tone}33` }}>
             <span className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: occasion.tone }} />{occasion.label}
           </span>
           {event.time && <Chip icon={<Clock size={12} />}>{formatTime(event.time)}</Chip>}
@@ -240,7 +241,31 @@ function EventDetail({ event, detailFailed, pending, problem, lookIndex, confirm
         </div>
         {event.notes && <p className="mt-3 text-sm italic leading-relaxed text-stone-500">“{event.notes}”</p>}
 
-        <div className="mt-6 rounded-3xl border border-stone-200/80 bg-white p-5 shadow-[0_1px_2px_rgba(28,25,23,0.03)] sm:p-6">
+        {/* Os looks como posts (sem cartão em volta), no celular e no computador */}
+        {looks.length > 0 && pending !== "generate" && pending !== "review" && !loadingLooks && (
+          <div className="mt-4">
+            <EventLookFeed
+              key={looks.length}
+              looks={looks}
+              initialIndex={Math.min(lookIndex, looks.length - 1)}
+              chosenLookId={event.chosenLookId}
+              choosing={pending === "choose"}
+              onChoose={onChoose}
+              editable={!past}
+              busy={busy}
+              onEditItems={onEditLook}
+            />
+            {problem && (
+              <div className="mt-4">
+                {problem.planLimit
+                  ? <PlanLimitNotice message={problem.message} compact />
+                  : <p role="alert" className="rounded-lg border border-red-200 bg-red-50 px-3.5 py-2.5 text-sm text-red-700">{problem.message}</p>}
+              </div>
+            )}
+          </div>
+        )}
+
+        <div className={`mt-6 rounded-3xl border border-stone-200/80 bg-white p-5 shadow-[0_1px_2px_rgba(28,25,23,0.03)] sm:p-6 ${looks.length > 0 && pending !== "generate" && pending !== "review" && !loadingLooks ? "hidden" : ""}`}>
           {pending === "generate" ? (
             <GeneratingLook />
           ) : pending === "review" ? (
@@ -250,18 +275,6 @@ function EventDetail({ event, detailFailed, pending, problem, lookIndex, confirm
               <div className="h-7 w-2/3 animate-pulse rounded-lg bg-stone-100" />
               <div className="grid grid-cols-3 gap-3">{[0, 1, 2].map((index) => <div key={index} className="aspect-[4/5] animate-pulse rounded-2xl bg-stone-100" />)}</div>
             </div>
-          ) : looks.length > 0 ? (
-            <EventLookView
-              looks={looks}
-              index={Math.min(lookIndex, looks.length - 1)}
-              chosenLookId={event.chosenLookId}
-              choosing={pending === "choose"}
-              onIndexChange={onLookIndexChange}
-              onChoose={onChoose}
-              editable={!past}
-              busy={busy}
-              onEditItems={onEditLook}
-            />
           ) : past ? (
             <p className="py-6 text-center text-sm text-stone-400">Este evento já passou e não teve um look planejado.</p>
           ) : (
@@ -299,7 +312,7 @@ function EventDetail({ event, detailFailed, pending, problem, lookIndex, confirm
         </div>
       </div>
 
-      <footer className="sticky bottom-0 z-40 flex flex-wrap items-center gap-2 border-t border-stone-200/70 bg-[#FAF8F5]/95 px-6 py-4 backdrop-blur-sm sm:px-7">
+      <footer className="flex shrink-0 items-center gap-1 border-t border-stone-200/70 bg-[#FAF8F5] px-4 pb-5 pt-3 sm:gap-2 sm:px-7 sm:pb-6 sm:pt-4">
         {confirmingDelete ? (
           <div className="flex items-center gap-2">
             <span className="text-sm text-stone-600">Excluir este evento?</span>
@@ -320,12 +333,13 @@ function EventDetail({ event, detailFailed, pending, problem, lookIndex, confirm
           </>
         )}
         {!past && looks.length > 0 && !confirmingDelete && (
-          <div className="ml-auto flex flex-col items-end">
-            <button type="button" onClick={onGenerate} disabled={busy} className="inline-flex items-center gap-2 rounded-full bg-stone-900 px-5 py-2.5 text-sm font-medium text-white transition-colors hover:bg-stone-800 disabled:opacity-60">
+          // Os três botões na mesma linha; o aviso do custo fica embaixo do botão, solto do alinhamento
+          <div className="relative ml-auto">
+            <button type="button" onClick={onGenerate} disabled={busy} title="Usa 1 mensagem do seu plano" className="inline-flex items-center gap-2 rounded-full bg-stone-900 px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-stone-800 disabled:opacity-60 sm:px-5">
               <RefreshCw size={14} className={pending === "generate" ? "animate-spin" : ""} />
-              Gerar outro look
+              Outro look
             </button>
-            <span className="mt-1 text-[10px] text-stone-400">Usa 1 mensagem do seu plano</span>
+            <span className="absolute right-0 top-full mt-0.5 whitespace-nowrap text-[10px] text-stone-400">Usa 1 mensagem</span>
           </div>
         )}
       </footer>

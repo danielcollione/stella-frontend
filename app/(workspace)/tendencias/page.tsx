@@ -3,8 +3,8 @@
 import { useEffect, useState } from "react";
 import type { ReactNode } from "react";
 import Link from "next/link";
-import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
-import { AlertCircle, ChevronDown, Info, Menu } from "lucide-react";
+import { useReducedMotion } from "framer-motion";
+import { AlertCircle, Info, Menu, X } from "lucide-react";
 import { useAppShell } from "@/components/layout/AppShell";
 import { StellaMark } from "@/components/ui/StellaMark";
 import { PageContent } from "@/components/layout/PageContent";
@@ -18,6 +18,8 @@ import { RatingButton } from "@/components/features/feedback/RatingButton";
 import { SeasonSplit } from "@/components/features/trends/SeasonSplit";
 import { SeasonWardrobe } from "@/components/features/trends/SeasonWardrobe";
 import { TrendCard } from "@/components/features/trends/TrendCard";
+import { TrendFeed } from "@/components/features/trends/TrendFeed";
+import { FloatingMenu } from "@/components/features/trends/PostCarousel";
 import { trendsService } from "@/services/trends/trendsService";
 import type { Trends } from "@/types/trends";
 
@@ -102,9 +104,13 @@ function Season({ data }: { data: Trends }) {
     <>
     <SectionNav sections={SECTIONS} />
     <div className="space-y-10">
-      <section id="estacao" aria-label="A estação" className="grid grid-cols-1 scroll-mt-20 gap-6 lg:grid-cols-[minmax(0,1.45fr)_minmax(0,1fr)] lg:gap-12">
-        <div className="space-y-5 sm:space-y-6">
-          <p className="font-serif text-xl italic leading-snug text-stone-800 sm:text-2xl lg:text-[26px]">{data.summary}</p>
+      <section id="estacao" aria-label="A estação" className="grid grid-cols-1 scroll-mt-20 gap-6 lg:grid-cols-2 lg:gap-12">
+        {/* No computador, a coluna acompanha a altura do "Seu armário": o texto no alto e a paleta e o método
+            embaixo, na mesma linha de base do botão ao lado, sem espaço sobrando */}
+        <div className="flex flex-col gap-5 sm:gap-6 lg:justify-between">
+          {/* Justificado, com hifenização em português para não abrir buracos entre as palavras */}
+          <p className="text-justify font-serif text-xl italic leading-snug text-stone-800 [hyphens:auto] sm:text-2xl lg:text-[26px]">{data.summary}</p>
+          <div className="flex flex-col gap-5 sm:gap-6">
           <SeasonPalette palette={data.palette ?? []} />
           <MethodNote sources={data.sourcesConsidered}>
             Para montar esta leitura, a Stella analisou {data.sourcesConsidered} fontes: matérias e manchetes das principais
@@ -112,17 +118,22 @@ function Season({ data }: { data: Trends }) {
             e o que os brasileiros estão buscando para comprar. Uma tendência só entra quando é confirmada por pelo menos
             duas fontes diferentes.{data.updatedAt && ` Última atualização: ${dayMonth(data.updatedAt)}.`}
           </MethodNote>
+          </div>
         </div>
         <SeasonWardrobe data={data} />
       </section>
 
       <section id="tendencias" aria-labelledby="trends-title" className="scroll-mt-20 border-t border-stone-200/80 pt-8">
         <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-stone-400">O que está em alta</p>
-        <h2 id="trends-title" className="mt-1 font-serif text-2xl italic tracking-tight text-stone-900">As tendências da estação</h2>
-        <div className="mt-4">
+        <h2 id="trends-title" className="mt-1 font-serif text-[30px] italic leading-tight tracking-tight text-stone-900">As tendências da estação</h2>
+        {/* Celular e tablet: uma tendência por vez, como um post; o que cada selo significa abre na bolinha colorida */}
+        <div className="mt-3 lg:hidden">
+          <TrendFeed trends={data.trends} />
+        </div>
+        <div className="mt-4 hidden lg:block">
           <SeasonSplit trends={data.trends} />
         </div>
-        <div className="mt-6">
+        <div className="mt-6 hidden lg:block">
           <Rail label="Tendências da estação">
             {data.trends.map((trend, index) => (
               <li key={trend.id} className="flex w-[272px] shrink-0 snap-start sm:w-[300px]">
@@ -135,7 +146,7 @@ function Season({ data }: { data: Trends }) {
 
       <section id="looks" aria-labelledby="looks-title" className="scroll-mt-20 border-t border-stone-200/80 pt-8">
         <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-stone-400">Seus looks da estação</p>
-        <h2 id="looks-title" className="mt-1 font-serif text-2xl italic tracking-tight text-stone-900">Looks com as suas peças e as tendências</h2>
+        <h2 id="looks-title" className="mt-1 font-serif text-[30px] italic leading-tight tracking-tight text-stone-900">Looks com as suas peças e as tendências</h2>
         <div className="mt-4">
           <SeasonLooks />
         </div>
@@ -146,7 +157,7 @@ function Season({ data }: { data: Trends }) {
 
       <section id="compras" aria-labelledby="shopping-title" className="scroll-mt-20 border-t border-stone-200/80 pt-8">
         <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-stone-400">Compras da semana</p>
-        <h2 id="shopping-title" className="mt-1 font-serif text-2xl italic tracking-tight text-stone-900">Peças para somar ao seu armário</h2>
+        <h2 id="shopping-title" className="mt-1 font-serif text-[30px] italic leading-tight tracking-tight text-stone-900">Peças para somar ao seu armário</h2>
         <div className="mt-4">
           <SeasonShopping />
         </div>
@@ -203,39 +214,33 @@ function StellaPreparing() {
 }
 
 /**
- * Como a Stella montou a leitura. No celular fica recolhido numa linha discreta (quem abre a aba quer ver as
- * funcionalidades) e abre com uma transição suave; a partir do tablet, aparece aberto.
+ * Como a Stella montou a leitura: uma linha discreta que abre num menu pequeno flutuante, o mesmo das outras
+ * explicações da aba (no celular e no computador).
  */
 function MethodNote({ sources, children }: { sources: number; children: ReactNode }) {
   const [open, setOpen] = useState(false);
-  const reducedMotion = useReducedMotion();
   return (
     <div className="text-[13px] leading-relaxed text-stone-500">
-      <button
-        type="button"
-        onClick={() => setOpen((current) => !current)}
-        aria-expanded={open}
-        className="stella-hit flex items-center gap-1.5 text-[12px] text-stone-400 transition-colors hover:text-stone-600 sm:hidden"
-      >
-        <Info size={13} />
-        Como a Stella montou esta leitura · {sources} fontes
-        <ChevronDown size={13} className={`transition-transform duration-300 ${open ? "rotate-180" : ""}`} />
-      </button>
-      <AnimatePresence initial={false}>
-        {open && (
-          <motion.div
-            key="method"
-            initial={{ height: 0, opacity: 0 }}
-            animate={{ height: "auto", opacity: 1 }}
-            exit={{ height: 0, opacity: 0 }}
-            transition={{ duration: reducedMotion ? 0 : 0.35, ease: [0.22, 1, 0.36, 1] }}
-            className="overflow-hidden sm:hidden"
-          >
-            <p className="pt-2">{children}</p>
-          </motion.div>
-        )}
-      </AnimatePresence>
-      <p className="hidden sm:block">{children}</p>
+      <div className="relative max-w-lg">
+        <FloatingMenu open={open} onClose={() => setOpen(false)} label="Como a Stella montou esta leitura">
+          <div className="flex items-start justify-between gap-3">
+            <p className="font-serif text-base italic text-stone-900">Como a Stella montou esta leitura</p>
+            <button type="button" onClick={() => setOpen(false)} aria-label="Fechar" title="Fechar" className="stella-hit -mr-1 rounded-full p-1 text-stone-400 transition-colors hover:bg-stone-100 hover:text-stone-700">
+              <X size={15} />
+            </button>
+          </div>
+          <p className="mt-1.5 text-[13px] leading-relaxed text-stone-600">{children}</p>
+        </FloatingMenu>
+        <button
+          type="button"
+          onClick={() => setOpen(true)}
+          aria-expanded={open}
+          className="stella-hit flex items-center gap-1.5 text-[12px] text-stone-400 transition-colors hover:text-stone-600"
+        >
+          <Info size={13} />
+          Como a Stella montou esta leitura · {sources} fontes
+        </button>
+      </div>
     </div>
   );
 }

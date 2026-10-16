@@ -338,3 +338,53 @@ html.stella-app body {
   background: linear-gradient(180deg, #f3eee6 0%, #faf7f2 100%);
   box-shadow: inset 0 1px 3px rgba(28, 25, 23, 0.08);
 }
+
+/*
+ * Botão principal com luz (Montar meus looks): um brilho que atravessa devagar de tempos em tempos, um halo dourado
+ * que respira e estrelinhas que cintilam em volta. Sutil de propósito; parado para quem pede menos movimento.
+ */
+.stella-shine-button {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  box-shadow: inset 0 0 0 1px rgba(201, 162, 126, 0.35), 0 10px 24px -12px rgba(28, 25, 23, 0.7);
+  animation: stella-halo 3.6s ease-in-out infinite;
+}
+
+.stella-shine-button::before {
+  content: "";
+  position: absolute;
+  inset: -2px;
+  z-index: -1;
+  pointer-events: none;
+  background: linear-gradient(115deg, transparent 30%, rgba(255, 236, 205, 0.28) 46%, rgba(255, 255, 255, 0.55) 50%, rgba(255, 236, 205, 0.28) 54%, transparent 70%);
+  transform: translateX(-130%);
+  animation: stella-sweep 4.8s cubic-bezier(0.22, 1, 0.36, 1) infinite;
+}
+
+@keyframes stella-sweep {
+  0%, 35% { transform: translateX(-130%); }
+  75%, 100% { transform: translateX(130%); }
+}
+
+@keyframes stella-halo {
+  0%, 100% { box-shadow: inset 0 0 0 1px rgba(201, 162, 126, 0.35), 0 10px 24px -12px rgba(28, 25, 23, 0.7), 0 0 0 0 rgba(201, 162, 126, 0); }
+  50% { box-shadow: inset 0 0 0 1px rgba(201, 162, 126, 0.6), 0 10px 24px -12px rgba(28, 25, 23, 0.7), 0 0 26px 2px rgba(201, 162, 126, 0.38); }
+}
+
+.stella-twinkle {
+  animation: stella-twinkle 2.8s ease-in-out infinite;
+}
+
+@keyframes stella-twinkle {
+  0%, 100% { opacity: 0; transform: scale(0.4) rotate(0deg); }
+  45%, 55% { opacity: 1; transform: scale(1) rotate(25deg); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .stella-shine-button,
+  .stella-shine-button::before,
+  .stella-twinkle {
+    animation: none;
+  }
+}

@@ -4,12 +4,13 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
-import { Check, Lock, MessageCircle, RefreshCw, ShoppingBag, Sparkles, X } from "lucide-react";
+import { Check, ChevronDown, Lock, MessageCircle, RefreshCw, ShoppingBag, Sparkle, Sparkles, X } from "lucide-react";
 import { Modal } from "@/components/ui/Modal";
 import { StellaMark } from "@/components/ui/StellaMark";
 import { DustField } from "@/components/ui/DustField";
 import { BADGES, LockBadge, PieceThumb } from "@/components/features/trends/TrendCard";
 import { Rail } from "@/components/features/trends/Rail";
+import { FloatingMenu, POST_SLIDE, PostAction, PostCarousel } from "@/components/features/trends/PostCarousel";
 import { UpgradePitch } from "@/components/features/trends/UpgradePitch";
 import { PartnerLinkNote, ShoppingLinks } from "@/components/features/shopping/ShoppingLinks";
 import { apiErrorMessage } from "@/services/wardrobe/wardrobeService";
@@ -28,9 +29,9 @@ const OCCASIONS: { value: LookOccasion; label: string }[] = [
 ];
 
 const LEVELS: { value: LookTrendLevel; label: string }[] = [
-  { value: "DISCRETO", label: "Discreto" },
-  { value: "EQUILIBRADO", label: "Equilibrado" },
-  { value: "NA_MODA", label: "Na moda" },
+  { value: "DISCRETO", label: "Pouco" },
+  { value: "EQUILIBRADO", label: "Na medida" },
+  { value: "NA_MODA", label: "Bastante" },
 ];
 
 // Os mesmos motivos do "não gostei" do chat
@@ -110,36 +111,40 @@ export function SeasonLooks() {
   if (!data.enabled) return <LockedLooks />;
 
   const roundsLeft = Math.max(0, data.rounds.limit - data.rounds.used);
-  const showFilters = !data.round || editing;
+  // Ao gerar, os filtros saem e a Stella aparece pensando, com os cards se formando onde os looks vão surgir
+  const showFilters = (!data.round || editing) && !generating;
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <p className="text-[13px] text-stone-500">
-          {roundsLeft > 0
-            ? `${plural(roundsLeft, "rodada disponível", "rodadas disponíveis")} nesta semana · cada rodada traz até 5 looks`
-            : data.rounds.limit === 1
-              ? `Você já usou a rodada desta semana. A próxima chega em ${dayMonth(data.rounds.resetsOn)}.`
-              : `Você já usou as rodadas desta semana. As próximas chegam em ${dayMonth(data.rounds.resetsOn)}.`}
-        </p>
-        {data.round && !editing && roundsLeft > 0 && (
-          <button type="button" onClick={() => setConfirming(true)} className="inline-flex items-center gap-1.5 rounded-full border border-stone-300 bg-white px-4 py-2 text-xs font-medium text-stone-700 transition-colors hover:border-stone-400 hover:text-stone-900">
-            <Sparkles size={13} />
-            Nova rodada
-          </button>
-        )}
-        {/* Rodada da semana usada num plano abaixo do Couture: o botão continua lá, com cadeado, levando aos planos */}
-        {data.round && !editing && roundsLeft === 0 && !data.advancedFilters && (
-          <Link
-            href="/planos"
-            title="No Couture são 3 rodadas por semana"
-            className="inline-flex items-center gap-1.5 rounded-full border border-stone-200 bg-white px-4 py-2 text-xs font-medium text-stone-400 transition-colors hover:border-stone-300 hover:text-stone-700"
-          >
-            <Lock size={12} />
-            Nova rodada
-          </Link>
-        )}
-      </div>
+      {/* Com uma rodada na tela: os filtros dela numa linha e o "Nova rodada" (que reabre o convite) */}
+      {data.round && !editing && !generating && (
+        <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
+          <div className="min-w-0">
+            <p className="text-[13px] text-stone-600">{roundSummary(data)}</p>
+            <p className="mt-0.5 text-[11px] text-stone-400">
+              {roundsLeft > 0
+                ? `${roundsLeft} de ${data.rounds.limit} ${data.rounds.limit === 1 ? "rodada" : "rodadas"} nesta semana`
+                : `Novas rodadas em ${dayMonth(data.rounds.resetsOn)}`}
+            </p>
+          </div>
+          {roundsLeft > 0 ? (
+            <button type="button" onClick={() => setConfirming(true)} className="inline-flex items-center gap-1.5 rounded-full border border-stone-300 bg-white px-4 py-2 text-xs font-medium text-stone-700 transition-colors hover:border-stone-400 hover:text-stone-900">
+              <Sparkles size={13} />
+              Nova rodada
+            </button>
+          ) : !data.advancedFilters && (
+            // Rodada da semana usada num plano abaixo do Couture: o botão continua lá, com cadeado, levando aos planos
+            <Link
+              href="/planos"
+              title="No Couture são 3 rodadas por semana"
+              className="inline-flex items-center gap-1.5 rounded-full border border-stone-200 bg-white px-4 py-2 text-xs font-medium text-stone-400 transition-colors hover:border-stone-300 hover:text-stone-700"
+            >
+              <Lock size={12} />
+              Nova rodada
+            </Link>
+          )}
+        </div>
+      )}
 
       <AnimatePresence initial={false}>
       {showFilters && (
@@ -152,8 +157,8 @@ export function SeasonLooks() {
           canBuildLook={data.canBuildLook}
           buildHint={data.buildHint}
           roundsLeft={roundsLeft}
-          generating={generating}
-          step={GENERATING_STEPS[step]}
+          roundsLimit={data.rounds.limit}
+          resetsOn={data.rounds.resetsOn}
           onGenerate={generate}
           onCancel={data.round ? () => setEditing(false) : undefined}
         />
@@ -169,6 +174,7 @@ export function SeasonLooks() {
       <AnimatePresence mode="wait" initial={false}>
         {generating ? (
           <motion.div key="forming" initial={{ opacity: 0 }} animate={{ opacity: 1, transition: { duration: 0.4 } }} exit={{ opacity: 0, transition: { duration: 0.3 } }}>
+            <div className="mb-3"><StellaThinking text={GENERATING_STEPS[step]} /></div>
             <FormingLooks />
           </motion.div>
         ) : data.round && data.looks.length > 0 && !editing ? (
@@ -190,7 +196,7 @@ export function SeasonLooks() {
             onClick={() => { setConfirming(false); setEditing(true); }}
             className="inline-flex items-center rounded-full bg-stone-900 px-6 py-3 text-sm font-medium text-white transition-colors hover:bg-stone-800"
           >
-            Escolher os filtros
+            Montar uma nova rodada
           </button>
           <button type="button" onClick={() => setConfirming(false)} className="rounded-full px-4 py-3 text-sm font-medium text-stone-500 transition-colors hover:text-stone-900">
             Manter os looks atuais
@@ -216,7 +222,11 @@ export function StellaThinking({ text }: { text: string }) {
   );
 }
 
-function Filters({ filters, onChange, advanced, disabled, canBuildLook, buildHint, roundsLeft, generating, step, onGenerate, onCancel }: {
+/**
+ * O convite para montar os looks: o título diz o que é e o botão diz como, logo de cara. A ocasião fica à vista (é a
+ * escolha que mais muda o resultado); o resto vai em "Mais opções", com escolhas boas por padrão.
+ */
+function Filters({ filters, onChange, advanced, disabled, canBuildLook, buildHint, roundsLeft, roundsLimit, resetsOn, onGenerate, onCancel }: {
   filters: LookFilters;
   onChange: (filters: LookFilters) => void;
   advanced: boolean;
@@ -224,18 +234,67 @@ function Filters({ filters, onChange, advanced, disabled, canBuildLook, buildHin
   canBuildLook: boolean;
   buildHint: string | null;
   roundsLeft: number;
-  generating: boolean;
-  step: string;
+  roundsLimit: number;
+  resetsOn: string;
   onGenerate: () => void;
   onCancel?: () => void;
 }) {
+  const [more, setMore] = useState(false);
   const set = (patch: Partial<LookFilters>) => onChange({ ...filters, ...patch });
+
   return (
-    <div className="rounded-3xl border border-stone-200/80 bg-white px-5 py-5 shadow-[0_1px_2px_rgba(28,25,23,0.03)] sm:px-6">
-      <fieldset disabled={disabled} className="space-y-5">
-        <div>
-          <legend className="text-[11px] font-semibold uppercase tracking-[0.16em] text-stone-400">Para qual ocasião</legend>
-          <div className="mt-2.5 flex flex-wrap gap-2">
+    <div className="rounded-3xl border border-stone-200/80 bg-white px-5 py-6 shadow-[0_1px_2px_rgba(28,25,23,0.03)] sm:px-8 sm:py-7">
+      <p className="font-serif text-[22px] italic leading-tight tracking-tight text-stone-900 sm:text-2xl">Monte seus looks da estação</p>
+      <p className="mt-1.5 text-[13px] leading-relaxed text-stone-500">Até 5 looks com as suas peças e o que está em alta agora.</p>
+
+      {/* A ação primeiro */}
+      <div className="mt-6 flex flex-col items-center gap-x-4 gap-y-2.5 sm:mt-5 sm:flex-row sm:flex-wrap sm:items-center">
+        {canBuildLook ? (
+          <>
+            {/* No celular, ao centro; com luz que atravessa, halo dourado e estrelinhas em volta */}
+            <span className="relative inline-flex">
+              {roundsLeft > 0 && !disabled && (
+                <>
+                  <Sparkle aria-hidden="true" size={11} className="stella-twinkle pointer-events-none absolute -left-3 -top-2 fill-[#C9A27E] text-[#C9A27E]" />
+                  <Sparkle aria-hidden="true" size={8} className="stella-twinkle pointer-events-none absolute -right-2 -top-3 fill-[#D9B98F] text-[#D9B98F] [animation-delay:0.9s]" />
+                  <Sparkle aria-hidden="true" size={9} className="stella-twinkle pointer-events-none absolute -bottom-2 right-6 fill-[#C9A27E] text-[#C9A27E] [animation-delay:1.7s]" />
+                </>
+              )}
+              <button
+                type="button"
+                onClick={onGenerate}
+                disabled={disabled || roundsLeft === 0}
+                className={`inline-flex items-center gap-2 rounded-full bg-stone-900 px-7 py-3.5 text-sm font-medium text-white transition-all hover:bg-stone-800 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-40 disabled:shadow-none ${roundsLeft > 0 && !disabled ? "stella-shine-button" : ""}`}
+              >
+                <Sparkles size={15} className="text-[#E9D3B4]" />
+                Montar meus looks
+              </button>
+            </span>
+            <span className="text-xs text-stone-400">
+              {roundsLeft > 0
+                ? `${roundsLeft} de ${roundsLimit} ${roundsLimit === 1 ? "rodada" : "rodadas"} nesta semana`
+                : `Novas rodadas em ${dayMonth(resetsOn)}`}
+            </span>
+            {onCancel && (
+              <button type="button" onClick={onCancel} className="stella-hit text-xs text-stone-500 underline decoration-stone-300 underline-offset-4 hover:text-stone-800">
+                Voltar aos looks
+              </button>
+            )}
+          </>
+        ) : (
+          <p className="text-sm leading-relaxed text-stone-500">
+            {buildHint ?? "Para montar looks, a Stella precisa de uma parte de cima e uma de baixo, ou de uma peça inteira."}{" "}
+            <Link href="/wardrobe" className="font-medium text-stone-800 underline decoration-stone-300 underline-offset-4">Cadastrar peças</Link>
+          </p>
+        )}
+      </div>
+
+      {/* min-w-0: um fieldset não encolhe por padrão, e a linha das ocasiões não rolaria no celular */}
+      <fieldset disabled={disabled} aria-label="Filtros dos looks" className="mt-6 min-w-0 border-t border-stone-100 pt-5">
+        {/* A ocasião, à vista: no celular arrasta para o lado em vez de quebrar em duas linhas */}
+        <div className="flex items-center gap-3">
+          <span className="shrink-0 text-xs text-stone-400">Para</span>
+          <div className="scrollbar-none -mr-5 flex min-w-0 flex-1 gap-1.5 overflow-x-auto pr-5 sm:mr-0 sm:flex-wrap sm:overflow-visible sm:pr-0">
             {OCCASIONS.map((occasion) => (
               <Chip key={occasion.value} selected={filters.occasion === occasion.value} onClick={() => set({ occasion: occasion.value })}>
                 {occasion.label}
@@ -245,88 +304,85 @@ function Filters({ filters, onChange, advanced, disabled, canBuildLook, buildHin
         </div>
 
         {advanced ? (
-          <div className="grid grid-cols-1 gap-5 sm:grid-cols-[auto_minmax(0,1fr)] sm:items-start sm:gap-x-10">
-            <div>
-              <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-stone-400">Nível de tendência</p>
-              <div className="mt-2.5 inline-flex rounded-full border border-stone-200 bg-[#FAF8F5] p-1">
-                {LEVELS.map((level) => (
-                  <button
-                    key={level.value}
-                    type="button"
-                    onClick={() => set({ trendLevel: level.value })}
-                    className={`rounded-full px-3.5 py-1.5 text-xs font-medium transition-colors ${filters.trendLevel === level.value ? "bg-stone-900 text-white" : "text-stone-500 hover:text-stone-900"}`}
-                  >
-                    {level.label}
-                  </button>
-                ))}
-              </div>
-            </div>
-            <div className="space-y-2.5 sm:pt-6">
-              <Toggle checked={filters.useWeather} onChange={(useWeather) => set({ useWeather })} label="Considerar o clima da semana" />
-              <Toggle checked={filters.allowPurchase} onChange={(allowPurchase) => set({ allowPurchase })} label="Pode sugerir uma peça para comprar (só de investimento)" />
-            </div>
-          </div>
-        ) : (
-          <Link href="/planos" className="flex w-fit items-center gap-2 text-xs text-stone-500 transition-colors hover:text-stone-800">
-            <Lock size={12} className="text-stone-400" />
-            Clima da semana, nível de tendência e sugestão de compra no plano Couture
-          </Link>
-        )}
-      </fieldset>
-
-      <div className="mt-6 flex flex-wrap items-center gap-3 border-t border-stone-100 pt-5">
-        {!canBuildLook ? (
-          <p className="text-sm text-stone-500">
-            {buildHint ?? "Para montar looks, a Stella precisa de uma parte de cima e uma de baixo, ou de uma peça inteira."}{" "}
-            <Link href="/wardrobe" className="font-medium text-stone-800 underline decoration-stone-300 underline-offset-4">Cadastrar peças</Link>
-          </p>
-        ) : generating ? (
-          <StellaThinking text={step} />
-        ) : (
           <>
             <button
               type="button"
-              onClick={onGenerate}
-              disabled={roundsLeft === 0}
-              className="inline-flex items-center gap-2 rounded-full bg-stone-900 px-5 py-2.5 text-sm font-medium text-white transition-colors hover:bg-stone-800 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-40"
+              onClick={() => setMore((open) => !open)}
+              aria-expanded={more}
+              className="stella-hit mt-4 inline-flex items-center gap-1 text-xs text-stone-500 transition-colors hover:text-stone-900"
             >
-              <Sparkles size={15} />
-              Montar meus looks da estação
+              Mais opções
+              <ChevronDown size={14} className={`transition-transform duration-300 ${more ? "rotate-180" : ""}`} />
             </button>
-            {onCancel && (
-              <button type="button" onClick={onCancel} className="text-sm text-stone-500 underline decoration-stone-300 underline-offset-4 hover:text-stone-800">
-                Voltar aos looks
-              </button>
-            )}
+            <AnimatePresence initial={false}>
+              {more && (
+                <motion.div key="more" {...COLLAPSE} className="overflow-hidden">
+                  <div className="space-y-4 pt-4">
+                    <div className="flex flex-wrap items-center gap-3">
+                      <span className="text-[13px] text-stone-700">Quanto de tendência?</span>
+                      {/* No celular, o seletor ocupa a largura toda, com as três opções do mesmo tamanho */}
+                      <div className="grid w-full grid-cols-3 rounded-full border border-stone-200 bg-[#FAF8F5] p-1 sm:inline-flex sm:w-auto">
+                        {LEVELS.map((level) => (
+                          <button
+                            key={level.value}
+                            type="button"
+                            onClick={() => set({ trendLevel: level.value })}
+                            aria-pressed={filters.trendLevel === level.value}
+                            className={`rounded-full px-3.5 py-2 text-xs font-medium sm:py-1.5 transition-colors ${filters.trendLevel === level.value ? "bg-stone-900 text-white" : "text-stone-500 hover:text-stone-900"}`}
+                          >
+                            {level.label}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                    <div className="space-y-2.5">
+                      <Toggle checked={filters.useWeather} onChange={(useWeather) => set({ useWeather })} label="Considerar o clima da semana" />
+                      <Toggle checked={filters.allowPurchase} onChange={(allowPurchase) => set({ allowPurchase })} label="Sugerir uma peça para comprar, se fizer falta" />
+                    </div>
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
           </>
+        ) : (
+          <Link href="/planos" className="stella-hit mt-4 inline-flex items-center gap-1.5 text-xs text-stone-400 transition-colors hover:text-stone-700">
+            <Lock size={12} />
+            Mais opções no plano Couture
+          </Link>
         )}
-      </div>
+      </fieldset>
     </div>
   );
+}
+
+// Os filtros da rodada na tela, numa linha: "Noite · Na medida · Clima da semana"
+function roundSummary(data: TrendLooks): string {
+  const round = data.round!;
+  return [
+    OCCASIONS.find((occasion) => occasion.value === round.occasion)?.label,
+    data.advancedFilters ? LEVELS.find((level) => level.value === round.trendLevel)?.label : null,
+    round.useWeather ? "Clima da semana" : null,
+    round.allowPurchase ? "Com sugestão de compra" : null,
+  ].filter(Boolean).join(" · ");
 }
 
 function RoundLooks({ data, onChange }: { data: TrendLooks; onChange: (data: TrendLooks) => void }) {
   const round = data.round!;
   const swapsLeft = Math.max(0, round.swapsLimit - round.swapsUsed);
-  const used = [
-    OCCASIONS.find((occasion) => occasion.value === round.occasion)?.label,
-    data.advancedFilters ? LEVELS.find((level) => level.value === round.trendLevel)?.label : null,
-    round.useWeather ? "Clima da semana" : null,
-    round.allowPurchase ? "Com sugestão de compra" : null,
-  ].filter(Boolean) as string[];
+
 
   return (
     <div>
-      <div className="mb-4 flex flex-wrap items-center gap-2">
-        {used.map((label) => (
-          <span key={label} className="rounded-full bg-stone-200/60 px-3 py-1 text-[11px] font-medium text-stone-600">{label}</span>
-        ))}
-        {data.looks.length < 5 && (
-          <span className="text-[12px] text-stone-500">
-            · Montei {plural(data.looks.length, "look", "looks")} com as peças que você tem agora. Quanto mais peças você cadastrar, mais combinações a Stella encontra.
-          </span>
-        )}
+      {data.looks.length < 5 && (
+        <p className="mb-4 text-[12px] leading-relaxed text-stone-500">
+          Montei {plural(data.looks.length, "look", "looks")} com as peças que você tem agora. Quanto mais peças você cadastrar, mais combinações a Stella encontra.
+        </p>
+      )}
+      {/* Celular e tablet: um look por vez, como um post */}
+      <div className="lg:hidden">
+        <LookFeed looks={data.looks} swapsLeft={swapsLeft} onChange={onChange} />
       </div>
+      <div className="hidden lg:block">
       <Rail label="Seus looks da estação">
         {data.looks.map((look, index) => (
           <motion.li
@@ -339,17 +395,17 @@ function RoundLooks({ data, onChange }: { data: TrendLooks; onChange: (data: Tre
           </motion.li>
         ))}
       </Rail>
+      </div>
       {data.looks.some((look) => look.purchase) && <div className="mt-3"><PartnerLinkNote /></div>}
     </div>
   );
 }
 
-function LookCard({ look, swapsLeft, onChange }: { look: TrendLook; swapsLeft: number; onChange: (data: TrendLooks) => void }) {
+// "Usei hoje" e "Trocar": a mesma lógica no card do computador e no post do celular
+function useLookActions(look: TrendLook, onChange: (data: TrendLooks) => void) {
   const [busy, setBusy] = useState<"wear" | "swap" | null>(null);
   const [askingReason, setAskingReason] = useState(false);
   const [error, setError] = useState("");
-  const photos = look.items.slice(0, 4);
-  const extra = look.items.length - photos.length;
 
   const toggleWorn = async () => {
     setBusy("wear");
@@ -375,6 +431,15 @@ function LookCard({ look, swapsLeft, onChange }: { look: TrendLook; swapsLeft: n
       setBusy(null);
     }
   };
+
+  return { busy, askingReason, setAskingReason, error, toggleWorn, swap };
+}
+
+// Computador: o card de sempre, lado a lado no slide
+function LookCard({ look, swapsLeft, onChange }: { look: TrendLook; swapsLeft: number; onChange: (data: TrendLooks) => void }) {
+  const { busy, askingReason, setAskingReason, error, toggleWorn, swap } = useLookActions(look, onChange);
+  const photos = look.items.slice(0, 4);
+  const extra = look.items.length - photos.length;
 
   return (
     <article className="relative flex w-full flex-col overflow-hidden rounded-3xl border border-stone-200/80 bg-white shadow-[0_1px_2px_rgba(28,25,23,0.03)]">
@@ -479,6 +544,30 @@ function splitByNames(text: string, names: string[]): { text: string; bold: bool
  * Troca de um look: um painel de vidro fosco que sobe sobre o texto do card, sem mudar o tamanho dele nem dos
  * vizinhos. Enquanto a Stella procura outro look, o painel mostra ela pensando.
  */
+// Os motivos da troca, em lista (a mesma do painel do card e do menu do post)
+function SwapReasons({ onPick, onClose }: { onPick: (reason: LookSwapReason) => void; onClose: () => void }) {
+  return (
+    <>
+      <div className="flex items-center justify-between">
+        <p className="font-serif text-base italic text-stone-900">O que não funcionou?</p>
+        <button type="button" onClick={onClose} aria-label="Manter este look" title="Manter este look" className="stella-hit rounded-full p-1 text-stone-400 transition-colors hover:bg-stone-100 hover:text-stone-700">
+          <X size={15} />
+        </button>
+      </div>
+      <ul className="mt-2 flex-1 divide-y divide-stone-100">
+        {SWAP_REASONS.map((reason) => (
+          <li key={reason.value}>
+            <button type="button" onClick={() => onPick(reason.value)} className="flex w-full items-center justify-between py-2.5 text-left text-[13px] text-stone-700 transition-colors hover:text-stone-950">
+              {reason.label}
+              <RefreshCw size={12} className="text-stone-300" />
+            </button>
+          </li>
+        ))}
+      </ul>
+    </>
+  );
+}
+
 function SwapPanel({ open, busy, onPick, onClose }: {
   open: boolean;
   busy: boolean;
@@ -501,28 +590,123 @@ function SwapPanel({ open, busy, onPick, onClose }: {
               <StellaThinking text="Procurando outro look" />
             </div>
           ) : (
-            <>
-              <div className="flex items-center justify-between">
-                <p className="font-serif text-base italic text-stone-900">O que não funcionou?</p>
-                <button type="button" onClick={onClose} aria-label="Manter este look" title="Manter este look" className="stella-hit rounded-full p-1 text-stone-400 transition-colors hover:bg-stone-100 hover:text-stone-700">
-                  <X size={15} />
-                </button>
-              </div>
-              <ul className="mt-2 flex-1 divide-y divide-stone-100">
-                {SWAP_REASONS.map((reason) => (
-                  <li key={reason.value}>
-                    <button type="button" onClick={() => onPick(reason.value)} className="flex w-full items-center justify-between py-2.5 text-left text-[13px] text-stone-700 transition-colors hover:text-stone-950">
-                      {reason.label}
-                      <RefreshCw size={12} className="text-stone-300" />
-                    </button>
-                  </li>
-                ))}
-              </ul>
-            </>
+            <SwapReasons onPick={onPick} onClose={onClose} />
           )}
         </motion.div>
       )}
     </AnimatePresence>
+  );
+}
+
+/**
+ * Celular e tablet, como um post do Instagram: só a colagem das peças arrasta para o lado (com as bolinhas logo
+ * embaixo); a ocasião, as ações e a legenda ficam fixas no lugar e trocam junto com o look que está na tela.
+ */
+function LookFeed({ looks, swapsLeft, onChange }: { looks: TrendLook[]; swapsLeft: number; onChange: (data: TrendLooks) => void }) {
+  const [active, setActive] = useState(0);
+  const current = looks[Math.min(Number.isFinite(active) ? active : 0, looks.length - 1)] ?? looks[0];
+
+  return (
+    <div>
+      <header className="flex min-h-[40px] items-center gap-2 overflow-hidden">
+        <span className="shrink-0 text-[11px] uppercase tracking-[0.14em] text-stone-400">{current.occasion}</span>
+        {current.trends.slice(0, 2).map((trend) => (
+          <span key={trend.name} className="inline-flex min-w-0 items-center gap-1.5 truncate rounded-full border border-stone-200 px-2.5 py-0.5 text-[11px] text-stone-600">
+            <span aria-hidden="true" className={`h-1.5 w-1.5 shrink-0 rounded-full ${BADGES[trend.badge]?.bar ?? "bg-stone-300"}`} />
+            <span className="truncate">{trend.name}</span>
+          </span>
+        ))}
+      </header>
+      <PostCarousel label="Seus looks da estação" count={looks.length} onActiveChange={setActive}>
+        {looks.map((look, slot) => (
+          <li key={slot} className={POST_SLIDE}>
+            <AnimatePresence mode="wait" initial={false}>
+              <motion.div
+                key={look.id}
+                initial={{ opacity: 0, filter: "blur(10px)" }}
+                animate={{ opacity: 1, filter: "blur(0px)", transition: { duration: 0.5, ease: EASE } }}
+                exit={{ opacity: 0, transition: { duration: 0.2 } }}
+                className="overflow-hidden sm:rounded-2xl"
+              >
+                <LookCollage look={look} />
+              </motion.div>
+            </AnimatePresence>
+          </li>
+        ))}
+      </PostCarousel>
+      <LookDetails key={current.id} look={current} swapsLeft={swapsLeft} onChange={onChange} />
+    </div>
+  );
+}
+
+// As peças do look numa colagem 4:3 (cada uma abre em tela cheia ao tocar)
+function LookCollage({ look }: { look: TrendLook }) {
+  const photos = look.items.slice(0, 4);
+  const extra = look.items.length - photos.length;
+  const layout = photos.length <= 1 ? "grid-cols-1" : photos.length === 2 ? "grid-cols-2" : "grid-cols-2 grid-rows-2";
+  return (
+    <ul className={`grid aspect-[4/3] gap-[3px] bg-stone-100 ${layout}`}>
+      {photos.map((item, index) => (
+        <li key={item.id} className={`relative min-h-0 ${photos.length === 3 && index === 0 ? "row-span-2" : ""} ${photos.length === 2 ? "row-span-2" : ""}`}>
+          <PieceThumb item={item} className="h-full w-full" />
+          {index === photos.length - 1 && extra > 0 && (
+            <span className="pointer-events-none absolute inset-0 flex items-center justify-center bg-stone-900/45 font-serif text-xl italic text-white">+{extra}</span>
+          )}
+        </li>
+      ))}
+    </ul>
+  );
+}
+
+// Abaixo da colagem: "Usei hoje" e "Trocar" (o motivo abre num menu flutuante) e a legenda do look na tela
+function LookDetails({ look, swapsLeft, onChange }: { look: TrendLook; swapsLeft: number; onChange: (data: TrendLooks) => void }) {
+  const { busy, askingReason, setAskingReason, error, toggleWorn, swap } = useLookActions(look, onChange);
+  const [expanded, setExpanded] = useState(false);
+
+  return (
+    <div className="mt-1">
+      <div className="relative">
+        <FloatingMenu open={askingReason} locked={busy === "swap"} onClose={() => setAskingReason(false)} label="Trocar este look">
+          {busy === "swap" ? (
+            <div className="flex min-h-[44px] items-center"><StellaThinking text="Procurando outro look" /></div>
+          ) : (
+            <SwapReasons onPick={swap} onClose={() => setAskingReason(false)} />
+          )}
+        </FloatingMenu>
+        <div className="-mx-2 flex min-h-[56px] items-center gap-1 px-2">
+          <WornToggle worn={look.wornToday} disabled={busy !== null} onToggle={toggleWorn} />
+          <span className="flex-1" />
+          <PostAction
+            onClick={() => setAskingReason(true)}
+            disabled={busy !== null || swapsLeft === 0}
+            active={askingReason}
+            icon={<RefreshCw size={20} strokeWidth={1.6} />}
+          >
+            {swapsLeft > 0 ? `Trocar (${swapsLeft})` : "Sem trocas"}
+          </PostAction>
+        </div>
+      </div>
+
+      <div className="pb-1">
+        <h3 className="mt-4 font-serif text-[30px] font-semibold italic leading-tight tracking-tight text-stone-900">{look.title}</h3>
+        <p className={`mt-1 text-sm leading-relaxed text-stone-600 ${expanded ? "" : "line-clamp-2"}`}>
+          <Reasoning text={look.reasoning} pieces={look.items.map((item) => item.name)} />
+        </p>
+        {!expanded && (
+          <button type="button" onClick={() => setExpanded(true)} className="stella-hit text-sm text-stone-400 hover:text-stone-700">mais</button>
+        )}
+        {look.purchase && (
+          <div className="mt-3 space-y-2.5 rounded-2xl border border-dashed border-stone-300 px-3.5 py-3">
+            <p className="flex items-center gap-2 text-[13px] text-stone-800">
+              <ShoppingBag size={14} className="shrink-0 text-stone-400" />
+              <span><span className="text-stone-500">Para completar:</span> {look.purchase}</span>
+            </p>
+            <ShoppingLinks suggestion={look.purchase} />
+          </div>
+        )}
+        {error && <p role="alert" className="mt-2 text-xs text-[#8A4B32]">{error}</p>}
+      </div>
+    </div>
   );
 }
 
@@ -560,7 +744,25 @@ function WornToggle({ worn, disabled, onToggle }: { worn: boolean; disabled: boo
  */
 function FormingLooks() {
   return (
-    <ul aria-hidden="true" className="flex gap-3 overflow-hidden">
+    <>
+    {/* Celular e tablet: o post que vai surgir, na largura da tela */}
+    <div aria-hidden="true" className="lg:hidden">
+      <div className="flex min-h-[40px] items-center gap-2">
+        <span className="h-2.5 w-20 rounded-full bg-stone-300/50" />
+        <span className="h-4 w-24 rounded-full bg-stone-300/40" />
+      </div>
+      <div className="relative -mx-4 overflow-hidden bg-[#EFE8DC] sm:mx-0 sm:w-[400px] sm:rounded-2xl">
+        <div className="aspect-[4/3] w-full" />
+        <span className="stella-forming-sheen absolute inset-0" />
+        <DustField density={1.1} />
+      </div>
+      <div className="space-y-2.5 pt-5">
+        <span className="block h-5 w-44 rounded-full bg-stone-300/50" />
+        <span className="block h-2.5 w-full rounded-full bg-stone-300/35" />
+        <span className="block h-2.5 w-4/5 rounded-full bg-stone-300/35" />
+      </div>
+    </div>
+    <ul aria-hidden="true" className="hidden gap-3 overflow-hidden lg:flex">
       {[0, 1, 2].map((index) => (
         <li key={index} className="relative w-[290px] shrink-0 overflow-hidden rounded-3xl border border-stone-200/70 bg-[#EFE8DC] sm:w-[320px]">
           <div className="aspect-square w-full" />
@@ -576,6 +778,7 @@ function FormingLooks() {
         </li>
       ))}
     </ul>
+    </>
   );
 }
 
@@ -636,7 +839,7 @@ function Chip({ selected, onClick, children }: { selected: boolean; onClick: () 
       type="button"
       onClick={onClick}
       aria-pressed={selected}
-      className={`rounded-full border px-3.5 py-1.5 text-sm transition-colors ${selected ? "border-stone-900 bg-stone-900 text-white" : "border-stone-200 bg-white text-stone-600 hover:border-stone-400 hover:text-stone-900"}`}
+      className={`shrink-0 whitespace-nowrap rounded-full border px-3.5 py-1.5 text-sm transition-colors ${selected ? "border-stone-900 bg-stone-900 text-white" : "border-stone-200 bg-white text-stone-600 hover:border-stone-400 hover:text-stone-900"}`}
     >
       {children}
     </button>

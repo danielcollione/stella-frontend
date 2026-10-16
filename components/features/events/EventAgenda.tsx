@@ -71,8 +71,8 @@ export function EventAgenda({ today, selected, dayEvents, upcoming, onOpen, onCr
   );
 }
 
-// Destaque do próximo compromisso, com a contagem regressiva e o look planejado
-function NextEventCard({ event, today, onOpen }: { event: CalendarEvent; today: string; onOpen: () => void }) {
+// Destaque do próximo compromisso, com a contagem regressiva e o look planejado (label: no celular, "Evento do dia")
+export function NextEventCard({ event, today, onOpen, label = "Próximo evento" }: { event: CalendarEvent; today: string; onOpen: () => void; label?: string }) {
   const look = event.featuredLook;
   const occasion = occasionOf(event.occasion);
   const days = Math.max(0, daysBetween(today, event.date));
@@ -81,7 +81,7 @@ function NextEventCard({ event, today, onOpen }: { event: CalendarEvent; today: 
       <span aria-hidden="true" className="pointer-events-none absolute -right-16 -top-16 h-48 w-48 rounded-full opacity-25 blur-2xl" style={{ backgroundColor: occasion.tone }} />
       <span className="relative flex items-start justify-between gap-4">
         <span className="min-w-0">
-          <span className="text-[10px] font-semibold uppercase tracking-[0.2em] text-stone-400">Próximo evento</span>
+          <span className="text-[10px] font-semibold uppercase tracking-[0.2em] text-stone-400">{label}</span>
           <span className="mt-1.5 block truncate font-serif text-2xl italic leading-tight">{event.title}</span>
           <span className="mt-1 block text-xs text-stone-300">
             {formatLongDate(event.date)}{event.time ? ` · ${formatTime(event.time)}` : ""}
@@ -109,7 +109,7 @@ function NextEventCard({ event, today, onOpen }: { event: CalendarEvent; today: 
   );
 }
 
-function EventRow({ event, withDate, past, onOpen }: { event: CalendarEvent; withDate?: boolean; past?: boolean; onOpen: () => void }) {
+export function EventRow({ event, withDate, past, onOpen }: { event: CalendarEvent; withDate?: boolean; past?: boolean; onOpen: () => void }) {
   const occasion = occasionOf(event.occasion);
   const date = parseIsoDate(event.date);
   const time = formatTime(event.time);
