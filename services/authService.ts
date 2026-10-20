@@ -1,6 +1,7 @@
 import { api } from '@/services/api';
 import axios from 'axios';
 import type { AuthResponseDto, RegisterRequest, UpdateProfileRequestDto, UserResponseDto } from '@/types/auth';
+import type { SavedPalette } from '@/types/chat';
 import { requestGoogleAuthorizationCode } from '@/utils/google';
 import { clearSession, getSessionToken, saveSessionToken } from '@/utils/session';
 
@@ -154,6 +155,25 @@ export const authService = {
       return data;
     } catch (error: unknown) {
       throw authError(error, 'Nao foi possivel tirar a foto agora. Tente novamente.');
+    }
+  },
+
+  // Paleta de cores que a pessoa salvou a partir de uma análise da Stella (null: nenhuma salva)
+  async getPalette(signal?: AbortSignal): Promise<SavedPalette | null> {
+    try {
+      const response = await api.get<SavedPalette | ''>('/auth/me/palette', { signal });
+      return response.status === 204 || !response.data ? null : response.data;
+    } catch (error: unknown) {
+      throw authError(error, 'Nao foi possivel carregar sua paleta.');
+    }
+  },
+
+  // A Stella deixa de considerar a coloração nos looks e nas compras
+  async clearPalette(): Promise<void> {
+    try {
+      await api.delete('/auth/me/palette');
+    } catch (error: unknown) {
+      throw authError(error, 'Nao foi possivel apagar sua paleta agora. Tente novamente.');
     }
   },
 

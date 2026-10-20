@@ -1,4 +1,4 @@
-import { ChatMessage, ChatThread, FeedbackReason, WardrobeSaveResult } from "@/types/chat";
+import { ChatMessage, ChatThread, FeedbackReason, PaletteProposal, WardrobeSaveResult } from "@/types/chat";
 import { api } from "@/services/api";
 
 function isStringArray(value: unknown): value is string[] {
@@ -12,15 +12,32 @@ function parseWardrobeResult(value: unknown): WardrobeSaveResult | null {
   return { savedItemIds, duplicateItemIds, failedCount, limitReached: limitReached === true, planRequired: planRequired === true };
 }
 
+function parsePaletteProposal(value: unknown): PaletteProposal | null {
+  if (!value || typeof value !== "object") return null;
+  const { status, season, summary, bestColors, avoidColors, metals, replaces, planRequired } = value as Record<string, unknown>;
+  if (status !== "PROPOSED" && status !== "SAVED" && status !== "DISMISSED") return null;
+  if (typeof season !== "string" || !isStringArray(bestColors)) return null;
+  return {
+    status, season, bestColors,
+    avoidColors: isStringArray(avoidColors) ? avoidColors : [],
+    summary: typeof summary === "string" ? summary : null,
+    metals: typeof metals === "string" ? metals : null,
+    replaces: typeof replaces === "string" ? replaces : null,
+    planRequired: planRequired === true,
+  };
+}
+
 function normalizeMessage(message: ChatMessage): ChatMessage {
   if (message.imageUrls?.length || !message.payloadJson) return message;
 
   try {
     const payload: unknown = JSON.parse(message.payloadJson);
-    // Resposta da Stella com o resultado do guarda-roupa: vira dado estruturado, não um bloco de JSON na tela
-    if (payload && typeof payload === "object" && "wardrobe" in payload) {
-      const wardrobeResult = parseWardrobeResult(payload.wardrobe);
-      return { ...message, payloadJson: null, wardrobeResult: wardrobeResult ?? undefined };
+    // Resposta da Stella com o resultado do guarda-roupa e/ou a paleta a salvar: vira dado estruturado,
+    // não um bloco de JSON na tela
+    if (payload && typeof payload === "object" && ("wardrobe" in payload || "palette" in payload)) {
+      const wardrobeResult = "wardrobe" in payload ? parseWardrobeResult(payload.wardrobe) : null;
+      const paletteProposal = "palette" in payload ? parsePaletteProposal(payload.palette) : null;
+      return { ...message, payloadJson: null, wardrobeResult: wardrobeResult ?? undefined, paletteProposal: paletteProposal ?? undefined };
     }
     if (!payload || typeof payload !== "object" ||
         !("imageUrls" in payload) || !Array.isArray(payload.imageUrls)) {
@@ -105,6 +122,16 @@ export const chatService = {
   // Só grava o sinal (sem IA no clique); o motivo é opcional e só vale para DISLIKE
   async sendFeedback(messageId: string, feedback: NonNullable<ChatMessage['feedback']>, reason?: FeedbackReason): Promise<void> {
     await api.post(`/chat/messages/${encodeURIComponent(messageId)}/feedback`, { feedback, reason: reason ?? null });
+  },
+
+  // Salvar como a paleta da pessoa a análise que esta resposta trouxe (substitui a anterior)
+  async savePalette(messageId: string): Promise<void> {
+    await api.post(`/chat/messages/${encodeURIComponent(messageId)}/palette`);
+  },
+
+  // "Agora não": nada é salvo e o convite some desta resposta
+  async dismissPalette(messageId: string): Promise<void> {
+    await api.delete(`/chat/messages/${encodeURIComponent(messageId)}/palette`);
   },
 
   // Apagar conversa

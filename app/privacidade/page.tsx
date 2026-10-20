@@ -49,8 +49,9 @@ export default function PrivacyPage() {
             avaliações (gostei, não gostei e o motivo).
           </li>
           <li>
-            <strong>O que a Stella aprende sobre você:</strong> a sua coloração pessoal, quando analisada, e um resumo das suas
-            preferências, usado para melhorar as próximas sugestões.
+            <strong>O que a Stella aprende sobre você:</strong> a sua paleta de cores, só se você escolher salvá-la depois de uma
+            análise (você pode apagá-la a qualquer momento no Perfil), e um resumo das suas preferências, usado para melhorar
+            as próximas sugestões.
           </li>
           <li><strong>Eventos:</strong> os compromissos que você cadastra (título, data, local, cidade, observações) e os looks planejados.</li>
           <li>

@@ -13,6 +13,7 @@ import { useFeedback } from "@/components/features/feedback/FeedbackProvider";
 import { useAppShell } from "@/components/layout/AppShell";
 import { PageContent } from "@/components/layout/PageContent";
 import { InstallAppRow } from "@/components/features/account/InstallAppRow";
+import { PalettePanel, PaletteRow } from "@/components/features/account/PalettePanel";
 import { AvatarPicker } from "@/components/features/account/AvatarPicker";
 import { UserAvatar } from "@/components/ui/UserAvatar";
 import { DeleteAccountDialog } from "@/components/features/account/DeleteAccountDialog";
@@ -24,7 +25,7 @@ import { CityAutocomplete } from "@/components/features/CityAutocomplete";
 import { authService } from "@/services/authService";
 import type { UpdateProfileRequestDto, UserResponseDto } from "@/types/auth";
 
-type ProfileView = "overview" | "plan" | "details" | "password";
+type ProfileView = "overview" | "plan" | "details" | "password" | "palette";
 
 const PLAN_LABELS: Record<NonNullable<UserResponseDto["plan"]>, string> = {
   FREE: "Provador", ATELIER: "Atelier", COUTURE: "Couture",
@@ -75,8 +76,11 @@ export default function ProfilePage() {
   const [verifyingEmail, setVerifyingEmail] = useState(false);
   const [deletingAccount, setDeletingAccount] = useState(false);
   const searchParams = useSearchParams();
-  // ?view=plan: retorno do portal do Stripe abre direto na seção do plano
-  const [view, setView] = useState<ProfileView>(() => searchParams.get("view") === "plan" ? "plan" : "overview");
+  // ?view=plan: retorno do portal do Stripe abre direto na seção do plano; ?view=palette vem do "Paleta salva" do chat
+  const [view, setView] = useState<ProfileView>(() => {
+    const requested = searchParams.get("view");
+    return requested === "plan" || requested === "palette" ? requested : "overview";
+  });
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
   const [saving, setSaving] = useState(false);
@@ -155,7 +159,7 @@ export default function ProfilePage() {
 
   if (!user) return <main className="h-full flex items-center justify-center text-stone-500" role="status">Carregando...</main>;
 
-  const titles: Record<ProfileView, string> = { overview: user.name, plan: "Plano", details: "Perfil", password: "Alterar Senha" };
+  const titles: Record<ProfileView, string> = { overview: user.name, plan: "Plano", details: "Perfil", password: "Alterar Senha", palette: "Minha paleta" };
   const rows = [
     { label: "Plano", icon: CreditCard, target: "plan" as const },
     { label: "Perfil", icon: UserRound, target: "details" as const },
@@ -223,6 +227,7 @@ export default function ProfilePage() {
                   const Icon = row.icon;
                   return <button key={row.target} type="button" onClick={() => openView(row.target)} className="flex items-center gap-3 w-full rounded-lg border border-stone-200/70 bg-white px-4 py-4 text-left text-sm hover:bg-stone-50 transition-colors"><Icon size={18} className="text-stone-600" /><span className="flex-1">{row.label}</span><ChevronRight size={17} className="text-stone-400" /></button>;
                 })}
+                <PaletteRow onOpen={() => openView("palette")} />
                 {/* mailto: abre o aplicativo de e-mail padrão do aparelho. O endereço fica à vista, com "copiar",
                     para quem não tem um aplicativo de e-mail configurado */}
                 <div className="relative flex items-center gap-3 rounded-lg border border-stone-200/70 bg-white px-4 py-3 text-sm transition-colors hover:bg-stone-50">
@@ -250,6 +255,8 @@ export default function ProfilePage() {
           {verifyingEmail && <VerifyEmailDialog email={user.email} onClose={() => setVerifyingEmail(false)} onVerified={setUser} />}
 
           {view === "plan" && <PlanStatusPanel />}
+
+          {view === "palette" && <PalettePanel />}
 
           {view === "details" && (
             <form onSubmit={saveProfile} className="space-y-6">

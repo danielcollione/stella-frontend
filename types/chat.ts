@@ -19,6 +19,7 @@ export interface ChatMessage {
   feedback?: 'LIKE' | 'DISLIKE' | 'NONE';
   feedbackReason?: FeedbackReason | null; // motivo opcional do "não gostei"
   wardrobeResult?: WardrobeSaveResult;
+  paletteProposal?: PaletteProposal; // análise de coloração que a pessoa pode salvar como a sua paleta
   mentionedItems?: ClothingItem[]; // do usuário: peças marcadas com "@"; da Stella: peças do guarda-roupa que ela indicou
   planLimit?: PlanLimitError; // resposta local quando o plano não permitiu a mensagem (HTTP 402)
   retry?: ChatRetry; // resposta local quando o envio falhou por rede ou servidor: guarda o que reenviar
@@ -38,6 +39,25 @@ export interface WardrobeSaveResult {
   failedCount: number;
   limitReached?: boolean; // guarda-roupa cheio no plano atual
   planRequired?: boolean; // salvar do chat é recurso dos planos pagos
+}
+
+// Paleta de cores: a da análise que a Stella acabou de fazer (proposta) ou a salva no Perfil
+export interface ColorPalette {
+  season: string;
+  summary?: string | null;
+  bestColors: string[];
+  avoidColors: string[];
+  metals?: string | null;
+}
+
+export interface PaletteProposal extends ColorPalette {
+  status: "PROPOSED" | "SAVED" | "DISMISSED";
+  replaces?: string | null; // estação que a pessoa já tinha salvo
+  planRequired?: boolean; // salvar a paleta é dos planos pagos
+}
+
+export interface SavedPalette extends ColorPalette {
+  analyzedAt?: string | null;
 }
 
 export interface SuggestionItem {

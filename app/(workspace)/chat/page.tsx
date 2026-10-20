@@ -33,6 +33,7 @@ import { PageContent } from "@/components/layout/PageContent";
 import { CopyMessageButton } from "@/components/ui/CopyMessageButton";
 import { WardrobeSaveToggle } from "@/components/features/WardrobeSaveToggle";
 import { WardrobeSaveResult } from "@/components/features/WardrobeSaveResult";
+import { PaletteProposalCard } from "@/components/features/PaletteProposalCard";
 import { useSaveToWardrobePreference } from "@/utils/wardrobePreference";
 import { compressImage } from "@/utils/imageCompression";
 import { takeChatDraft } from "@/utils/chatDraft";
@@ -570,6 +571,8 @@ export default function ChatPage() {
                     )}
 
                     {msg.wardrobeResult && <WardrobeSaveResult result={msg.wardrobeResult} />}
+
+                    {msg.paletteProposal && msg.id != null && <PaletteProposalCard messageId={String(msg.id)} proposal={msg.paletteProposal} />}
 
                     {!msg.planLimit && !msg.retry && <div className="flex items-center justify-between gap-3 pt-1 text-stone-400">
                       <StellaMark size={28} decorative />
