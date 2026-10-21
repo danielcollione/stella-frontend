@@ -16,6 +16,8 @@ const SECURITY_HEADERS = [
 
 const nextConfig: NextConfig = {
   devIndicators: false,
+  // Em desenvolvimento, deixa abrir pelo celular na rede local (ex: http://192.168.0.15:3000)
+  allowedDevOrigins: ["192.168.*.*"],
   async headers() {
     return [{ source: "/:path*", headers: SECURITY_HEADERS }];
   },

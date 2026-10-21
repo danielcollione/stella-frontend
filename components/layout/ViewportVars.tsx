@@ -1,6 +1,8 @@
 "use client";
 
 import { useEffect } from "react";
+// Montado em todas as páginas: já começa a escutar o aviso de instalação do Android (ver installApp)
+import "@/utils/installApp";
 
 const FIELD_SELECTOR = "input:not([type='checkbox']):not([type='radio']):not([type='range']):not([type='file']), textarea, select, [contenteditable='true']";
 

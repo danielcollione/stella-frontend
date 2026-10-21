@@ -7,6 +7,7 @@ import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { RatingCard } from "@/components/features/feedback/RatingCard";
 import { feedbackService } from "@/services/feedback/feedbackService";
 import { onGoodMoment } from "@/utils/goodMoment";
+import { isInstallGuideOpen } from "@/utils/installApp";
 import type { AppRating, RatingSource } from "@/types/feedback";
 
 /** Depois do momento bom, um respiro antes do convite (no chat, a resposta da Stella aparece primeiro). */
@@ -56,6 +57,11 @@ export function FeedbackProvider({ enabled, children }: { enabled: boolean; chil
       if (inviteUsed.current) return;
       inviteUsed.current = true;
       timer = window.setTimeout(() => {
+        // Com a janela de instalação aberta, o convite fica para o próximo momento bom
+        if (isInstallGuideOpen()) {
+          inviteUsed.current = false;
+          return;
+        }
         setSource((current) => current ?? "INVITE");
         void feedbackService.inviteShown().catch(() => undefined);
       }, INVITE_DELAY_MS);

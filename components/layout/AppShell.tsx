@@ -9,6 +9,7 @@ import { CalendarCheck, ChartNoAxesColumn, Gem, LogOut, MessageSquare, PanelLeft
 import { StellaMark } from "@/components/ui/StellaMark";
 import { UserAvatar } from "@/components/ui/UserAvatar";
 import { FeedbackProvider } from "@/components/features/feedback/FeedbackProvider";
+import { InstallCard } from "@/components/features/install/InstallCard";
 import { MobileTabBar, MobileTopBar, useKeyboardOpen } from "@/components/layout/MobileNav";
 import { authService } from "@/services/authService";
 import { chatService } from "@/services/chat/chatService";
@@ -288,6 +289,7 @@ export function AppShell({ children }: { children: ReactNode }) {
         </div>
         </div>
         {user && <MobileTabBar hidden={keyboardOpen || mobileMenuOpen} user={user} activeThreadId={activeThreadId} onNewChat={newChat} />}
+        {user && <InstallCard hidden={keyboardOpen || mobileMenuOpen} />}
       </div>
       </FeedbackProvider>
     </AppShellContext.Provider>
